@@ -1,0 +1,27 @@
+{
+  "name": "tunca-report-system",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:admin": "pnpm --filter @tunca/admin dev",
+    "dev:mobile": "pnpm --filter @tunca/mobile start",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm --filter @tunca/admin build && pnpm --filter @tunca/mobile typecheck",
+    "create-admin": "tsx scripts/create-admin.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10"
+  }
+}

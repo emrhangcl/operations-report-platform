@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "TUNCA Rapor",
+    "slug": "tunca-rapor",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "tunca-rapor",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tunca.rapor"
+    },
+    "android": {
+      "package": "com.tunca.rapor"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Rapor fotoğrafları eklemek için galeri erişimi gerekir.",
+          "cameraPermission": "Rapor fotoğrafları çekmek için kamera erişimi gerekir."
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ]
+  }
+}

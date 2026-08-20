@@ -1,0 +1,15 @@
+node_modules
+.next
+.next-stale-*
+.expo
+.vercel
+dist
+coverage
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+*.log
+TUNCA_Raporlar_*.xlsx
+admin-login-qr.png
+expo-go-qr.png
