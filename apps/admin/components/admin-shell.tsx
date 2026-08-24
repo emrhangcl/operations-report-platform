@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, Car, ClipboardList, Gauge, GitBranch, LogOut, Users, Waves } from "lucide-react";
+import { Building2, Car, ClipboardCheck, ClipboardList, Gauge, GitBranch, LogOut, Users, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "../lib/supabase-browser";
 import { TuncaLogo } from "./logo";
 
 const links = [
   { href: "/", label: "Panel", icon: Gauge },
+  { href: "/assignments", label: "Montaj Atamaları", icon: ClipboardCheck },
   { href: "/reports", label: "Raporlar", icon: ClipboardList },
-  { href: "/personnel", label: "Personel", icon: Users },
+  { href: "/personnel", label: "Kullanıcılar", icon: Users },
   { href: "/companies", label: "Firmalar", icon: Building2 },
   { href: "/lines", label: "Hatlar", icon: GitBranch },
   { href: "/vehicles", label: "Araçlar", icon: Car },

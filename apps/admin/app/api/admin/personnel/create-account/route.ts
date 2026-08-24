@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { personnelSchema } from "@tunca/validation";
+import { userAccountSchema } from "@tunca/validation";
 import { requireAdmin } from "../../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json() as unknown;
-  const parsed = personnelSchema
+  const parsed = userAccountSchema
     .extend({
       password: z.string().min(8)
     })
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Personel bilgileri geçersiz." }, { status: 400 });
   }
 
-  const { first_name, last_name, email, phone, password, is_active } = parsed.data;
+  const { first_name, last_name, email, phone, password, is_active, role } = parsed.data;
 
   const { data, error } = await admin.service.auth.admin.createUser({
     email,
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     last_name,
     email,
     phone: phone || null,
-    role: "PERSONNEL",
+    role,
     is_active
   });
 
@@ -54,10 +54,10 @@ export async function POST(request: Request) {
 
   await admin.service.from("audit_logs").insert({
     actor_id: admin.userId,
-    action: "personnel_account_created",
+    action: "user_account_created",
     entity_table: "profiles",
     entity_id: data.user.id,
-    after_data: { email, first_name, last_name }
+    after_data: { email, first_name, last_name, role }
   });
 
   return NextResponse.json({ id: data.user.id });

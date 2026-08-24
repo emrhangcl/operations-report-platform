@@ -37,6 +37,15 @@ export const photoCategories = [
   "Diğer"
 ] as const;
 
+export const userRoles = ["ADMIN", "PERSONNEL"] as const;
+
+export const installationAssignmentStatuses = [
+  "ASSIGNED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED"
+] as const;
+
 export const emptyReportFormValues = {
   client_request_id: "",
   report_date: "",
@@ -226,6 +235,20 @@ export const personnelSchema = z.object({
   email: z.string().trim().email("Geçerli bir e-posta girin."),
   phone: z.string().trim().optional().or(z.literal("")),
   is_active: z.boolean().default(true)
+});
+
+export const userAccountSchema = personnelSchema.extend({
+  role: z.enum(userRoles).default("PERSONNEL")
+});
+
+export const installationAssignmentSchema = z.object({
+  title: z.string().trim().optional().or(z.literal("")),
+  assigned_to_profile_id: z.string().uuid("Personel seçimi zorunludur."),
+  scheduled_date: z.string().trim().optional().or(z.literal("")),
+  notes: z.string().trim().optional().or(z.literal("")),
+  company_id: z.string().uuid("Firma seçimi zorunludur."),
+  line_name: z.string().trim().optional().or(z.literal("")),
+  report_values: z.record(z.unknown()).default({})
 });
 
 export type ReportFormInput = z.infer<typeof reportFormSchema>;

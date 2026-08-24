@@ -2,6 +2,12 @@ export type UserRole = "ADMIN" | "PERSONNEL";
 
 export type ReportStatus = "DRAFT" | "SUBMITTED";
 
+export type InstallationAssignmentStatus =
+  | "ASSIGNED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export type SyncStatus =
   | "DEVICE_SAVED"
   | "WAITING_SYNC"
@@ -106,6 +112,26 @@ export interface ReportListItem {
   submitted_at: string | null;
   process_actions: ProcessAction[];
   report_personnel?: Array<{ name_snapshot: string }>;
+}
+
+export interface InstallationAssignment {
+  id: string;
+  title: string;
+  status: InstallationAssignmentStatus;
+  assigned_to_profile_id: string;
+  created_by_profile_id: string | null;
+  report_id: string | null;
+  scheduled_date: string | null;
+  notes: string | null;
+  company_id: string | null;
+  company_name_snapshot: string | null;
+  line_name: string | null;
+  report_values: Record<string, unknown>;
+  started_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ReportFormValues {

@@ -9,6 +9,7 @@ interface DashboardCounts {
   totalReports: number;
   monthlyReports: number;
   drafts: number;
+  assignments: number;
   personnel: number;
   companies: number;
   lines: number;
@@ -19,6 +20,7 @@ const emptyCounts: DashboardCounts = {
   totalReports: 0,
   monthlyReports: 0,
   drafts: 0,
+  assignments: 0,
   personnel: 0,
   companies: 0,
   lines: 0,
@@ -44,6 +46,7 @@ export default function DashboardPage() {
         totalReports,
         monthlyReports,
         drafts,
+        assignments,
         personnel,
         companies,
         lines,
@@ -58,6 +61,10 @@ export default function DashboardPage() {
           .from("reports")
           .select("id", { count: "exact", head: true })
           .eq("status", "DRAFT"),
+        client
+          .from("installation_assignments")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["ASSIGNED", "IN_PROGRESS"]),
         client
           .from("profiles")
           .select("id", { count: "exact", head: true })
@@ -77,6 +84,7 @@ export default function DashboardPage() {
         totalReports.error,
         monthlyReports.error,
         drafts.error,
+        assignments.error,
         personnel.error,
         companies.error,
         lines.error,
@@ -92,6 +100,7 @@ export default function DashboardPage() {
         totalReports: totalReports.count ?? 0,
         monthlyReports: monthlyReports.count ?? 0,
         drafts: drafts.count ?? 0,
+        assignments: assignments.count ?? 0,
         personnel: personnel.count ?? 0,
         companies: companies.count ?? 0,
         lines: lines.count ?? 0,
@@ -115,6 +124,7 @@ export default function DashboardPage() {
         <StatCard label="Toplam Rapor" value={counts.totalReports} />
         <StatCard label="Bu Ayki Raporlar" value={counts.monthlyReports} />
         <StatCard label="Taslaklar" value={counts.drafts} />
+        <StatCard label="Aktif Montajlar" value={counts.assignments} />
         <StatCard label="Personel" value={counts.personnel} />
         <StatCard label="Firma" value={counts.companies} />
         <StatCard label="Hat" value={counts.lines} />

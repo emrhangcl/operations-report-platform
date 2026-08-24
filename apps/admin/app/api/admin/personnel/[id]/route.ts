@@ -35,8 +35,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { error: profileError } = await admin.service
     .from("profiles")
     .delete()
-    .eq("id", id)
-    .eq("role", "PERSONNEL");
+    .eq("id", id);
 
   if (profileError) {
     return NextResponse.json({ message: "Personel profili silinemedi." }, { status: 500 });
@@ -49,7 +48,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   await admin.service.from("audit_logs").insert({
     actor_id: admin.userId,
-    action: "personnel_deleted",
+    action: "user_deleted",
     entity_table: "profiles",
     entity_id: id
   });

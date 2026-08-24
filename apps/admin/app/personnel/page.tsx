@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { KeyRound, Pencil, Save, Trash2, UserPlus, X } from "lucide-react";
-import type { Profile } from "@tunca/types";
-import { personnelSchema } from "@tunca/validation";
+import type { Profile, UserRole } from "@tunca/types";
+import { userAccountSchema } from "@tunca/validation";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
@@ -14,6 +14,7 @@ type PersonnelForm = {
   email: string;
   phone: string;
   password: string;
+  role: UserRole;
 };
 
 const emptyForm: PersonnelForm = {
@@ -21,7 +22,8 @@ const emptyForm: PersonnelForm = {
   last_name: "",
   email: "",
   phone: "",
-  password: ""
+  password: "",
+  role: "PERSONNEL"
 };
 
 export default function PersonnelPage() {
@@ -37,7 +39,6 @@ export default function PersonnelPage() {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("role", "PERSONNEL")
       .order("created_at", { ascending: false });
     if (error) {
       setMessage("Personel listesi alınamadı.");
@@ -62,7 +63,7 @@ export default function PersonnelPage() {
     event.preventDefault();
     setMessage("");
 
-    const parsed = personnelSchema.safeParse(form);
+    const parsed = userAccountSchema.safeParse(form);
     if (!parsed.success) {
       setMessage(parsed.error.issues[0]?.message ?? "Personel bilgilerini kontrol edin.");
       return;
@@ -81,6 +82,7 @@ export default function PersonnelPage() {
             last_name: parsed.data.last_name,
             email: parsed.data.email,
             phone: parsed.data.phone || null,
+            role: parsed.data.role,
             is_active: true
           })
           .eq("id", editingId);
@@ -164,15 +166,16 @@ export default function PersonnelPage() {
       last_name: profile.last_name,
       email: profile.email ?? "",
       phone: profile.phone ?? "",
-      password: ""
+      password: "",
+      role: profile.role
     });
   }
 
   return (
     <AdminShell>
       <PageHeader
-        title="Personel"
-        description="Saha kullanıcılarını ve aktiflik durumlarını yönetin."
+        title="Kullanıcılar"
+        description="Personel ve admin hesaplarını oluşturun, düzenleyin ve silin."
       />
       <form className="form-panel" onSubmit={submit}>
         <div className="form-grid">
@@ -203,6 +206,15 @@ export default function PersonnelPage() {
               onChange={(event) => setForm({ ...form, phone: event.target.value })}
               value={form.phone}
             />
+          </Field>
+          <Field label="Yetki">
+            <select
+              onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}
+              value={form.role}
+            >
+              <option value="PERSONNEL">Personel</option>
+              <option value="ADMIN">Admin / Talep Açan</option>
+            </select>
           </Field>
           {!editingId ? (
             <Field label="İlk Şifre">
@@ -239,7 +251,7 @@ export default function PersonnelPage() {
       {message ? <div className={message.includes("üretildi") || message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
       <div className="table-panel">
         {rows.length === 0 ? (
-          <div className="empty">Henüz personel eklenmemiş.</div>
+          <div className="empty">Henüz kullanıcı eklenmemiş.</div>
         ) : (
           <table>
             <thead>
@@ -247,7 +259,7 @@ export default function PersonnelPage() {
                 <th>Ad Soyad</th>
                 <th>Telefon</th>
                 <th>E-posta</th>
-                <th>Kullanıcı Hesabı</th>
+                <th>Yetki</th>
                 <th>Oluşturulma</th>
                 <th>İşlemler</th>
               </tr>
@@ -258,7 +270,11 @@ export default function PersonnelPage() {
                   <td>{profile.first_name} {profile.last_name}</td>
                   <td>{profile.phone ?? "-"}</td>
                   <td>{profile.email ?? "-"}</td>
-                  <td>Var</td>
+                  <td>
+                    <span className={`status ${profile.role === "ADMIN" ? "ok" : "warn"}`}>
+                      {profile.role === "ADMIN" ? "Admin" : "Personel"}
+                    </span>
+                  </td>
                   <td>{new Date(profile.created_at).toLocaleDateString("tr-TR")}</td>
                   <td>
                     <div className="actions" style={{ marginTop: 0 }}>
