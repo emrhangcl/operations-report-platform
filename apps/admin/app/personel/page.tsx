@@ -78,6 +78,10 @@ const replacementReasonOptions = [
   "Diğer"
 ];
 
+function getPersonnelSupabase() {
+  return getBrowserSupabase("personnel");
+}
+
 export default function PersonnelWebPage() {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -102,7 +106,7 @@ export default function PersonnelWebPage() {
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
 
   useEffect(() => {
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase) {
       setAccessMessage("Supabase bilgileri girilmedi.");
       return;
@@ -137,7 +141,7 @@ export default function PersonnelWebPage() {
   }
 
   async function loadBootstrapData() {
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase || !sessionUserId) return;
 
     const [
@@ -209,7 +213,7 @@ export default function PersonnelWebPage() {
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase) {
       showMessage("Supabase bilgileri girilmedi.", "error");
       return;
@@ -228,7 +232,7 @@ export default function PersonnelWebPage() {
   }
 
   async function signOut() {
-    await getBrowserSupabase()?.auth.signOut();
+    await getPersonnelSupabase()?.auth.signOut();
     setProfile(null);
     setSessionUserId(null);
     setActiveAssignment(null);
@@ -281,7 +285,7 @@ export default function PersonnelWebPage() {
 
     if (assignment.status !== "ASSIGNED") return;
 
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase) return;
 
     const { error } = await supabase
@@ -321,7 +325,7 @@ export default function PersonnelWebPage() {
   }
 
   async function submitReport(status: ReportStatus) {
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase || !profile) return;
 
     setMessage("");
@@ -383,7 +387,7 @@ export default function PersonnelWebPage() {
   }
 
   async function replaceReportPersonnel(reportId: string) {
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase || !profile) return;
 
     await supabase.from("report_personnel").delete().eq("report_id", reportId);
@@ -405,7 +409,7 @@ export default function PersonnelWebPage() {
   }
 
   async function uploadPhotos(reportId: string) {
-    const supabase = getBrowserSupabase();
+    const supabase = getPersonnelSupabase();
     if (!supabase || !sessionUserId) return;
 
     for (const photo of photos) {
@@ -714,7 +718,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
     let cancelled = false;
 
     async function load() {
-      const supabase = getBrowserSupabase();
+      const supabase = getPersonnelSupabase();
       if (!supabase) {
         setMessage("Supabase bilgileri girilmedi.");
         return;
