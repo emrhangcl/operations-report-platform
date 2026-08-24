@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "TUNCA Rapor Sistemi",
     short_name: "TUNCA Rapor",
-    description: "TUNCA montaj ve tamir rapor sistemi",
+    description: "TUNCA montaj ve tamir rapor sistemi.",
     start_url: "/personel",
     scope: "/",
     display: "standalone",
