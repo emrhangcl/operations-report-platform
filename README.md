@@ -6,7 +6,7 @@ TUNCA Teknik Makina Sanayi ve Ticaret A.Ş. için hazırlanmış temiz başlang�
 
 ```text
 apps/admin      Next.js yönetim paneli
-apps/mobile     Expo SDK 54 React Native mobil uygulama
+apps/mobile     Expo SDK 54 React Native mobil uygulama (yerel test/opsiyonel)
 packages/types  Ortak TypeScript tipleri
 packages/validation  Ortak Zod doğrulama kuralları
 packages/shared Ortak tarih, izin, Excel ve rapor numarası yardımcıları
@@ -14,6 +14,15 @@ supabase/migrations PostgreSQL schema, trigger ve RLS
 ```
 
 Logo dosyası `assets/tunca-logo.png`, admin içinde `apps/admin/public/tunca-logo.png`, mobil içinde `apps/mobile/assets/tunca-logo.png` olarak yerleştirildi.
+
+## Web Kullanımı
+
+Vercel'e dağıtılan Next.js uygulaması iki ekranı birlikte taşır:
+
+- Admin panel: `/`
+- Personel rapor ekranı: `/personel`
+
+Personel tarafı mobil web/PWA olarak kullanılabilir. iPhone ve Android kullanıcıları `/personel` adresini tarayıcıdan açıp ana ekrana ekleyerek uygulama gibi kullanabilir. Expo Go dağıtım için gerekli değildir.
 
 ## Kurulum
 
@@ -60,25 +69,25 @@ pnpm run create-admin
 
 Komut ad, soyad, e-posta ve şifre sorar. Veritabanına otomatik demo admin eklenmez.
 
-8. Admin paneli başlatın:
+8. Web uygulamasını başlatın:
 
 ```bash
 pnpm run dev:admin
 ```
 
-Panel varsayılan olarak `http://localhost:3000` adresinde açılır.
+Admin panel varsayılan olarak `http://localhost:3000`, personel ekranı `http://localhost:3000/personel` adresinde açılır.
 
-9. Expo mobil uygulamayı başlatın:
+9. Expo mobil uygulamayı yerel test için başlatmak isterseniz:
 
 ```bash
 pnpm run dev:mobile
 ```
 
-10. iPhone'da test:
+10. iPhone'da Expo ile test:
 
 Expo Go uygulamasını açın ve terminaldeki QR kodu kamera ile okutun.
 
-11. Android'de test:
+11. Android'de Expo ile test:
 
 Expo Go uygulamasını açın ve terminaldeki QR kodu okutun.
 
@@ -95,7 +104,7 @@ Boş veritabanında admin dashboard kartları `0` gösterir. Firma, bant, person
 1. Firma ekle.
 2. Bant ekle.
 3. Personel hesabı oluştur.
-4. Mobil uygulamada personel ile giriş yap.
+4. `/personel` ekranında personel ile giriş yap.
 5. Rapor oluştur, fotoğraf ekle ve gönder.
 6. Admin panelden raporu kontrol et.
 7. Excel'e aktar.

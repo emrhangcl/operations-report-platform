@@ -53,6 +53,20 @@ function loadProjectEnv() {
 
 loadProjectEnv();
 
+const supabaseImageHost = (() => {
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  try {
+    return new URL(rawUrl).hostname;
+  } catch {
+    return undefined;
+  }
+})();
+
 const publicEnv = Object.fromEntries(
   Object.entries({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -63,6 +77,19 @@ const publicEnv = Object.fromEntries(
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: publicEnv,
+  ...(supabaseImageHost
+    ? {
+        images: {
+          remotePatterns: [
+            {
+              protocol: "https",
+              hostname: supabaseImageHost,
+              pathname: "/storage/v1/object/sign/**"
+            }
+          ]
+        }
+      }
+    : {}),
   outputFileTracingRoot: projectRoot,
   transpilePackages: ["@tunca/shared", "@tunca/types", "@tunca/validation"]
 };
