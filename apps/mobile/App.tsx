@@ -281,7 +281,7 @@ export default function App() {
 
     setLoading(true);
     try {
-      const payload = reportPayload(parsed.data, status);
+      const payload = reportPayload(prepareReportValues(parsed.data, belts), status);
       const { data, error } = await supabase
         .from("reports")
         .upsert(payload, { onConflict: "client_request_id" })
@@ -568,6 +568,29 @@ function workItemsFromValues(values: ReportFormValues) {
   ]);
 }
 
+function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFormValues {
+  const beltsById = new Map(belts.map((belt) => [belt.id, belt]));
+  const workItems = workItemsFromValues(values).map((item) => {
+    const belt = beltsById.get(item.belt_id);
+    return {
+      ...item,
+      belt_code: item.belt_code || belt?.code || "",
+      belt_name: item.belt_name || belt?.name || ""
+    };
+  });
+  const primaryWorkItem = workItems[0] ?? emptyReportWorkItem();
+  const productCodes = workItems.map((item) => item.belt_code).filter(Boolean);
+
+  return {
+    ...values,
+    line_name: primaryWorkItem.line_name || values.line_name,
+    belt_id: primaryWorkItem.belt_id || values.belt_id,
+    work_items: workItems,
+    product_code: productCodes.join("\n") || values.product_code,
+    product_measure: ""
+  };
+}
+
 function validDate(value: Date) {
   return Number.isFinite(value.getTime());
 }
@@ -663,7 +686,7 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
     customer_departure_at: nullable(values.customer_departure_at),
     factory_return_at: nullable(values.factory_return_at),
     product_code: nullable(values.product_code),
-    product_measure: nullable(values.product_measure),
+    product_measure: null,
     product_width: nullable(values.product_width),
     product_length: nullable(values.product_length),
     product_quantity: nullable(values.product_quantity),
@@ -942,8 +965,7 @@ function SubmittedReportDetail({
           <Section title="Ürün Bilgileri">
             <ReadOnlyRows
               rows={[
-                ["Ürün Kodu", readonlyText(report.product_code)],
-                ["Ölçü", readonlyText(report.product_measure)],
+                ["Ürün Kodları", readonlyText(report.product_code || report.belt_code_snapshot)],
                 ["En", readonlyText(report.product_width)],
                 ["Boy", readonlyText(report.product_length)],
                 ["Miktar", readonlyText(report.product_quantity)],
@@ -1110,6 +1132,10 @@ function ReportForm(props: {
     () => companyLines.filter((line) => line.company_id === values.company_id),
     [companyLines, values.company_id]
   );
+  const selectedBelt = useMemo(
+    () => belts.find((belt) => belt.id === values.belt_id),
+    [belts, values.belt_id]
+  );
 
   useEffect(() => {
     if (selectedCompany) {
@@ -1239,8 +1265,7 @@ function ReportForm(props: {
       </Section>
 
       <Section title="3. Ürün Bilgileri">
-        <Input label="Ürün Kodu" value={values.product_code} onChange={(value) => update("product_code", value)} />
-        <Input label="Ölçü" value={values.product_measure} onChange={(value) => update("product_measure", value)} />
+        <Text style={styles.readonly}>Ürün Kodları: {selectedBelt?.code ?? "-"}</Text>
         <Input label="En" value={values.product_width} onChange={(value) => update("product_width", value)} />
         <Input label="Boy" value={values.product_length} onChange={(value) => update("product_length", value)} />
         <Input keyboardType="numeric" label="Miktar" value={values.product_quantity} onChange={(value) => update("product_quantity", value)} />

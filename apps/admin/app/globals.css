@@ -448,6 +448,34 @@ tr:last-child td {
   min-width: 0;
 }
 
+.product-code-list {
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px;
+}
+
+.product-code-list span {
+  background: #fff;
+  border: 1px solid rgba(189, 51, 50, 0.28);
+  border-radius: 6px;
+  color: var(--brand);
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 6px 9px;
+}
+
+.product-code-list em {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 650;
+}
+
 .icon-button {
   justify-content: center;
   min-height: 42px;

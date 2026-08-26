@@ -126,6 +126,10 @@ export default function AssignmentsPage() {
     () => new Map(belts.map((belt) => [belt.id, belt])),
     [belts]
   );
+  const productCodes = useMemo(
+    () => workItemProductCodes(form.work_items, beltsById),
+    [beltsById, form.work_items]
+  );
 
   async function loadLookups() {
     const supabase = getBrowserSupabase();
@@ -464,11 +468,8 @@ export default function AssignmentsPage() {
               <Field className="span-2" label="Kullanılacak Makine/Ekipman">
                 <textarea onChange={(event) => update("used_equipment", event.target.value)} value={form.used_equipment} />
               </Field>
-              <Field label="Ürün Kodu">
-                <input onChange={(event) => update("product_code", event.target.value)} value={form.product_code} />
-              </Field>
-              <Field label="Ölçü">
-                <input onChange={(event) => update("product_measure", event.target.value)} value={form.product_measure} />
+              <Field label="Ürün Kodları">
+                <ProductCodeList codes={productCodes} />
               </Field>
               <Field label="En">
                 <input onChange={(event) => update("product_width", event.target.value)} value={form.product_width} />
@@ -659,6 +660,7 @@ function buildReportValues(form: AssignmentForm, belts: Belt[]): Record<string, 
   const contacts = compactContacts(form.company_contacts);
   const workItems = enrichWorkItems(compactWorkItems(form.work_items), belts);
   const primaryWorkItem = workItems[0] ?? emptyWorkItem();
+  const productCodes = workItemProductCodes(workItems);
 
   return {
     report_date: form.scheduled_date,
@@ -672,8 +674,8 @@ function buildReportValues(form: AssignmentForm, belts: Belt[]): Record<string, 
     belt_id: primaryWorkItem.belt_id,
     vehicle_plate: form.vehicle_plate,
     used_equipment: form.used_equipment,
-    product_code: form.product_code,
-    product_measure: form.product_measure,
+    product_code: productCodes.join("\n") || form.product_code,
+    product_measure: "",
     product_width: form.product_width,
     product_length: form.product_length,
     product_quantity: form.product_quantity,
@@ -722,7 +724,7 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
     vehicle_plate: stringValue(values.vehicle_plate),
     used_equipment: stringValue(values.used_equipment),
     product_code: stringValue(values.product_code),
-    product_measure: stringValue(values.product_measure),
+    product_measure: "",
     product_width: stringValue(values.product_width),
     product_length: stringValue(values.product_length),
     product_quantity: stringValue(values.product_quantity),
@@ -838,6 +840,12 @@ function enrichWorkItems(items: ReportWorkItem[], belts: Belt[]) {
   });
 }
 
+function workItemProductCodes(items: ReportWorkItem[], beltsById?: Map<string, Belt>) {
+  return compactWorkItems(items)
+    .map((item) => item.belt_code || beltsById?.get(item.belt_id)?.code || "")
+    .filter(Boolean);
+}
+
 function workItemsFromValue(value: unknown, fallbackLineName: string, fallbackBeltId: string): ReportWorkItem[] {
   if (Array.isArray(value)) {
     const items = value
@@ -935,6 +943,18 @@ function ContactFields({
       <button className="button secondary contact-add-button" onClick={onAdd} type="button">
         Yetkili Ekle
       </button>
+    </div>
+  );
+}
+
+function ProductCodeList({ codes }: { codes: string[] }) {
+  return (
+    <div className="product-code-list">
+      {codes.length > 0 ? (
+        codes.map((code, index) => <span key={`${code}-${index}`}>{code}</span>)
+      ) : (
+        <em>Bant kodu seçilince otomatik gelir</em>
+      )}
     </div>
   );
 }

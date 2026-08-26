@@ -161,9 +161,7 @@ export default function ReportDetailPage() {
           <Section
             title="Ürün Bilgileri"
             rows={[
-              ["Ürün Kodu", text(report.product_code)],
-              ["Bant Kodu", reportBeltCodesText(report)],
-              ["Ölçü", text(report.product_measure)],
+              ["Ürün Kodları", reportProductCodesText(report)],
               ["En", text(report.product_width)],
               ["Boy", text(report.product_length)],
               ["Miktar", text(report.product_quantity)],
@@ -364,6 +362,25 @@ function reportBeltCodesText(report: Record<string, unknown>) {
   }
 
   return text(report.belt_code_snapshot);
+}
+
+function reportProductCodesText(report: Record<string, unknown>) {
+  const items = compactWorkItems(
+    workItemsFromValue(
+      report.work_items,
+      textValue(report.line_name),
+      textValue(report.belt_id),
+      textValue(report.belt_code_snapshot),
+      textValue(report.belt_name_snapshot)
+    )
+  );
+  const codes = items.map((item) => item.belt_code).filter(Boolean);
+
+  if (codes.length > 0) {
+    return codes.join(" • ");
+  }
+
+  return text(report.product_code || report.belt_code_snapshot);
 }
 
 function toRecord(value: unknown) {
