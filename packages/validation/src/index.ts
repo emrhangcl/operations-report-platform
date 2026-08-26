@@ -217,8 +217,8 @@ export const companySchema = z.object({
 });
 
 export const beltSchema = z.object({
-  name: z.string().trim().min(1, "Bant adı zorunludur."),
-  code: z.string().trim().optional().or(z.literal("")),
+  code: z.string().trim().min(1, "Bant kodu zorunludur."),
+  name: z.string().trim().optional().or(z.literal("")),
   description: z.string().trim().optional().or(z.literal("")),
   is_active: z.boolean().default(true)
 });

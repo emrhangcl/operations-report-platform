@@ -541,6 +541,10 @@ function parseTimeValue(value: string) {
   return date;
 }
 
+function formatBeltLabel(belt: Belt) {
+  return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
+}
+
 function validDate(value: Date) {
   return Number.isFinite(value.getTime());
 }
@@ -1165,7 +1169,7 @@ function ReportForm(props: {
         <Input label="Makina Marka Modeli" value={values.machine_brand_model} onChange={(value) => update("machine_brand_model", value)} />
         <Select label="Bant Seç" value={values.belt_id} onChange={(value) => update("belt_id", value)}>
           <SelectOption label="Bant seçin" value="" />
-          {belts.map((belt) => <SelectOption key={belt.id} label={belt.name} value={belt.id} />)}
+          {belts.map((belt) => <SelectOption key={belt.id} label={formatBeltLabel(belt)} value={belt.id} />)}
         </Select>
         <Text style={styles.readonly}>Formu Dolduran Personel: {profile ? `${profile.first_name} ${profile.last_name}` : "-"}</Text>
         <Checklist

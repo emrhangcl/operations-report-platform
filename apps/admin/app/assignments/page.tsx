@@ -22,6 +22,7 @@ type AssignmentForm = {
   scheduled_date: string;
   notes: string;
   company_id: string;
+  company_contacts: CompanyContactDraft[];
   company_contact_name: string;
   company_contact_phone: string;
   line_name: string;
@@ -49,12 +50,18 @@ type AssignmentForm = {
   billing_status: string;
 };
 
+type CompanyContactDraft = {
+  name: string;
+  phone: string;
+};
+
 const emptyForm: AssignmentForm = {
   title: "",
   assigned_to_profile_id: "",
   scheduled_date: "",
   notes: "",
   company_id: "",
+  company_contacts: [{ name: "", phone: "" }],
   company_contact_name: "",
   company_contact_phone: "",
   line_name: "",
@@ -124,7 +131,7 @@ export default function AssignmentsPage() {
 
     const [companyRows, beltRows, lineRows, vehicleRows, personnelRows] = await Promise.all([
       supabase.from("companies").select("*").eq("is_active", true).order("name"),
-      supabase.from("belts").select("*").eq("is_active", true).order("name"),
+      supabase.from("belts").select("*").eq("is_active", true).order("code"),
       supabase.from("company_lines").select("*").order("name"),
       supabase.from("vehicles").select("*").order("plate"),
       supabase
@@ -171,13 +178,43 @@ export default function AssignmentsPage() {
 
   function updateCompany(companyId: string) {
     const company = companies.find((item) => item.id === companyId);
+    const contacts = contactsFromFallback(company?.contact_name ?? "", company?.contact_phone ?? "");
     setForm((current) => ({
       ...current,
       company_id: companyId,
-      company_contact_name: company?.contact_name ?? "",
-      company_contact_phone: company?.contact_phone ?? "",
+      company_contacts: contacts,
+      company_contact_name: contacts[0]?.name ?? "",
+      company_contact_phone: contacts[0]?.phone ?? "",
       line_name: ""
     }));
+  }
+
+  function updateContact(index: number, key: keyof CompanyContactDraft, value: string) {
+    setForm((current) => {
+      const contacts = normalizeContacts(
+        current.company_contacts.map((contact, contactIndex) =>
+          contactIndex === index ? { ...contact, [key]: value } : contact
+        )
+      );
+      return syncPrimaryContact({ ...current, company_contacts: contacts });
+    });
+  }
+
+  function addContact() {
+    setForm((current) => ({
+      ...current,
+      company_contacts: [...normalizeContacts(current.company_contacts), { name: "", phone: "" }]
+    }));
+  }
+
+  function removeContact(index: number) {
+    setForm((current) => {
+      const nextContacts = normalizeContacts(current.company_contacts.filter((_, contactIndex) => contactIndex !== index));
+      return syncPrimaryContact({
+        ...current,
+        company_contacts: nextContacts.length > 0 ? nextContacts : [{ name: "", phone: "" }]
+      });
+    });
   }
 
   function toggleArray(key: "product_types" | "process_actions" | "replacement_reasons", value: string) {
@@ -344,18 +381,12 @@ export default function AssignmentsPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Yetkili Kişi">
-                <input
-                  onChange={(event) => update("company_contact_name", event.target.value)}
-                  value={form.company_contact_name}
-                />
-              </Field>
-              <Field label="Yetkili Telefon">
-                <input
-                  onChange={(event) => update("company_contact_phone", event.target.value)}
-                  value={form.company_contact_phone}
-                />
-              </Field>
+              <ContactFields
+                contacts={form.company_contacts}
+                onAdd={addContact}
+                onRemove={removeContact}
+                onUpdate={updateContact}
+              />
               <Field label="Hat">
                 <select
                   disabled={!form.company_id}
@@ -383,7 +414,7 @@ export default function AssignmentsPage() {
                 <select onChange={(event) => update("belt_id", event.target.value)} value={form.belt_id}>
                   <option value="">Bant seçin</option>
                   {belts.map((belt) => (
-                    <option key={belt.id} value={belt.id}>{belt.name}</option>
+                    <option key={belt.id} value={belt.id}>{formatBeltLabel(belt)}</option>
                   ))}
                 </select>
               </Field>
@@ -431,6 +462,7 @@ export default function AssignmentsPage() {
           <FormSection title="İşlem ve Teknik">
             <div className="form-grid assignment-grid">
               <CheckPicker
+                className="span-2 assignment-compact-picker"
                 label="Ürün Türü"
                 options={productTypes.map((value) => ({ label: value, value }))}
                 selected={form.product_types}
@@ -442,6 +474,7 @@ export default function AssignmentsPage() {
                 </Field>
               ) : null}
               <CheckPicker
+                className="span-2 assignment-compact-picker"
                 label="Yapılacak İşlem"
                 options={processActions.map((value) => ({ label: value, value }))}
                 selected={form.process_actions}
@@ -474,6 +507,7 @@ export default function AssignmentsPage() {
                 <input onChange={(event) => update("removed_belt_years", event.target.value)} value={form.removed_belt_years} />
               </Field>
               <CheckPicker
+                className="span-2 assignment-compact-picker"
                 label="Değiştirme Sebebi"
                 options={replacementReasonOptions.map((value) => ({ label: value, value }))}
                 selected={form.replacement_reasons}
@@ -602,11 +636,14 @@ export default function AssignmentsPage() {
 }
 
 function buildReportValues(form: AssignmentForm): Record<string, unknown> {
+  const contacts = compactContacts(form.company_contacts);
+
   return {
     report_date: form.scheduled_date,
     company_id: form.company_id,
-    company_contact_name: form.company_contact_name,
-    company_contact_phone: form.company_contact_phone,
+    company_contacts: contacts,
+    company_contact_name: contacts[0]?.name ?? "",
+    company_contact_phone: contacts[0]?.phone ?? "",
     line_name: form.line_name,
     machine_brand_model: form.machine_brand_model,
     belt_id: form.belt_id,
@@ -635,6 +672,12 @@ function buildReportValues(form: AssignmentForm): Record<string, unknown> {
 
 function formFromAssignment(assignment: InstallationAssignment): AssignmentForm {
   const values = toRecord(assignment.report_values);
+  const companyContacts = contactsFromValue(
+    values.company_contacts,
+    stringValue(values.company_contact_name),
+    stringValue(values.company_contact_phone)
+  );
+  const primaryContact = compactContacts(companyContacts)[0] ?? { name: "", phone: "" };
 
   return {
     ...emptyForm,
@@ -643,8 +686,9 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
     scheduled_date: assignment.scheduled_date ?? "",
     notes: assignment.notes ?? "",
     company_id: (stringValue(values.company_id) || assignment.company_id) ?? "",
-    company_contact_name: stringValue(values.company_contact_name),
-    company_contact_phone: stringValue(values.company_contact_phone),
+    company_contacts: companyContacts,
+    company_contact_name: primaryContact.name,
+    company_contact_phone: primaryContact.phone,
     line_name: (stringValue(values.line_name) || assignment.line_name) ?? "",
     machine_brand_model: stringValue(values.machine_brand_model),
     belt_id: stringValue(values.belt_id),
@@ -695,12 +739,104 @@ function toRecord(value: unknown) {
     : {};
 }
 
+function contactsFromFallback(name: string, phone: string): CompanyContactDraft[] {
+  return name.trim() || phone.trim() ? [{ name, phone }] : [{ name: "", phone: "" }];
+}
+
+function contactsFromValue(value: unknown, fallbackName: string, fallbackPhone: string): CompanyContactDraft[] {
+  if (Array.isArray(value)) {
+    const contacts = value
+      .map((item) => toRecord(item))
+      .map((item) => ({
+        name: stringValue(item.name),
+        phone: stringValue(item.phone)
+      }))
+      .filter((contact) => contact.name.trim() || contact.phone.trim());
+
+    if (contacts.length > 0) {
+      return contacts;
+    }
+  }
+
+  return contactsFromFallback(fallbackName, fallbackPhone);
+}
+
+function normalizeContacts(contacts: CompanyContactDraft[]) {
+  return contacts.length > 0 ? contacts : [{ name: "", phone: "" }];
+}
+
+function compactContacts(contacts: CompanyContactDraft[]) {
+  return contacts
+    .map((contact) => ({
+      name: contact.name.trim(),
+      phone: contact.phone.trim()
+    }))
+    .filter((contact) => contact.name || contact.phone);
+}
+
+function syncPrimaryContact<T extends AssignmentForm>(form: T): T {
+  const firstContact = compactContacts(form.company_contacts)[0] ?? { name: "", phone: "" };
+  return {
+    ...form,
+    company_contact_name: firstContact.name,
+    company_contact_phone: firstContact.phone
+  };
+}
+
+function formatBeltLabel(belt: Belt) {
+  return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
+}
+
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="form-subsection">
       <h2>{title}</h2>
       {children}
     </section>
+  );
+}
+
+function ContactFields({
+  contacts,
+  onAdd,
+  onRemove,
+  onUpdate
+}: {
+  contacts: CompanyContactDraft[];
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+  onUpdate: (index: number, key: keyof CompanyContactDraft, value: string) => void;
+}) {
+  return (
+    <div className="field span-2 contact-list-field">
+      <label>Yetkili Kişiler</label>
+      <div className="contact-list">
+        {contacts.map((contact, index) => (
+          <div className="contact-row" key={index}>
+            <input
+              aria-label={`Yetkili ${index + 1} adı`}
+              onChange={(event) => onUpdate(index, "name", event.target.value)}
+              placeholder="Ad Soyad"
+              value={contact.name}
+            />
+            <input
+              aria-label={`Yetkili ${index + 1} telefonu`}
+              onChange={(event) => onUpdate(index, "phone", event.target.value)}
+              placeholder="Telefon"
+              value={contact.phone}
+            />
+            {contacts.length > 1 ? (
+              <button className="button subtle icon-button" onClick={() => onRemove(index)} type="button">
+                <X aria-hidden size={16} />
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <button className="button secondary contact-add-button" onClick={onAdd} type="button">
+        Yetkili Ekle
+      </button>
+    </div>
   );
 }
 
@@ -722,18 +858,20 @@ function Field({
 }
 
 function CheckPicker({
+  className,
   label,
   options,
   selected,
   onToggle
 }: {
+  className?: string;
   label: string;
   options: Array<{ label: string; value: string }>;
   selected: string[];
   onToggle: (value: string) => void;
 }) {
   return (
-    <div className="field">
+    <div className={["field", className].filter(Boolean).join(" ")}>
       <label>{label}</label>
       <div className="choice-list">
         {options.map((option) => (

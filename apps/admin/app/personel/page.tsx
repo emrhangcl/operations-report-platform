@@ -157,7 +157,7 @@ export default function PersonnelWebPage() {
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", sessionUserId).maybeSingle(),
       supabase.from("companies").select("*").eq("is_active", true).order("name"),
-      supabase.from("belts").select("*").eq("is_active", true).order("name"),
+      supabase.from("belts").select("*").eq("is_active", true).order("code"),
       supabase.from("company_lines").select("*").order("name"),
       supabase.from("vehicles").select("*").order("plate"),
       supabase
@@ -987,7 +987,7 @@ function ReportForm({
           <Field label="Bant Seç">
             <select value={values.belt_id} onChange={(event) => update("belt_id", event.target.value)}>
               <option value="">Bant seçin</option>
-              {belts.map((belt) => <option key={belt.id} value={belt.id}>{belt.name}</option>)}
+              {belts.map((belt) => <option key={belt.id} value={belt.id}>{formatBeltLabel(belt)}</option>)}
             </select>
           </Field>
           <Field label="Formu Dolduran Personel">
@@ -1037,15 +1037,15 @@ function ReportForm({
 
       <details className="personnel-section">
         <summary><span className="section-number">3</span><span>Ürün Bilgileri</span></summary>
-        <div className="personnel-form-grid">
+        <div className="personnel-form-grid personnel-product-grid">
           <TextField label="Ürün Kodu" value={values.product_code} onChange={(value) => update("product_code", value)} />
           <TextField label="Ölçü" value={values.product_measure} onChange={(value) => update("product_measure", value)} />
           <TextField label="En" value={values.product_width} onChange={(value) => update("product_width", value)} />
           <TextField label="Boy" value={values.product_length} onChange={(value) => update("product_length", value)} />
           <TextField inputMode="numeric" label="Miktar" value={values.product_quantity} onChange={(value) => update("product_quantity", value)} />
           <TextField label="Ürün Item ve Coil Kodu" value={values.product_item_coil_code} onChange={(value) => update("product_item_coil_code", value)} />
-          <TextField multiline label="Müşteri Stoğu Bilgisi" value={values.customer_stock_note} onChange={(value) => update("customer_stock_note", value)} />
           <CheckPicker
+            className="span-2 personnel-compact-picker"
             label="İşlem Görecek Ürün Türü"
             options={productTypes.map((value) => ({ label: value, value }))}
             selected={values.product_types}
@@ -1059,8 +1059,9 @@ function ReportForm({
 
       <details className="personnel-section">
         <summary><span className="section-number">4</span><span>Yapılan İşlemler</span></summary>
-        <div className="personnel-form-grid">
+        <div className="personnel-form-grid personnel-process-grid">
           <CheckPicker
+            className="span-2 personnel-compact-picker"
             label="Yapılacak İşlem"
             options={processActions.map((value) => ({ label: value, value }))}
             selected={values.process_actions}
@@ -1077,10 +1078,11 @@ function ReportForm({
           {values.process_actions.includes("Diğer") ? (
             <TextField label="Diğer İşlem Açıklama" value={values.process_action_other} onChange={(value) => update("process_action_other", value)} />
           ) : null}
-          <TextField multiline label="Kullanılan Mekanik Bağlantı Tipi ve Miktarı" value={values.mechanical_connection} onChange={(value) => update("mechanical_connection", value)} />
-          <TextField multiline label="Kullanılan Profil Tipi ve Miktarı" value={values.profile_material} onChange={(value) => update("profile_material", value)} />
+          <TextField className="span-2" multiline label="Kullanılan Mekanik Bağlantı Tipi ve Miktarı" value={values.mechanical_connection} onChange={(value) => update("mechanical_connection", value)} />
+          <TextField className="span-2" multiline label="Kullanılan Profil Tipi ve Miktarı" value={values.profile_material} onChange={(value) => update("profile_material", value)} />
           <TextField label="Kaç Yıldır Çalışıyordu?" value={values.removed_belt_years} onChange={(value) => update("removed_belt_years", value)} />
           <CheckPicker
+            className="span-2 personnel-compact-picker"
             label="Değiştirme Sebebi Nedir?"
             options={replacementReasonOptions.map((value) => ({ label: value, value }))}
             selected={values.replacement_reasons}
@@ -1250,9 +1252,17 @@ function DetailSection({ title, rows }: { title: string; rows: Array<[string, st
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  children,
+  className,
+  label
+}: {
+  children: React.ReactNode;
+  className?: string;
+  label: string;
+}) {
   return (
-    <label className="personnel-field">
+    <label className={["personnel-field", className].filter(Boolean).join(" ")}>
       <span>{label}</span>
       {children}
     </label>
@@ -1260,12 +1270,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function TextField({
+  className,
   inputMode,
   label,
   multiline = false,
   value,
   onChange
 }: {
+  className?: string;
   inputMode?: React.InputHTMLAttributes<HTMLInputElement>["inputMode"];
   label: string;
   multiline?: boolean;
@@ -1273,7 +1285,7 @@ function TextField({
   onChange: (value: string) => void;
 }) {
   return (
-    <Field label={label}>
+    <Field {...(className ? { className } : {})} label={label}>
       {multiline ? (
         <textarea value={value} onChange={(event) => onChange(event.target.value)} />
       ) : (
@@ -1313,11 +1325,13 @@ function RadioField({
 }
 
 function CheckPicker({
+  className,
   label,
   options,
   selected,
   onToggle
 }: {
+  className?: string;
   label: string;
   options: Array<{ label: string; value: string }>;
   selected: string[];
@@ -1328,7 +1342,7 @@ function CheckPicker({
     .map((option) => option.label);
 
   return (
-    <div className="personnel-field">
+    <div className={["personnel-field", className].filter(Boolean).join(" ")}>
       <span>{label}</span>
       <details className="personnel-choice-panel">
         <summary>{selectedLabels.length > 0 ? selectedLabels.join(", ") : options.length > 0 ? "Seçim yapın" : "Seçilebilir kayıt yok"}</summary>
@@ -1651,6 +1665,10 @@ function toRecord(value: unknown) {
 
 function arrayValue(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function formatBeltLabel(belt: Belt) {
+  return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
 }
 
 function booleanValue(value: unknown) {

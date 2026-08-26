@@ -43,7 +43,7 @@ export default function ReportsPage() {
     if (!supabase) return;
     const [companyRows, beltRows, personnelRows] = await Promise.all([
       supabase.from("companies").select("*").order("name"),
-      supabase.from("belts").select("*").order("name"),
+      supabase.from("belts").select("*").order("code"),
       supabase.from("profiles").select("*").eq("role", "PERSONNEL").order("first_name")
     ]);
     setCompanies((companyRows.data ?? []) as Company[]);
@@ -252,7 +252,7 @@ export default function ReportsPage() {
             <select name="beltId" onChange={updateFilter} value={filters.beltId}>
               <option value="">Tümü</option>
               {belts.map((belt) => (
-                <option key={belt.id} value={belt.id}>{belt.name}</option>
+                <option key={belt.id} value={belt.id}>{formatBeltLabel(belt)}</option>
               ))}
             </select>
           </Field>
@@ -364,4 +364,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </div>
   );
+}
+
+function formatBeltLabel(belt: Belt) {
+  return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
 }

@@ -9,14 +9,14 @@ import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 type BeltForm = {
-  name: string;
   code: string;
+  name: string;
   description: string;
 };
 
 const emptyForm: BeltForm = {
-  name: "",
   code: "",
+  name: "",
   description: ""
 };
 
@@ -33,7 +33,7 @@ export default function BeltsPage() {
     const { data, error } = await supabase
       .from("belts")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("code", { ascending: true });
     if (error) {
       setMessage("Bantlar alınamadı.");
       return;
@@ -67,7 +67,7 @@ export default function BeltsPage() {
     if (!supabase) return;
     const payload = {
       ...parsed.data,
-      code: parsed.data.code || null,
+      name: parsed.data.name || null,
       description: parsed.data.description || null
     };
     const request = editingId
@@ -84,7 +84,7 @@ export default function BeltsPage() {
   }
 
   async function remove(belt: Belt) {
-    if (!confirm(`"${belt.name}" bandı silinsin mi?`)) return;
+    if (!confirm(`"${formatBeltLabel(belt)}" bandı silinsin mi?`)) return;
 
     setMessage("");
     setLoading(true);
@@ -110,8 +110,8 @@ export default function BeltsPage() {
   function edit(belt: Belt) {
     setEditingId(belt.id);
     setForm({
-      name: belt.name,
-      code: belt.code ?? "",
+      code: belt.code,
+      name: belt.name ?? "",
       description: belt.description ?? ""
     });
   }
@@ -124,17 +124,18 @@ export default function BeltsPage() {
       />
       <form className="form-panel" onSubmit={submit}>
         <div className="form-grid">
+          <Field label="Bant Kodu">
+            <input
+              onChange={(event) => setForm({ ...form, code: event.target.value })}
+              required
+              value={form.code}
+            />
+          </Field>
           <Field label="Bant Adı">
             <input
               onChange={(event) => setForm({ ...form, name: event.target.value })}
-              required
+              placeholder="Opsiyonel"
               value={form.name}
-            />
-          </Field>
-          <Field label="Kod">
-            <input
-              onChange={(event) => setForm({ ...form, code: event.target.value })}
-              value={form.code}
             />
           </Field>
           <Field label="Açıklama">
@@ -172,8 +173,8 @@ export default function BeltsPage() {
           <table>
             <thead>
               <tr>
-                <th>Bant</th>
                 <th>Kod</th>
+                <th>Bant Adı</th>
                 <th>Açıklama</th>
                 <th>Oluşturulma</th>
                 <th>İşlemler</th>
@@ -182,8 +183,8 @@ export default function BeltsPage() {
             <tbody>
               {belts.map((belt) => (
                 <tr key={belt.id}>
-                  <td>{belt.name}</td>
-                  <td>{belt.code ?? "-"}</td>
+                  <td>{belt.code}</td>
+                  <td>{belt.name ?? "-"}</td>
                   <td>{belt.description ?? "-"}</td>
                   <td>{new Date(belt.created_at).toLocaleDateString("tr-TR")}</td>
                   <td>
@@ -206,6 +207,10 @@ export default function BeltsPage() {
       </div>
     </AdminShell>
   );
+}
+
+function formatBeltLabel(belt: Belt) {
+  return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

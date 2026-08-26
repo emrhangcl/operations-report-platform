@@ -77,8 +77,8 @@ export interface Company {
 
 export interface Belt {
   id: string;
-  name: string;
-  code: string | null;
+  name: string | null;
+  code: string;
   description: string | null;
   is_active: boolean;
   created_at: string;

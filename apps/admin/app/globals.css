@@ -329,15 +329,15 @@ tr:last-child td {
   background: var(--surface-strong);
   border-bottom: 1px solid var(--line);
   color: var(--ink-dark);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.2;
   margin: 0;
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .assignment-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: 14px;
+  padding: 12px;
 }
 
 .span-2 {
@@ -386,6 +386,49 @@ tr:last-child td {
 
 .assignment-form textarea {
   min-height: 54px;
+}
+
+.assignment-compact-picker .choice-list {
+  gap: 6px;
+  max-height: 164px;
+  padding: 8px;
+}
+
+.assignment-compact-picker .check-row {
+  min-height: 34px;
+  padding: 6px 8px;
+}
+
+.contact-list-field {
+  align-content: start;
+}
+
+.contact-list {
+  display: grid;
+  gap: 8px;
+}
+
+.contact-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) auto;
+}
+
+.contact-row input {
+  min-width: 0;
+}
+
+.contact-add-button {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.icon-button {
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px;
+  width: 42px;
 }
 
 .choice-list {
@@ -550,14 +593,15 @@ tr:last-child td {
 .report-photo-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 210px));
+  justify-content: start;
 }
 
 .report-photo-card {
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -571,12 +615,12 @@ tr:last-child td {
 .report-photo-card div:last-child {
   display: grid;
   gap: 3px;
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
 }
 
 .report-photo-card strong {
   color: var(--ink-dark);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .report-photo-card span {
@@ -888,6 +932,11 @@ tr:last-child td {
   padding: 14px;
 }
 
+.personnel-product-grid,
+.personnel-process-grid {
+  gap: 10px;
+}
+
 .personnel-field {
   color: #454b52;
   display: grid;
@@ -913,6 +962,10 @@ tr:last-child td {
 .personnel-field textarea {
   min-height: 92px;
   resize: vertical;
+}
+
+.personnel-process-grid .personnel-field textarea {
+  min-height: 68px;
 }
 
 .personnel-field input:focus,
@@ -967,6 +1020,12 @@ tr:last-child td {
   z-index: 5;
 }
 
+.personnel-compact-picker .personnel-choice-panel > div {
+  gap: 6px;
+  max-height: 178px;
+  padding: 8px;
+}
+
 .personnel-check-row,
 .personnel-toggle-row {
   align-items: center;
@@ -977,6 +1036,11 @@ tr:last-child td {
   gap: 10px;
   min-height: 42px;
   padding: 9px 10px;
+}
+
+.personnel-compact-picker .personnel-check-row {
+  min-height: 34px;
+  padding: 6px 8px;
 }
 
 .personnel-check-row input,
@@ -1145,8 +1209,9 @@ tr:last-child td {
 
 .personnel-photo-grid {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 180px));
+  justify-content: start;
   padding: 0 16px 16px;
 }
 
@@ -1154,7 +1219,7 @@ tr:last-child td {
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   overflow: hidden;
 }
 
@@ -1167,9 +1232,9 @@ tr:last-child td {
 
 .personnel-photo-card span {
   color: var(--ink-dark);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 0 10px 10px;
+  padding: 0 8px 8px;
 }
 
 .personnel-photo-placeholder {
@@ -1206,6 +1271,14 @@ tr:last-child td {
   .personnel-grid,
   .personnel-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .contact-row {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-row .icon-button {
+    justify-self: start;
   }
 
   .personnel-selected-photo {
