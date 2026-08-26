@@ -64,7 +64,7 @@ const emptyForm: AssignmentForm = {
   company_contact_name: "",
   company_contact_phone: "",
   line_name: "",
-  work_items: [{ line_name: "", belt_id: "", belt_code: "", belt_name: "" }],
+  work_items: [{ line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" }],
   machine_brand_model: "",
   belt_id: "",
   vehicle_plate: "",
@@ -126,11 +126,6 @@ export default function AssignmentsPage() {
     () => new Map(belts.map((belt) => [belt.id, belt])),
     [belts]
   );
-  const productCodes = useMemo(
-    () => workItemProductCodes(form.work_items, beltsById),
-    [beltsById, form.work_items]
-  );
-
   async function loadLookups() {
     const supabase = getBrowserSupabase();
     if (!supabase) return;
@@ -468,18 +463,7 @@ export default function AssignmentsPage() {
               <Field className="span-2" label="Kullanılacak Makine/Ekipman">
                 <textarea onChange={(event) => update("used_equipment", event.target.value)} value={form.used_equipment} />
               </Field>
-              <Field label="Ürün Kodları">
-                <ProductCodeList codes={productCodes} />
-              </Field>
-              <Field label="En">
-                <input onChange={(event) => update("product_width", event.target.value)} value={form.product_width} />
-              </Field>
-              <Field label="Boy">
-                <input onChange={(event) => update("product_length", event.target.value)} value={form.product_length} />
-              </Field>
-              <Field label="Miktar">
-                <input onChange={(event) => update("product_quantity", event.target.value)} value={form.product_quantity} />
-              </Field>
+              <ProductItemsField items={form.work_items} onUpdate={updateWorkItem} />
               <Field label="Item / Coil Kodu">
                 <input
                   onChange={(event) => update("product_item_coil_code", event.target.value)}
@@ -676,9 +660,9 @@ function buildReportValues(form: AssignmentForm, belts: Belt[]): Record<string, 
     used_equipment: form.used_equipment,
     product_code: productCodes.join("\n") || form.product_code,
     product_measure: "",
-    product_width: form.product_width,
-    product_length: form.product_length,
-    product_quantity: form.product_quantity,
+    product_width: primaryWorkItem.product_width || form.product_width,
+    product_length: primaryWorkItem.product_length || form.product_length,
+    product_quantity: primaryWorkItem.product_quantity || form.product_quantity,
     product_item_coil_code: form.product_item_coil_code,
     product_types: form.product_types,
     product_type_other: form.product_type_other,
@@ -703,7 +687,10 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
   const workItems = workItemsFromValue(
     values.work_items,
     (stringValue(values.line_name) || assignment.line_name) ?? "",
-    stringValue(values.belt_id)
+    stringValue(values.belt_id),
+    stringValue(values.product_width),
+    stringValue(values.product_length),
+    stringValue(values.product_quantity)
   );
   const primaryWorkItem = compactWorkItems(workItems)[0] ?? workItems[0] ?? emptyWorkItem();
 
@@ -725,9 +712,9 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
     used_equipment: stringValue(values.used_equipment),
     product_code: stringValue(values.product_code),
     product_measure: "",
-    product_width: stringValue(values.product_width),
-    product_length: stringValue(values.product_length),
-    product_quantity: stringValue(values.product_quantity),
+    product_width: primaryWorkItem.product_width || stringValue(values.product_width),
+    product_length: primaryWorkItem.product_length || stringValue(values.product_length),
+    product_quantity: primaryWorkItem.product_quantity || stringValue(values.product_quantity),
     product_item_coil_code: stringValue(values.product_item_coil_code),
     product_types: arrayValue(values.product_types),
     product_type_other: stringValue(values.product_type_other),
@@ -810,7 +797,7 @@ function syncPrimaryContact<T extends AssignmentForm>(form: T): T {
 }
 
 function emptyWorkItem(): ReportWorkItem {
-  return { line_name: "", belt_id: "", belt_code: "", belt_name: "" };
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" };
 }
 
 function normalizeWorkItems(items: ReportWorkItem[]) {
@@ -823,9 +810,12 @@ function compactWorkItems(items: ReportWorkItem[]) {
       line_name: item.line_name.trim(),
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
-      belt_name: item.belt_name.trim()
+      belt_name: item.belt_name.trim(),
+      product_width: item.product_width.trim(),
+      product_length: item.product_length.trim(),
+      product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
 }
 
 function enrichWorkItems(items: ReportWorkItem[], belts: Belt[]) {
@@ -846,7 +836,14 @@ function workItemProductCodes(items: ReportWorkItem[], beltsById?: Map<string, B
     .filter(Boolean);
 }
 
-function workItemsFromValue(value: unknown, fallbackLineName: string, fallbackBeltId: string): ReportWorkItem[] {
+function workItemsFromValue(
+  value: unknown,
+  fallbackLineName: string,
+  fallbackBeltId: string,
+  fallbackProductWidth = "",
+  fallbackProductLength = "",
+  fallbackProductQuantity = ""
+): ReportWorkItem[] {
   if (Array.isArray(value)) {
     const items = value
       .map((item) => toRecord(item))
@@ -854,9 +851,12 @@ function workItemsFromValue(value: unknown, fallbackLineName: string, fallbackBe
         line_name: stringValue(item.line_name),
         belt_id: stringValue(item.belt_id),
         belt_code: stringValue(item.belt_code),
-        belt_name: stringValue(item.belt_name)
+        belt_name: stringValue(item.belt_name),
+        product_width: stringValue(item.product_width),
+        product_length: stringValue(item.product_length),
+        product_quantity: stringValue(item.product_quantity)
       }))
-      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
 
     if (items.length > 0) {
       return items;
@@ -864,7 +864,15 @@ function workItemsFromValue(value: unknown, fallbackLineName: string, fallbackBe
   }
 
   return normalizeWorkItems([
-    { line_name: fallbackLineName, belt_id: fallbackBeltId, belt_code: "", belt_name: "" }
+    {
+      line_name: fallbackLineName,
+      belt_id: fallbackBeltId,
+      belt_code: "",
+      belt_name: "",
+      product_width: fallbackProductWidth,
+      product_length: fallbackProductLength,
+      product_quantity: fallbackProductQuantity
+    }
   ]);
 }
 
@@ -947,14 +955,50 @@ function ContactFields({
   );
 }
 
-function ProductCodeList({ codes }: { codes: string[] }) {
+function ProductItemsField({
+  items,
+  onUpdate
+}: {
+  items: ReportWorkItem[];
+  onUpdate: (index: number, key: keyof ReportWorkItem, value: string) => void;
+}) {
+  const rows = normalizeWorkItems(items);
+
   return (
-    <div className="product-code-list">
-      {codes.length > 0 ? (
-        codes.map((code, index) => <span key={`${code}-${index}`}>{code}</span>)
-      ) : (
-        <em>Bant kodu seçilince otomatik gelir</em>
-      )}
+    <div className="field span-4 product-items-field">
+      <label>Ürün Kodları ve Ölçüler</label>
+      <div className="product-item-list">
+        <div className="product-item-row product-item-head">
+          <span>Ürün Kodu</span>
+          <span>En</span>
+          <span>Boy</span>
+          <span>Miktar</span>
+        </div>
+        {rows.map((item, index) => (
+          <div className="product-item-row" key={index}>
+            <div className="product-code-chip">{item.belt_code || "Bant kodu seçin"}</div>
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır en`}
+              onChange={(event) => onUpdate(index, "product_width", event.target.value)}
+              placeholder="En"
+              value={item.product_width}
+            />
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır boy`}
+              onChange={(event) => onUpdate(index, "product_length", event.target.value)}
+              placeholder="Boy"
+              value={item.product_length}
+            />
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır miktar`}
+              inputMode="numeric"
+              onChange={(event) => onUpdate(index, "product_quantity", event.target.value)}
+              placeholder="Miktar"
+              value={item.product_quantity}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -546,7 +546,7 @@ function formatBeltLabel(belt: Belt) {
 }
 
 function emptyReportWorkItem(): ReportWorkItem {
-  return { line_name: "", belt_id: "", belt_code: "", belt_name: "" };
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" };
 }
 
 function compactReportWorkItems(items: ReportWorkItem[]) {
@@ -555,16 +555,27 @@ function compactReportWorkItems(items: ReportWorkItem[]) {
       line_name: item.line_name.trim(),
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
-      belt_name: item.belt_name.trim()
+      belt_name: item.belt_name.trim(),
+      product_width: item.product_width.trim(),
+      product_length: item.product_length.trim(),
+      product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
 }
 
 function workItemsFromValues(values: ReportFormValues) {
   const compactItems = compactReportWorkItems(values.work_items);
   if (compactItems.length > 0) return compactItems;
   return compactReportWorkItems([
-    { line_name: values.line_name, belt_id: values.belt_id, belt_code: "", belt_name: "" }
+    {
+      line_name: values.line_name,
+      belt_id: values.belt_id,
+      belt_code: "",
+      belt_name: "",
+      product_width: values.product_width,
+      product_length: values.product_length,
+      product_quantity: values.product_quantity
+    }
   ]);
 }
 
@@ -575,7 +586,10 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFor
     return {
       ...item,
       belt_code: item.belt_code || belt?.code || "",
-      belt_name: item.belt_name || belt?.name || ""
+      belt_name: item.belt_name || belt?.name || "",
+      product_width: item.product_width || values.product_width,
+      product_length: item.product_length || values.product_length,
+      product_quantity: item.product_quantity || values.product_quantity
     };
   });
   const primaryWorkItem = workItems[0] ?? emptyReportWorkItem();
@@ -587,7 +601,10 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFor
     belt_id: primaryWorkItem.belt_id || values.belt_id,
     work_items: workItems,
     product_code: productCodes.join("\n") || values.product_code,
-    product_measure: ""
+    product_measure: "",
+    product_width: primaryWorkItem.product_width || values.product_width,
+    product_length: primaryWorkItem.product_length || values.product_length,
+    product_quantity: primaryWorkItem.product_quantity || values.product_quantity
   };
 }
 
@@ -687,9 +704,9 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
     factory_return_at: nullable(values.factory_return_at),
     product_code: nullable(values.product_code),
     product_measure: null,
-    product_width: nullable(values.product_width),
-    product_length: nullable(values.product_length),
-    product_quantity: nullable(values.product_quantity),
+    product_width: nullable(primaryWorkItem.product_width || values.product_width),
+    product_length: nullable(primaryWorkItem.product_length || values.product_length),
+    product_quantity: nullable(primaryWorkItem.product_quantity || values.product_quantity),
     product_item_coil_code: nullable(values.product_item_coil_code),
     product_types: values.product_types,
     product_type_other: nullable(values.product_type_other),

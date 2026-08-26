@@ -53,7 +53,15 @@ export const emptyReportFormValues = {
   company_contact_name: "",
   company_contact_phone: "",
   line_name: "",
-  work_items: [] as Array<{ line_name: string; belt_id: string; belt_code: string; belt_name: string }>,
+  work_items: [] as Array<{
+    line_name: string;
+    belt_id: string;
+    belt_code: string;
+    belt_name: string;
+    product_width: string;
+    product_length: string;
+    product_quantity: string;
+  }>,
   machine_brand_model: "",
   customer_machine_name: "",
   belt_id: "",
@@ -119,7 +127,10 @@ export const reportFormSchema = z
       line_name: z.string().trim(),
       belt_id: z.string().uuid().or(z.literal("")),
       belt_code: z.string().trim(),
-      belt_name: z.string().trim()
+      belt_name: z.string().trim(),
+      product_width: z.string().trim(),
+      product_length: z.string().trim(),
+      product_quantity: z.string().trim()
     })),
     machine_brand_model: z.string().trim(),
     customer_machine_name: z.string().trim(),

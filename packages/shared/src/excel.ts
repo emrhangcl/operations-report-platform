@@ -82,6 +82,9 @@ export interface ExportReportRow {
     belt_id?: string | null;
     belt_code?: string | null;
     belt_name?: string | null;
+    product_width?: string | null;
+    product_length?: string | null;
+    product_quantity?: string | null;
   }> | null;
   product_types: string[] | null;
   process_actions: string[] | null;

@@ -139,6 +139,9 @@ export interface ReportWorkItem {
   belt_id: string;
   belt_code: string;
   belt_name: string;
+  product_width: string;
+  product_length: string;
+  product_quantity: string;
 }
 
 export interface ReportFormValues {
