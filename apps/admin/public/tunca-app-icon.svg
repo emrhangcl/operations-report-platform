@@ -1,10 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#f2f3f5"/>
-  <circle cx="256" cy="256" r="148" fill="#33373d"/>
-  <path d="M256 70v66M256 376v66M70 256h66M376 256h66" stroke="#33373d" stroke-width="42" stroke-linecap="round"/>
-  <path d="M151 151l47 47M314 314l47 47M361 151l-47 47M198 314l-47 47" stroke="#33373d" stroke-width="38" stroke-linecap="round"/>
-  <path d="M256 126a130 130 0 0 1 123 88h-78a60 60 0 0 0-45-20 62 62 0 0 0-62 62 60 60 0 0 0 20 45v78a130 130 0 0 1 42-253Z" fill="#bd3332"/>
-  <path d="M379 214a130 130 0 0 1-165 165v-78a60 60 0 0 0 87-87h78Z" fill="#5d8d6c"/>
-  <circle cx="256" cy="256" r="76" fill="#ffffff"/>
-  <text x="256" y="287" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#33373d">T</text>
+  <image href="/tunca-app-icon.png" width="512" height="512" preserveAspectRatio="xMidYMid meet"/>
 </svg>

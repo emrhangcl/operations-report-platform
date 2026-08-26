@@ -4,6 +4,7 @@
     "slug": "tunca-rapor",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/tunca-app-icon.png",
     "scheme": "tunca-rapor",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -14,7 +15,16 @@
       "bundleIdentifier": "com.tunca.rapor"
     },
     "android": {
-      "package": "com.tunca.rapor"
+      "package": "com.tunca.rapor",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/tunca-app-icon.png",
+        "backgroundColor": "#f2f3f5"
+      }
+    },
+    "splash": {
+      "image": "./assets/tunca-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f2f3f5"
     },
     "plugins": [
       [

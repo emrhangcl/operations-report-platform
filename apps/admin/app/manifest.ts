@@ -12,15 +12,15 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#bd3332",
     icons: [
       {
-        src: "/tunca-app-icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/tunca-app-icon.png",
+        sizes: "512x512",
+        type: "image/png",
         purpose: "any"
       },
       {
-        src: "/tunca-app-icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/tunca-app-icon.png",
+        sizes: "512x512",
+        type: "image/png",
         purpose: "maskable"
       }
     ]
