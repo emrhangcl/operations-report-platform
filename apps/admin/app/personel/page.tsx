@@ -782,7 +782,11 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
               ["Yetkili Telefon", text(report.company_contact_phone)],
               ["Hat Adı", text(report.line_name)],
               ["Makina Marka Model", text(report.machine_brand_model)],
-              ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"]
+              ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"],
+              ["Araç Plakası", text(report.vehicle_plate)],
+              ["Araç Alış KM", text(report.vehicle_start_km)],
+              ["Araç Teslim KM", text(report.vehicle_end_km)],
+              ["Kullanılan Makine ve Ekipman", text(report.used_equipment)]
             ]}
           />
           <DetailSection
@@ -956,7 +960,7 @@ function ReportForm({
       ) : null}
 
       <details className="personnel-section" open>
-        <summary>1. Genel Bilgiler</summary>
+        <summary><span className="section-number">1</span><span>Genel Bilgiler</span></summary>
         <div className="personnel-form-grid">
           <Field label="Rapor Tarihi">
             <input type="date" value={values.report_date} onChange={(event) => update("report_date", event.target.value)} />
@@ -989,6 +993,20 @@ function ReportForm({
           <Field label="Formu Dolduran Personel">
             <div className="personnel-readonly">{profile ? `${profile.first_name} ${profile.last_name}` : "-"}</div>
           </Field>
+          <Field label="Araç Alış KM">
+            <input
+              inputMode="numeric"
+              onChange={(event) => update("vehicle_start_km", event.target.value)}
+              value={values.vehicle_start_km}
+            />
+          </Field>
+          <Field label="Araç Teslim KM">
+            <input
+              inputMode="numeric"
+              onChange={(event) => update("vehicle_end_km", event.target.value)}
+              value={values.vehicle_end_km}
+            />
+          </Field>
           <CheckPicker
             label="Giden Personel"
             options={personnel
@@ -1008,7 +1026,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>2. Zaman Bilgileri</summary>
+        <summary><span className="section-number">2</span><span>Zaman Bilgileri</span></summary>
         <div className="personnel-form-grid">
           <DateTimeField label="Atölyeden Çıkış Tarih Saati" value={values.workshop_departure_at} onChange={(value) => update("workshop_departure_at", value)} />
           <DateTimeField label="Müşteriye Varış Tarih Saati" value={values.customer_arrival_at} onChange={(value) => update("customer_arrival_at", value)} />
@@ -1018,7 +1036,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>3. Ürün Bilgileri</summary>
+        <summary><span className="section-number">3</span><span>Ürün Bilgileri</span></summary>
         <div className="personnel-form-grid">
           <TextField label="Ürün Kodu" value={values.product_code} onChange={(value) => update("product_code", value)} />
           <TextField label="Ölçü" value={values.product_measure} onChange={(value) => update("product_measure", value)} />
@@ -1040,7 +1058,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>4. Yapılan İşlemler</summary>
+        <summary><span className="section-number">4</span><span>Yapılan İşlemler</span></summary>
         <div className="personnel-form-grid">
           <CheckPicker
             label="Yapılacak İşlem"
@@ -1075,7 +1093,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>5. Test ve Pres Bilgileri</summary>
+        <summary><span className="section-number">5</span><span>Test ve Pres Bilgileri</span></summary>
         <div className="personnel-form-grid">
           <RadioField label="Ürün Test Parçası Var mı?" options={["Var", "Yok"]} value={values.has_test_piece} onChange={(value) => update("has_test_piece", value as ReportFormValues["has_test_piece"])} />
           <RadioField label="Test Durumu" options={["Test Yapıldı", "Test Yapılmadı"]} value={values.test_status} onChange={(value) => update("test_status", value as ReportFormValues["test_status"])} />
@@ -1099,7 +1117,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>6. Teknik Detaylar</summary>
+        <summary><span className="section-number">6</span><span>Teknik Detaylar</span></summary>
         <div className="personnel-form-grid">
           <TextField multiline label="Yapılan İşlem Açıklama" value={values.process_description} onChange={(value) => update("process_description", value)} />
           <RadioField
@@ -1113,7 +1131,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>7. Gerdirme ve Blanket</summary>
+        <summary><span className="section-number">7</span><span>Gerdirme ve Blanket</span></summary>
         <div className="personnel-form-grid">
           <RadioField label="Gerdirme İşlemi Yapıldı mı?" options={["Evet", "Hayır"]} value={values.tensioning_done} onChange={(value) => update("tensioning_done", value as ReportFormValues["tensioning_done"])} />
           <ToggleField label="Müşteri Daha Sonra Kendisi Yapacak" value={values.customer_will_tension} onChange={(value) => update("customer_will_tension", value)} />
@@ -1128,7 +1146,7 @@ function ReportForm({
       </details>
 
       <details className="personnel-section">
-        <summary>8. Fotoğraflar</summary>
+        <summary><span className="section-number">8</span><span>Fotoğraflar</span></summary>
         <div className="personnel-photo-actions">
           <details className="personnel-choice-panel personnel-photo-picker">
             <summary>
@@ -1363,6 +1381,8 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
     customer_machine_name: nullable(values.customer_machine_name),
     belt_id: values.belt_id || null,
     vehicle_plate: nullable(values.vehicle_plate),
+    vehicle_start_km: nullable(values.vehicle_start_km),
+    vehicle_end_km: nullable(values.vehicle_end_km),
     used_equipment: nullable(values.used_equipment),
     workshop_departure_at: nullable(values.workshop_departure_at),
     customer_arrival_at: nullable(values.customer_arrival_at),
@@ -1425,6 +1445,8 @@ function reportToValues(report: ReportRow): ReportFormValues {
       .map((item) => item.profile_id)
       .filter((value): value is string => Boolean(value)),
     vehicle_plate: stringValue(report.vehicle_plate),
+    vehicle_start_km: stringValue(report.vehicle_start_km),
+    vehicle_end_km: stringValue(report.vehicle_end_km),
     used_equipment: stringValue(report.used_equipment),
     workshop_departure_at: stringValue(report.workshop_departure_at),
     customer_arrival_at: stringValue(report.customer_arrival_at),
@@ -1487,6 +1509,8 @@ function assignmentToValues(assignment: InstallationAssignment): ReportFormValue
     belt_id: stringValue(values.belt_id),
     visiting_personnel_ids: arrayValue(values.visiting_personnel_ids),
     vehicle_plate: stringValue(values.vehicle_plate),
+    vehicle_start_km: stringValue(values.vehicle_start_km),
+    vehicle_end_km: stringValue(values.vehicle_end_km),
     used_equipment: stringValue(values.used_equipment),
     workshop_departure_at: stringValue(values.workshop_departure_at),
     customer_arrival_at: stringValue(values.customer_arrival_at),

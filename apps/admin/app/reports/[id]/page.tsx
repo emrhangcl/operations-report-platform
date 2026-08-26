@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { ImageIcon, Trash2 } from "lucide-react";
 import { AdminShell } from "../../../components/admin-shell";
 import { PageHeader } from "../../../components/page-header";
 import { getBrowserSupabase } from "../../../lib/supabase-browser";
@@ -19,6 +20,7 @@ type ReportDetail = Record<string, unknown> & {
   submitted_at: string | null;
   report_personnel?: Array<{ name_snapshot: string | null }>;
   report_photos?: Array<{
+    id?: string;
     category: string | null;
     caption: string | null;
     storage_path: string | null;
@@ -30,24 +32,54 @@ export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [report, setReport] = useState<ReportDetail | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    let cancelled = false;
 
-    supabase
-      .from("reports")
-      .select("*, report_personnel(name_snapshot), report_photos(category,caption,storage_path,created_at)")
-      .eq("id", params.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setMessage("Rapor detayı alınamadı.");
-          return;
-        }
-        setReport(data as ReportDetail);
-      });
+    async function load() {
+      const supabase = getBrowserSupabase();
+      if (!supabase) return;
+
+      const { data, error } = await supabase
+        .from("reports")
+        .select("*, report_personnel(name_snapshot), report_photos(id,category,caption,storage_path,created_at)")
+        .eq("id", params.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error || !data) {
+        setMessage("Rapor detayı alınamadı.");
+        return;
+      }
+
+      const nextReport = data as ReportDetail;
+      setReport(nextReport);
+
+      const signedEntries = await Promise.all(
+        (nextReport.report_photos ?? [])
+          .filter((photo) => photo.storage_path)
+          .map(async (photo) => {
+            const path = String(photo.storage_path);
+            const signed = await supabase.storage.from("report-photos").createSignedUrl(path, 60 * 30);
+            return [path, signed.data?.signedUrl ?? ""] as const;
+          })
+      );
+
+      if (!cancelled) {
+        setPhotoUrls(Object.fromEntries(signedEntries.filter((entry) => entry[1])));
+      }
+    }
+
+    load().catch(() => {
+      if (!cancelled) setMessage("Rapor detayı alınamadı.");
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [params.id]);
 
   async function authHeaders() {
@@ -107,6 +139,10 @@ export default function ReportDetailPage() {
               ["Yetkili Telefon", text(report.company_contact_phone)],
               ["Hat Adı", text(report.line_name)],
               ["Makina Marka Model", text(report.machine_brand_model)],
+              ["Araç Plakası", text(report.vehicle_plate)],
+              ["Araç Alış KM", text(report.vehicle_start_km)],
+              ["Araç Teslim KM", text(report.vehicle_end_km)],
+              ["Kullanılan Makine ve Ekipman", text(report.used_equipment)],
               ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"]
             ]}
           />
@@ -173,15 +209,7 @@ export default function ReportDetailPage() {
               ["Hat Çalışır Teslim Edildi", boolText(report.line_delivered_running)]
             ]}
           />
-          <Section
-            title="Fotoğraflar"
-            rows={(report.report_photos ?? []).length === 0
-              ? [["Fotoğraf", "Fotoğraf eklenmemiş."]]
-              : (report.report_photos ?? []).map((photo) => [
-                  photo.category ?? "-",
-                  [photo.caption, photo.storage_path].filter(Boolean).join(" - ")
-                ])}
-          />
+          <PhotoSection photos={report.report_photos ?? []} photoUrls={photoUrls} />
           <Section
             title="Sistem Bilgileri"
             rows={[
@@ -210,6 +238,52 @@ function Section({ title, rows }: { title: string; rows: Array<[string, string]>
           </div>
         ))}
       </dl>
+    </section>
+  );
+}
+
+function PhotoSection({
+  photos,
+  photoUrls
+}: {
+  photos: NonNullable<ReportDetail["report_photos"]>;
+  photoUrls: Record<string, string>;
+}) {
+  return (
+    <section className="card detail-section detail-section-wide">
+      <h2>Fotoğraflar</h2>
+      {photos.length === 0 ? (
+        <div className="empty compact">Fotoğraf eklenmemiş.</div>
+      ) : (
+        <div className="report-photo-grid">
+          {photos.map((photo) => {
+            const path = photo.storage_path ?? "";
+            const signedUrl = photoUrls[path];
+
+            return (
+              <div className="report-photo-card" key={photo.id ?? path}>
+                {signedUrl ? (
+                  <Image
+                    alt={photo.caption || "Rapor fotoğrafı"}
+                    height={220}
+                    src={signedUrl}
+                    unoptimized
+                    width={320}
+                  />
+                ) : (
+                  <div className="report-photo-placeholder">
+                    <ImageIcon aria-hidden size={26} />
+                  </div>
+                )}
+                <div>
+                  <strong>{photo.caption || "Açıklama yok"}</strong>
+                  <span>{photo.category || "Genel"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

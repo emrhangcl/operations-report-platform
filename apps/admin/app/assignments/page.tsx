@@ -304,189 +304,208 @@ export default function AssignmentsPage() {
         description="Bilinen montaj bilgilerini doldurun, işi seçilen personele atayın."
       />
 
-      <form className="form-panel" onSubmit={submit}>
-        <div className="form-grid">
-          <Field label="Atama Başlığı">
-            <input
-              onChange={(event) => update("title", event.target.value)}
-              placeholder="Boş bırakılırsa firma ve hat adı kullanılır"
-              value={form.title}
-            />
-          </Field>
-          <Field label="Atanacak Personel">
-            <select
-              onChange={(event) => update("assigned_to_profile_id", event.target.value)}
-              required
-              value={form.assigned_to_profile_id}
-            >
-              <option value="">Personel seçin</option>
-              {personnel.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.first_name} {profile.last_name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Planlanan Tarih">
-            <input
-              onChange={(event) => update("scheduled_date", event.target.value)}
-              type="date"
-              value={form.scheduled_date}
-            />
-          </Field>
-          <Field label="Firma">
-            <select onChange={(event) => updateCompany(event.target.value)} required value={form.company_id}>
-              <option value="">Firma seçin</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Yetkili Kişi">
-            <input
-              onChange={(event) => update("company_contact_name", event.target.value)}
-              value={form.company_contact_name}
-            />
-          </Field>
-          <Field label="Yetkili Telefon">
-            <input
-              onChange={(event) => update("company_contact_phone", event.target.value)}
-              value={form.company_contact_phone}
-            />
-          </Field>
-          <Field label="Hat">
-            <select
-              disabled={!form.company_id}
-              onChange={(event) => update("line_name", event.target.value)}
-              value={form.line_name}
-            >
-              <option value="">{form.company_id ? "Hat seçin" : "Önce firma seçin"}</option>
-              {selectedCompanyLines.map((line) => (
-                <option key={line.id} value={line.name}>{line.name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Makina Marka Modeli">
-            <input
-              onChange={(event) => update("machine_brand_model", event.target.value)}
-              value={form.machine_brand_model}
-            />
-          </Field>
-          <Field label="Bant">
-            <select onChange={(event) => update("belt_id", event.target.value)} value={form.belt_id}>
-              <option value="">Bant seçin</option>
-              {belts.map((belt) => (
-                <option key={belt.id} value={belt.id}>{belt.name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Araç Plakası">
-            <select onChange={(event) => update("vehicle_plate", event.target.value)} value={form.vehicle_plate}>
-              <option value="">Plaka seçin</option>
-              {vehicles.map((vehicle) => (
-                <option key={vehicle.id} value={vehicle.plate}>{vehicle.plate}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Kullanılacak Makine/Ekipman">
-            <textarea onChange={(event) => update("used_equipment", event.target.value)} value={form.used_equipment} />
-          </Field>
-          <Field label="Ürün Kodu">
-            <input onChange={(event) => update("product_code", event.target.value)} value={form.product_code} />
-          </Field>
-          <Field label="Ölçü">
-            <input onChange={(event) => update("product_measure", event.target.value)} value={form.product_measure} />
-          </Field>
-          <Field label="En">
-            <input onChange={(event) => update("product_width", event.target.value)} value={form.product_width} />
-          </Field>
-          <Field label="Boy">
-            <input onChange={(event) => update("product_length", event.target.value)} value={form.product_length} />
-          </Field>
-          <Field label="Miktar">
-            <input onChange={(event) => update("product_quantity", event.target.value)} value={form.product_quantity} />
-          </Field>
-          <Field label="Item / Coil Kodu">
-            <input
-              onChange={(event) => update("product_item_coil_code", event.target.value)}
-              value={form.product_item_coil_code}
-            />
-          </Field>
-          <Field label="Müşteri Stoğu">
-            <textarea
-              onChange={(event) => update("customer_stock_note", event.target.value)}
-              value={form.customer_stock_note}
-            />
-          </Field>
-          <CheckPicker
-            label="Ürün Türü"
-            options={productTypes.map((value) => ({ label: value, value }))}
-            selected={form.product_types}
-            onToggle={(value) => toggleArray("product_types", value)}
-          />
-          {form.product_types.includes("Diğer") ? (
-            <Field label="Diğer Ürün Türü">
-              <input onChange={(event) => update("product_type_other", event.target.value)} value={form.product_type_other} />
-            </Field>
-          ) : null}
-          <CheckPicker
-            label="Yapılacak İşlem"
-            options={processActions.map((value) => ({ label: value, value }))}
-            selected={form.process_actions}
-            onToggle={(value) => toggleArray("process_actions", value)}
-          />
-          {form.process_actions.includes("Kenar Kesim") ? (
-            <Field label="Kenar Kesim">
-              <select onChange={(event) => update("edge_cut_method", event.target.value)} value={form.edge_cut_method}>
-                <option value="">Seçilmedi</option>
-                <option value="Makine ile">Makine ile</option>
-                <option value="El ile">El ile</option>
-              </select>
-            </Field>
-          ) : null}
-          {form.process_actions.includes("Diğer") ? (
-            <Field label="Diğer İşlem">
-              <input onChange={(event) => update("process_action_other", event.target.value)} value={form.process_action_other} />
-            </Field>
-          ) : null}
-          <Field label="Mekanik Bağlantı">
-            <textarea
-              onChange={(event) => update("mechanical_connection", event.target.value)}
-              value={form.mechanical_connection}
-            />
-          </Field>
-          <Field label="Profil Tipi ve Miktarı">
-            <textarea onChange={(event) => update("profile_material", event.target.value)} value={form.profile_material} />
-          </Field>
-          <Field label="Eski Bant Çalışma Süresi">
-            <input onChange={(event) => update("removed_belt_years", event.target.value)} value={form.removed_belt_years} />
-          </Field>
-          <CheckPicker
-            label="Değiştirme Sebebi"
-            options={replacementReasonOptions.map((value) => ({ label: value, value }))}
-            selected={form.replacement_reasons}
-            onToggle={(value) => toggleArray("replacement_reasons", value)}
-          />
-          {form.replacement_reasons.includes("Diğer") ? (
-            <Field label="Diğer Sebep">
-              <input
-                onChange={(event) => update("replacement_reason_other", event.target.value)}
-                value={form.replacement_reason_other}
+      <form className="form-panel assignment-form" onSubmit={submit}>
+        <div className="assignment-form-sections">
+          <FormSection title="Atama ve Firma">
+            <div className="form-grid assignment-grid">
+              <Field label="Atama Başlığı">
+                <input
+                  onChange={(event) => update("title", event.target.value)}
+                  placeholder="Boş bırakılırsa firma ve hat adı kullanılır"
+                  value={form.title}
+                />
+              </Field>
+              <Field label="Atanacak Personel">
+                <select
+                  onChange={(event) => update("assigned_to_profile_id", event.target.value)}
+                  required
+                  value={form.assigned_to_profile_id}
+                >
+                  <option value="">Personel seçin</option>
+                  {personnel.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.first_name} {profile.last_name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Planlanan Tarih">
+                <input
+                  onChange={(event) => update("scheduled_date", event.target.value)}
+                  type="date"
+                  value={form.scheduled_date}
+                />
+              </Field>
+              <Field label="Firma">
+                <select onChange={(event) => updateCompany(event.target.value)} required value={form.company_id}>
+                  <option value="">Firma seçin</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>{company.name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Yetkili Kişi">
+                <input
+                  onChange={(event) => update("company_contact_name", event.target.value)}
+                  value={form.company_contact_name}
+                />
+              </Field>
+              <Field label="Yetkili Telefon">
+                <input
+                  onChange={(event) => update("company_contact_phone", event.target.value)}
+                  value={form.company_contact_phone}
+                />
+              </Field>
+              <Field label="Hat">
+                <select
+                  disabled={!form.company_id}
+                  onChange={(event) => update("line_name", event.target.value)}
+                  value={form.line_name}
+                >
+                  <option value="">{form.company_id ? "Hat seçin" : "Önce firma seçin"}</option>
+                  {selectedCompanyLines.map((line) => (
+                    <option key={line.id} value={line.name}>{line.name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Makina Marka Modeli">
+                <input
+                  onChange={(event) => update("machine_brand_model", event.target.value)}
+                  value={form.machine_brand_model}
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Araç ve Ürün">
+            <div className="form-grid assignment-grid">
+              <Field label="Bant">
+                <select onChange={(event) => update("belt_id", event.target.value)} value={form.belt_id}>
+                  <option value="">Bant seçin</option>
+                  {belts.map((belt) => (
+                    <option key={belt.id} value={belt.id}>{belt.name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Araç Plakası">
+                <select onChange={(event) => update("vehicle_plate", event.target.value)} value={form.vehicle_plate}>
+                  <option value="">Plaka seçin</option>
+                  {vehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.plate}>{vehicle.plate}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field className="span-2" label="Kullanılacak Makine/Ekipman">
+                <textarea onChange={(event) => update("used_equipment", event.target.value)} value={form.used_equipment} />
+              </Field>
+              <Field label="Ürün Kodu">
+                <input onChange={(event) => update("product_code", event.target.value)} value={form.product_code} />
+              </Field>
+              <Field label="Ölçü">
+                <input onChange={(event) => update("product_measure", event.target.value)} value={form.product_measure} />
+              </Field>
+              <Field label="En">
+                <input onChange={(event) => update("product_width", event.target.value)} value={form.product_width} />
+              </Field>
+              <Field label="Boy">
+                <input onChange={(event) => update("product_length", event.target.value)} value={form.product_length} />
+              </Field>
+              <Field label="Miktar">
+                <input onChange={(event) => update("product_quantity", event.target.value)} value={form.product_quantity} />
+              </Field>
+              <Field label="Item / Coil Kodu">
+                <input
+                  onChange={(event) => update("product_item_coil_code", event.target.value)}
+                  value={form.product_item_coil_code}
+                />
+              </Field>
+              <Field className="span-2" label="Müşteri Stoğu">
+                <textarea
+                  onChange={(event) => update("customer_stock_note", event.target.value)}
+                  value={form.customer_stock_note}
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="İşlem ve Teknik">
+            <div className="form-grid assignment-grid">
+              <CheckPicker
+                label="Ürün Türü"
+                options={productTypes.map((value) => ({ label: value, value }))}
+                selected={form.product_types}
+                onToggle={(value) => toggleArray("product_types", value)}
               />
-            </Field>
-          ) : null}
-          <Field label="Faturalandırma">
-            <select onChange={(event) => update("billing_status", event.target.value)} value={form.billing_status}>
-              <option value="">Seçilmedi</option>
-              <option value="Yapılan İşlem Tarafınıza Fatura Edilecektir">
-                Yapılan İşlem Tarafınıza Fatura Edilecektir
-              </option>
-              <option value="Bedelsiz İşlem Yapılmıştır">Bedelsiz İşlem Yapılmıştır</option>
-            </select>
-          </Field>
-          <Field label="Personel Notu">
-            <textarea onChange={(event) => update("notes", event.target.value)} value={form.notes} />
-          </Field>
+              {form.product_types.includes("Diğer") ? (
+                <Field label="Diğer Ürün Türü">
+                  <input onChange={(event) => update("product_type_other", event.target.value)} value={form.product_type_other} />
+                </Field>
+              ) : null}
+              <CheckPicker
+                label="Yapılacak İşlem"
+                options={processActions.map((value) => ({ label: value, value }))}
+                selected={form.process_actions}
+                onToggle={(value) => toggleArray("process_actions", value)}
+              />
+              {form.process_actions.includes("Kenar Kesim") ? (
+                <Field label="Kenar Kesim">
+                  <select onChange={(event) => update("edge_cut_method", event.target.value)} value={form.edge_cut_method}>
+                    <option value="">Seçilmedi</option>
+                    <option value="Makine ile">Makine ile</option>
+                    <option value="El ile">El ile</option>
+                  </select>
+                </Field>
+              ) : null}
+              {form.process_actions.includes("Diğer") ? (
+                <Field label="Diğer İşlem">
+                  <input onChange={(event) => update("process_action_other", event.target.value)} value={form.process_action_other} />
+                </Field>
+              ) : null}
+              <Field className="span-2" label="Mekanik Bağlantı">
+                <textarea
+                  onChange={(event) => update("mechanical_connection", event.target.value)}
+                  value={form.mechanical_connection}
+                />
+              </Field>
+              <Field className="span-2" label="Profil Tipi ve Miktarı">
+                <textarea onChange={(event) => update("profile_material", event.target.value)} value={form.profile_material} />
+              </Field>
+              <Field label="Eski Bant Çalışma Süresi">
+                <input onChange={(event) => update("removed_belt_years", event.target.value)} value={form.removed_belt_years} />
+              </Field>
+              <CheckPicker
+                label="Değiştirme Sebebi"
+                options={replacementReasonOptions.map((value) => ({ label: value, value }))}
+                selected={form.replacement_reasons}
+                onToggle={(value) => toggleArray("replacement_reasons", value)}
+              />
+              {form.replacement_reasons.includes("Diğer") ? (
+                <Field label="Diğer Sebep">
+                  <input
+                    onChange={(event) => update("replacement_reason_other", event.target.value)}
+                    value={form.replacement_reason_other}
+                  />
+                </Field>
+              ) : null}
+            </div>
+          </FormSection>
+
+          <FormSection title="Not ve Faturalandırma">
+            <div className="form-grid assignment-grid">
+              <Field label="Faturalandırma">
+                <select onChange={(event) => update("billing_status", event.target.value)} value={form.billing_status}>
+                  <option value="">Seçilmedi</option>
+                  <option value="Yapılan İşlem Tarafınıza Fatura Edilecektir">
+                    Yapılan İşlem Tarafınıza Fatura Edilecektir
+                  </option>
+                  <option value="Bedelsiz İşlem Yapılmıştır">Bedelsiz İşlem Yapılmıştır</option>
+                </select>
+              </Field>
+              <Field className="span-2" label="Personel Notu">
+                <textarea onChange={(event) => update("notes", event.target.value)} value={form.notes} />
+              </Field>
+            </div>
+          </FormSection>
         </div>
         <div className="actions">
           <button className="button" disabled={loading} type="submit">
@@ -676,9 +695,26 @@ function toRecord(value: unknown) {
     : {};
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="field">
+    <section className="form-subsection">
+      <h2>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Field({
+  children,
+  className,
+  label
+}: {
+  children: React.ReactNode;
+  className?: string;
+  label: string;
+}) {
+  return (
+    <div className={["field", className].filter(Boolean).join(" ")}>
       <label>{label}</label>
       {children}
     </div>

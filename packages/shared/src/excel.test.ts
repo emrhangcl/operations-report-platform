@@ -18,6 +18,8 @@ describe("Excel export mapping", () => {
       machine_brand_model: null,
       customer_machine_name: null,
       vehicle_plate: null,
+      vehicle_start_km: null,
+      vehicle_end_km: null,
       used_equipment: null,
       product_item_coil_code: null,
       product_code: null,
@@ -63,6 +65,6 @@ describe("Excel export mapping", () => {
     expect(row[4]).toBe("A Personel");
     expect(row[5]).toBe("B Personel");
     expect(row[6]).toBe("C Personel");
-    expect(row[45]).toBe(1);
+    expect(row[row.length - 1]).toBe(1);
   });
 });

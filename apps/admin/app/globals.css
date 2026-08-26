@@ -309,6 +309,45 @@ tr:last-child td {
   grid-template-columns: repeat(4, minmax(150px, 1fr));
 }
 
+.assignment-form {
+  display: grid;
+  gap: 16px;
+}
+
+.assignment-form-sections {
+  display: grid;
+  gap: 16px;
+}
+
+.form-subsection {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.form-subsection h2 {
+  background: var(--surface-strong);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-dark);
+  font-size: 16px;
+  line-height: 1.2;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.assignment-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 14px;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-4 {
+  grid-column: 1 / -1;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -343,6 +382,10 @@ tr:last-child td {
 .field textarea {
   min-height: 78px;
   resize: vertical;
+}
+
+.assignment-form textarea {
+  min-height: 54px;
 }
 
 .choice-list {
@@ -470,6 +513,10 @@ tr:last-child td {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.detail-section-wide {
+  grid-column: 1 / -1;
+}
+
 .detail-section h2 {
   border-bottom: 1px solid var(--line);
   color: var(--ink-dark);
@@ -500,6 +547,54 @@ tr:last-child td {
   font-weight: 750;
 }
 
+.report-photo-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.report-photo-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.report-photo-card img {
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: cover;
+  width: 100%;
+}
+
+.report-photo-card div:last-child {
+  display: grid;
+  gap: 3px;
+  padding: 0 12px 12px;
+}
+
+.report-photo-card strong {
+  color: var(--ink-dark);
+  font-size: 14px;
+}
+
+.report-photo-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.report-photo-placeholder {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background: var(--surface-soft);
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .kv dd {
   margin: 0;
   min-width: 0;
@@ -523,6 +618,11 @@ tr:last-child td {
   .form-grid,
   .detail-sections {
     grid-template-columns: 1fr;
+  }
+
+  .span-2,
+  .span-4 {
+    grid-column: 1 / -1;
   }
 
   .content {
@@ -743,10 +843,13 @@ tr:last-child td {
 
 .personnel-section > summary,
 .personnel-section > h2 {
+  align-items: center;
   color: var(--ink-dark);
   cursor: pointer;
+  display: flex;
   font-size: 18px;
   font-weight: 850;
+  gap: 10px;
   list-style: none;
   margin: 0;
   min-height: 54px;
@@ -755,6 +858,19 @@ tr:last-child td {
 
 .personnel-section > h2 {
   cursor: default;
+}
+
+.section-number {
+  align-items: center;
+  background: var(--brand);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
 }
 
 .personnel-section > summary::-webkit-details-marker {

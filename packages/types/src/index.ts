@@ -146,6 +146,8 @@ export interface ReportFormValues {
   belt_id: string;
   visiting_personnel_ids: string[];
   vehicle_plate: string;
+  vehicle_start_km: string;
+  vehicle_end_km: string;
   used_equipment: string;
   workshop_departure_at: string;
   customer_arrival_at: string;

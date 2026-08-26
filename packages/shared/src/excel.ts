@@ -28,6 +28,8 @@ export const reportExportColumns = [
   "HAT ADI",
   "MAKİNA MARKA MODEL",
   "KULLANILAN ARAÇ",
+  "ARAÇ ALIŞ KM",
+  "ARAÇ TESLİM KM",
   "KULLANILAN MAKİNE VE EKİPMANLAR",
   "ÜRÜN ITEM/COIL KODU",
   "MEKANİK BAĞLANTI",
@@ -64,6 +66,8 @@ export interface ExportReportRow {
   machine_brand_model: string | null;
   customer_machine_name: string | null;
   vehicle_plate: string | null;
+  vehicle_start_km: string | null;
+  vehicle_end_km: string | null;
   used_equipment: string | null;
   product_item_coil_code: string | null;
   product_code: string | null;
@@ -158,6 +162,8 @@ export function mapReportToExcelRow(report: ExportReportRow) {
     report.line_name ?? "",
     report.machine_brand_model ?? "",
     report.vehicle_plate ?? "",
+    report.vehicle_start_km ?? "",
+    report.vehicle_end_km ?? "",
     report.used_equipment ?? "",
     report.product_item_coil_code ?? "",
     report.mechanical_connection ?? "",
