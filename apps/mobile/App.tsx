@@ -21,7 +21,7 @@ import {
   TextInput,
   View
 } from "react-native";
-import type { Belt, Company, CompanyLine, OfflineDraft, Profile, ReportFormValues, Vehicle } from "@tunca/types";
+import type { Belt, Company, CompanyLine, OfflineDraft, Profile, ReportFormValues, ReportWorkItem, Vehicle } from "@tunca/types";
 import {
   emptyReportFormValues,
   processActions,
@@ -545,6 +545,29 @@ function formatBeltLabel(belt: Belt) {
   return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
 }
 
+function emptyReportWorkItem(): ReportWorkItem {
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "" };
+}
+
+function compactReportWorkItems(items: ReportWorkItem[]) {
+  return items
+    .map((item) => ({
+      line_name: item.line_name.trim(),
+      belt_id: item.belt_id.trim(),
+      belt_code: item.belt_code.trim(),
+      belt_name: item.belt_name.trim()
+    }))
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+}
+
+function workItemsFromValues(values: ReportFormValues) {
+  const compactItems = compactReportWorkItems(values.work_items);
+  if (compactItems.length > 0) return compactItems;
+  return compactReportWorkItems([
+    { line_name: values.line_name, belt_id: values.belt_id, belt_code: "", belt_name: "" }
+  ]);
+}
+
 function validDate(value: Date) {
   return Number.isFinite(value.getTime());
 }
@@ -618,6 +641,9 @@ function formatTimeDisplay(value: string) {
 
 function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") {
   const nullable = (value: string) => value.trim() || null;
+  const workItems = workItemsFromValues(values);
+  const primaryWorkItem = workItems[0] ?? emptyReportWorkItem();
+
   return {
     client_request_id: values.client_request_id,
     status,
@@ -625,10 +651,11 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
     company_id: values.company_id,
     company_contact_name: nullable(values.company_contact_name),
     company_contact_phone: nullable(values.company_contact_phone),
-    line_name: nullable(values.line_name),
+    line_name: nullable(primaryWorkItem.line_name || values.line_name),
+    work_items: workItems,
     machine_brand_model: nullable(values.machine_brand_model),
     customer_machine_name: nullable(values.customer_machine_name),
-    belt_id: values.belt_id || null,
+    belt_id: primaryWorkItem.belt_id || values.belt_id || null,
     vehicle_plate: nullable(values.vehicle_plate),
     used_equipment: nullable(values.used_equipment),
     workshop_departure_at: nullable(values.workshop_departure_at),
@@ -641,7 +668,6 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
     product_length: nullable(values.product_length),
     product_quantity: nullable(values.product_quantity),
     product_item_coil_code: nullable(values.product_item_coil_code),
-    customer_stock_note: nullable(values.customer_stock_note),
     product_types: values.product_types,
     product_type_other: nullable(values.product_type_other),
     process_actions: values.process_actions,
@@ -1219,7 +1245,6 @@ function ReportForm(props: {
         <Input label="Boy" value={values.product_length} onChange={(value) => update("product_length", value)} />
         <Input keyboardType="numeric" label="Miktar" value={values.product_quantity} onChange={(value) => update("product_quantity", value)} />
         <Input label="Ürün Item ve Coil Kodu" value={values.product_item_coil_code} onChange={(value) => update("product_item_coil_code", value)} />
-        <Input multiline label="Müşteri Stoğu Bilgisi" value={values.customer_stock_note} onChange={(value) => update("customer_stock_note", value)} />
         <Checklist label="İşlem Görecek Ürün Türü" options={productTypes.map((value) => ({ label: value, value }))} selected={values.product_types} onToggle={(value) => toggleArray("product_types", value)} />
         {values.product_types.includes("Diğer") ? <Input label="Diğer Açıklama" value={values.product_type_other} onChange={(value) => update("product_type_other", value)} /> : null}
       </Section>

@@ -134,6 +134,13 @@ export interface InstallationAssignment {
   updated_at: string;
 }
 
+export interface ReportWorkItem {
+  line_name: string;
+  belt_id: string;
+  belt_code: string;
+  belt_name: string;
+}
+
 export interface ReportFormValues {
   client_request_id: string;
   report_date: string;
@@ -141,6 +148,7 @@ export interface ReportFormValues {
   company_contact_name: string;
   company_contact_phone: string;
   line_name: string;
+  work_items: ReportWorkItem[];
   machine_brand_model: string;
   customer_machine_name: string;
   belt_id: string;
@@ -159,7 +167,6 @@ export interface ReportFormValues {
   product_length: string;
   product_quantity: string;
   product_item_coil_code: string;
-  customer_stock_note: string;
   product_types: ProductType[];
   product_type_other: string;
   process_actions: ProcessAction[];

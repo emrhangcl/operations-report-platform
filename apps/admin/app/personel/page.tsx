@@ -14,7 +14,8 @@ import {
   Save,
   Send,
   Trash2,
-  Upload
+  Upload,
+  X
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type {
@@ -25,6 +26,7 @@ import type {
   Profile,
   ReportFormValues,
   ReportStatus,
+  ReportWorkItem,
   Vehicle
 } from "@tunca/types";
 import {
@@ -329,9 +331,10 @@ export default function PersonnelWebPage() {
     if (!supabase || !profile) return;
 
     setMessage("");
+    const preparedValues = prepareReportValues(values, belts);
 
     if (status === "SUBMITTED") {
-      const parsed = reportFormSchema.safeParse(values);
+      const parsed = reportFormSchema.safeParse(preparedValues);
       if (!parsed.success) {
         showMessage(parsed.error.issues[0]?.message ?? "Form bilgilerini kontrol edin.", "error");
         return;
@@ -342,7 +345,7 @@ export default function PersonnelWebPage() {
     try {
       const { data, error } = await supabase
         .from("reports")
-        .upsert(reportPayload(values, status), { onConflict: "client_request_id" })
+        .upsert(reportPayload(preparedValues, status), { onConflict: "client_request_id" })
         .select("id,report_number")
         .single();
 
@@ -669,7 +672,7 @@ function AssignmentCards({
             <span>{assignment.status === "IN_PROGRESS" ? "Devam ediyor" : "Atandı"}</span>
             <strong>{assignment.title}</strong>
             <small>
-              {[assignment.company_name_snapshot, assignment.line_name].filter(Boolean).join(" / ") || "Firma bilgisi yok"}
+              {[assignment.company_name_snapshot, assignmentWorkItemsText(assignment)].filter(Boolean).join(" / ") || "Firma bilgisi yok"}
             </small>
             <small>{assignment.scheduled_date ? formatDateDisplay(assignment.scheduled_date) : "Tarih seçilmedi"}</small>
           </button>
@@ -781,6 +784,8 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
               ["Yetkili Kişi", text(report.company_contact_name)],
               ["Yetkili Telefon", text(report.company_contact_phone)],
               ["Hat Adı", text(report.line_name)],
+              ["Bant Kodu", reportBeltCodesText(report)],
+              ["İş Kalemleri", reportWorkItemsText(report)],
               ["Makina Marka Model", text(report.machine_brand_model)],
               ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"],
               ["Araç Plakası", text(report.vehicle_plate)],
@@ -802,6 +807,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
             title="Ürün ve İşlem"
             rows={[
               ["Ürün Kodu", text(report.product_code)],
+              ["Bant Kodu", reportBeltCodesText(report)],
               ["Ölçü", text(report.product_measure)],
               ["En", text(report.product_width)],
               ["Boy", text(report.product_length)],
@@ -923,6 +929,52 @@ function ReportForm({
     () => companyLines.filter((line) => line.company_id === values.company_id),
     [companyLines, values.company_id]
   );
+  const beltsById = useMemo(
+    () => new Map(belts.map((belt) => [belt.id, belt])),
+    [belts]
+  );
+  const formWorkItems = useMemo(
+    () => enrichReportWorkItems(workItemsFromValue(values.work_items, values.line_name, values.belt_id), beltsById),
+    [beltsById, values.belt_id, values.line_name, values.work_items]
+  );
+  const beltCodesText = workItemBeltCodesText(formWorkItems, values.belt_id, beltsById);
+
+  function updateWorkItems(nextItems: ReportWorkItem[]) {
+    const enriched = enrichReportWorkItems(normalizeReportWorkItems(nextItems), beltsById);
+    const primaryWorkItem = compactReportWorkItems(enriched)[0] ?? enriched[0] ?? emptyReportWorkItem();
+    update("work_items", enriched);
+    update("line_name", primaryWorkItem.line_name);
+    update("belt_id", primaryWorkItem.belt_id);
+  }
+
+  function updateReportWorkItem(index: number, key: keyof ReportWorkItem, value: string) {
+    const nextItems = normalizeReportWorkItems(formWorkItems).map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+
+      if (key === "belt_id") {
+        const belt = beltsById.get(value);
+        return {
+          ...item,
+          belt_id: value,
+          belt_code: belt?.code ?? "",
+          belt_name: belt?.name ?? ""
+        };
+      }
+
+      return { ...item, [key]: value };
+    });
+
+    updateWorkItems(nextItems);
+  }
+
+  function addWorkItem() {
+    updateWorkItems([...normalizeReportWorkItems(formWorkItems), emptyReportWorkItem()]);
+  }
+
+  function removeWorkItem(index: number) {
+    const nextItems = normalizeReportWorkItems(formWorkItems).filter((_, itemIndex) => itemIndex !== index);
+    updateWorkItems(nextItems.length > 0 ? nextItems : [emptyReportWorkItem()]);
+  }
 
   useEffect(() => {
     if (!selectedCompany) return;
@@ -932,20 +984,19 @@ function ReportForm({
   }, [selectedCompany?.id]);
 
   useEffect(() => {
-    if (!values.company_id && values.line_name) {
-      update("line_name", "");
-      return;
-    }
+    const validLineNames = new Set(selectedCompanyLines.map((line) => line.name));
+    const nextItems = formWorkItems.map((item) => {
+      if (!values.company_id) return { ...item, line_name: "" };
+      if (item.line_name && !validLineNames.has(item.line_name)) return { ...item, line_name: "" };
+      return item;
+    });
+    const changed = nextItems.some((item, index) => item.line_name !== formWorkItems[index]?.line_name);
 
-    if (
-      values.company_id &&
-      values.line_name &&
-      !selectedCompanyLines.some((line) => line.name === values.line_name)
-    ) {
-      update("line_name", "");
+    if (changed) {
+      updateWorkItems(nextItems);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCompanyLines, values.company_id, values.line_name]);
+  }, [formWorkItems, selectedCompanyLines, values.company_id]);
 
   return (
     <section className="personnel-stack">
@@ -973,23 +1024,19 @@ function ReportForm({
           </Field>
           <TextField label="Yetkili Kişi" value={values.company_contact_name} onChange={(value) => update("company_contact_name", value)} />
           <TextField label="Yetkili Telefon" value={values.company_contact_phone} onChange={(value) => update("company_contact_phone", value)} />
-          <Field label="İşlem Görecek Olan Hat Adı">
-            <select
-              disabled={!values.company_id}
-              value={values.line_name}
-              onChange={(event) => update("line_name", event.target.value)}
-            >
-              <option value="">{values.company_id ? "Hat seçin" : "Önce firma seçin"}</option>
-              {selectedCompanyLines.map((line) => <option key={line.id} value={line.name}>{line.name}</option>)}
-            </select>
+          <ReportWorkItemsField
+            belts={belts}
+            companySelected={Boolean(values.company_id)}
+            items={formWorkItems}
+            lines={selectedCompanyLines}
+            onAdd={addWorkItem}
+            onRemove={removeWorkItem}
+            onUpdate={updateReportWorkItem}
+          />
+          <Field label="Bant Kodu">
+            <div className="personnel-readonly">{beltCodesText}</div>
           </Field>
           <TextField label="Makina Marka Modeli" value={values.machine_brand_model} onChange={(value) => update("machine_brand_model", value)} />
-          <Field label="Bant Seç">
-            <select value={values.belt_id} onChange={(event) => update("belt_id", event.target.value)}>
-              <option value="">Bant seçin</option>
-              {belts.map((belt) => <option key={belt.id} value={belt.id}>{formatBeltLabel(belt)}</option>)}
-            </select>
-          </Field>
           <Field label="Formu Dolduran Personel">
             <div className="personnel-readonly">{profile ? `${profile.first_name} ${profile.last_name}` : "-"}</div>
           </Field>
@@ -1038,6 +1085,9 @@ function ReportForm({
       <details className="personnel-section">
         <summary><span className="section-number">3</span><span>Ürün Bilgileri</span></summary>
         <div className="personnel-form-grid personnel-product-grid">
+          <Field label="Bant Kodu">
+            <div className="personnel-readonly">{beltCodesText}</div>
+          </Field>
           <TextField label="Ürün Kodu" value={values.product_code} onChange={(value) => update("product_code", value)} />
           <TextField label="Ölçü" value={values.product_measure} onChange={(value) => update("product_measure", value)} />
           <TextField label="En" value={values.product_width} onChange={(value) => update("product_width", value)} />
@@ -1364,6 +1414,59 @@ function CheckPicker({
   );
 }
 
+function ReportWorkItemsField({
+  belts,
+  companySelected,
+  items,
+  lines,
+  onAdd,
+  onRemove,
+  onUpdate
+}: {
+  belts: Belt[];
+  companySelected: boolean;
+  items: ReportWorkItem[];
+  lines: CompanyLine[];
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+  onUpdate: (index: number, key: keyof ReportWorkItem, value: string) => void;
+}) {
+  const rows = normalizeReportWorkItems(items);
+
+  return (
+    <div className="personnel-field span-2 work-items-field">
+      <span>İş Kalemleri</span>
+      <div className="work-item-list">
+        {rows.map((item, index) => (
+          <div className="work-item-row" key={index}>
+            <select
+              disabled={!companySelected}
+              onChange={(event) => onUpdate(index, "line_name", event.target.value)}
+              value={item.line_name}
+            >
+              <option value="">{companySelected ? "Hat seçin" : "Önce firma seçin"}</option>
+              {lines.map((line) => <option key={line.id} value={line.name}>{line.name}</option>)}
+            </select>
+            <select onChange={(event) => onUpdate(index, "belt_id", event.target.value)} value={item.belt_id}>
+              <option value="">Bant kodu seçin</option>
+              {belts.map((belt) => <option key={belt.id} value={belt.id}>{formatBeltLabel(belt)}</option>)}
+            </select>
+            {rows.length > 1 ? (
+              <button className="button subtle icon-button" onClick={() => onRemove(index)} type="button">
+                <X aria-hidden size={16} />
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <button className="button secondary contact-add-button" onClick={onAdd} type="button">
+        <Plus aria-hidden size={16} />
+        Kalem Ekle
+      </button>
+    </div>
+  );
+}
+
 function ToggleField({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
   return (
     <label className="personnel-toggle-row">
@@ -1383,6 +1486,9 @@ function newReportValues(): ReportFormValues {
 
 function reportPayload(values: ReportFormValues, status: ReportStatus) {
   const nullable = (value: string) => value.trim() || null;
+  const workItems = compactReportWorkItems(values.work_items);
+  const primaryWorkItem = workItems[0] ?? emptyReportWorkItem();
+
   return {
     client_request_id: values.client_request_id,
     status,
@@ -1390,10 +1496,11 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
     company_id: values.company_id || null,
     company_contact_name: nullable(values.company_contact_name),
     company_contact_phone: nullable(values.company_contact_phone),
-    line_name: nullable(values.line_name),
+    line_name: nullable(primaryWorkItem.line_name || values.line_name),
+    work_items: workItems,
     machine_brand_model: nullable(values.machine_brand_model),
     customer_machine_name: nullable(values.customer_machine_name),
-    belt_id: values.belt_id || null,
+    belt_id: primaryWorkItem.belt_id || values.belt_id || null,
     vehicle_plate: nullable(values.vehicle_plate),
     vehicle_start_km: nullable(values.vehicle_start_km),
     vehicle_end_km: nullable(values.vehicle_end_km),
@@ -1408,7 +1515,6 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
     product_length: nullable(values.product_length),
     product_quantity: nullable(values.product_quantity),
     product_item_coil_code: nullable(values.product_item_coil_code),
-    customer_stock_note: nullable(values.customer_stock_note),
     product_types: values.product_types,
     product_type_other: nullable(values.product_type_other),
     process_actions: values.process_actions,
@@ -1444,6 +1550,15 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
 }
 
 function reportToValues(report: ReportRow): ReportFormValues {
+  const workItems = workItemsFromValue(
+    report.work_items,
+    stringValue(report.line_name),
+    stringValue(report.belt_id),
+    stringValue(report.belt_code_snapshot),
+    stringValue(report.belt_name_snapshot)
+  );
+  const primaryWorkItem = compactReportWorkItems(workItems)[0] ?? workItems[0] ?? emptyReportWorkItem();
+
   return {
     ...emptyReportFormValues,
     client_request_id: stringValue(report.client_request_id) || createId(),
@@ -1451,10 +1566,11 @@ function reportToValues(report: ReportRow): ReportFormValues {
     company_id: stringValue(report.company_id),
     company_contact_name: stringValue(report.company_contact_name),
     company_contact_phone: stringValue(report.company_contact_phone),
-    line_name: stringValue(report.line_name),
+    line_name: primaryWorkItem.line_name,
+    work_items: workItems,
     machine_brand_model: stringValue(report.machine_brand_model),
     customer_machine_name: stringValue(report.customer_machine_name),
-    belt_id: stringValue(report.belt_id),
+    belt_id: primaryWorkItem.belt_id,
     visiting_personnel_ids: (report.report_personnel ?? [])
       .map((item) => item.profile_id)
       .filter((value): value is string => Boolean(value)),
@@ -1472,7 +1588,6 @@ function reportToValues(report: ReportRow): ReportFormValues {
     product_length: stringValue(report.product_length),
     product_quantity: stringValue(report.product_quantity),
     product_item_coil_code: stringValue(report.product_item_coil_code),
-    customer_stock_note: stringValue(report.customer_stock_note),
     product_types: arrayValue(report.product_types) as ReportFormValues["product_types"],
     product_type_other: stringValue(report.product_type_other),
     process_actions: arrayValue(report.process_actions) as ReportFormValues["process_actions"],
@@ -1509,6 +1624,14 @@ function reportToValues(report: ReportRow): ReportFormValues {
 
 function assignmentToValues(assignment: InstallationAssignment): ReportFormValues {
   const values = toRecord(assignment.report_values);
+  const workItems = workItemsFromValue(
+    values.work_items,
+    (stringValue(values.line_name) || assignment.line_name) ?? "",
+    stringValue(values.belt_id),
+    stringValue(values.belt_code),
+    stringValue(values.belt_name)
+  );
+  const primaryWorkItem = compactReportWorkItems(workItems)[0] ?? workItems[0] ?? emptyReportWorkItem();
 
   return {
     ...emptyReportFormValues,
@@ -1517,10 +1640,11 @@ function assignmentToValues(assignment: InstallationAssignment): ReportFormValue
     company_id: (stringValue(values.company_id) || assignment.company_id) ?? "",
     company_contact_name: stringValue(values.company_contact_name),
     company_contact_phone: stringValue(values.company_contact_phone),
-    line_name: (stringValue(values.line_name) || assignment.line_name) ?? "",
+    line_name: primaryWorkItem.line_name,
+    work_items: workItems,
     machine_brand_model: stringValue(values.machine_brand_model),
     customer_machine_name: stringValue(values.customer_machine_name),
-    belt_id: stringValue(values.belt_id),
+    belt_id: primaryWorkItem.belt_id,
     visiting_personnel_ids: arrayValue(values.visiting_personnel_ids),
     vehicle_plate: stringValue(values.vehicle_plate),
     vehicle_start_km: stringValue(values.vehicle_start_km),
@@ -1536,7 +1660,6 @@ function assignmentToValues(assignment: InstallationAssignment): ReportFormValue
     product_length: stringValue(values.product_length),
     product_quantity: stringValue(values.product_quantity),
     product_item_coil_code: stringValue(values.product_item_coil_code),
-    customer_stock_note: stringValue(values.customer_stock_note),
     product_types: arrayValue(values.product_types) as ReportFormValues["product_types"],
     product_type_other: stringValue(values.product_type_other),
     process_actions: arrayValue(values.process_actions) as ReportFormValues["process_actions"],
@@ -1667,8 +1790,144 @@ function arrayValue(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
+function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFormValues {
+  const beltsById = new Map(belts.map((belt) => [belt.id, belt]));
+  const workItems = compactReportWorkItems(
+    enrichReportWorkItems(workItemsFromValue(values.work_items, values.line_name, values.belt_id), beltsById)
+  );
+  const primaryWorkItem = workItems[0] ?? emptyReportWorkItem();
+
+  return {
+    ...values,
+    line_name: primaryWorkItem.line_name || values.line_name,
+    belt_id: primaryWorkItem.belt_id || values.belt_id,
+    work_items: workItems
+  };
+}
+
 function formatBeltLabel(belt: Belt) {
   return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
+}
+
+function emptyReportWorkItem(): ReportWorkItem {
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "" };
+}
+
+function normalizeReportWorkItems(items: ReportWorkItem[]) {
+  return items.length > 0 ? items : [emptyReportWorkItem()];
+}
+
+function compactReportWorkItems(items: ReportWorkItem[]) {
+  return items
+    .map((item) => ({
+      line_name: item.line_name.trim(),
+      belt_id: item.belt_id.trim(),
+      belt_code: item.belt_code.trim(),
+      belt_name: item.belt_name.trim()
+    }))
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+}
+
+function workItemsFromValue(
+  value: unknown,
+  fallbackLineName: string,
+  fallbackBeltId: string,
+  fallbackBeltCode = "",
+  fallbackBeltName = ""
+): ReportWorkItem[] {
+  if (Array.isArray(value)) {
+    const items = value
+      .map((item) => toRecord(item))
+      .map((item) => ({
+        line_name: stringValue(item.line_name),
+        belt_id: stringValue(item.belt_id),
+        belt_code: stringValue(item.belt_code),
+        belt_name: stringValue(item.belt_name)
+      }))
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+
+    if (items.length > 0) {
+      return items;
+    }
+  }
+
+  return normalizeReportWorkItems([
+    {
+      line_name: fallbackLineName,
+      belt_id: fallbackBeltId,
+      belt_code: fallbackBeltCode,
+      belt_name: fallbackBeltName
+    }
+  ]);
+}
+
+function enrichReportWorkItems(items: ReportWorkItem[], beltsById: Map<string, Belt>) {
+  return normalizeReportWorkItems(items).map((item) => {
+    const belt = beltsById.get(item.belt_id);
+    return {
+      ...item,
+      belt_code: item.belt_code || belt?.code || "",
+      belt_name: item.belt_name || belt?.name || ""
+    };
+  });
+}
+
+function formatReportWorkItemLabel(item: ReportWorkItem) {
+  const beltLabel = item.belt_code ? (item.belt_name ? `${item.belt_code} - ${item.belt_name}` : item.belt_code) : "";
+  return [item.line_name, beltLabel].filter(Boolean).join(" / ");
+}
+
+function workItemBeltCodesText(items: ReportWorkItem[], fallbackBeltId: string, beltsById: Map<string, Belt>) {
+  const codes = compactReportWorkItems(items)
+    .map((item) => item.belt_code || beltsById.get(item.belt_id)?.code || "")
+    .filter(Boolean);
+
+  if (codes.length > 0) {
+    return Array.from(new Set(codes)).join(", ");
+  }
+
+  return beltsById.get(fallbackBeltId)?.code ?? "-";
+}
+
+function reportWorkItemsText(report: Record<string, unknown>) {
+  const items = compactReportWorkItems(
+    workItemsFromValue(
+      report.work_items,
+      stringValue(report.line_name),
+      stringValue(report.belt_id),
+      stringValue(report.belt_code_snapshot),
+      stringValue(report.belt_name_snapshot)
+    )
+  );
+
+  return items.map(formatReportWorkItemLabel).filter(Boolean).join(" • ") || "-";
+}
+
+function reportBeltCodesText(report: Record<string, unknown>) {
+  const items = compactReportWorkItems(
+    workItemsFromValue(
+      report.work_items,
+      stringValue(report.line_name),
+      stringValue(report.belt_id),
+      stringValue(report.belt_code_snapshot),
+      stringValue(report.belt_name_snapshot)
+    )
+  );
+  const codes = items.map((item) => item.belt_code).filter(Boolean);
+
+  if (codes.length > 0) {
+    return Array.from(new Set(codes)).join(", ");
+  }
+
+  return text(report.belt_code_snapshot);
+}
+
+function assignmentWorkItemsText(assignment: InstallationAssignment) {
+  const values = toRecord(assignment.report_values);
+  const items = compactReportWorkItems(
+    workItemsFromValue(values.work_items, assignment.line_name ?? "", stringValue(values.belt_id))
+  );
+  return items.map(formatReportWorkItemLabel).filter(Boolean).join(" • ") || assignment.line_name || "";
 }
 
 function booleanValue(value: unknown) {

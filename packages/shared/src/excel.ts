@@ -26,6 +26,7 @@ export const reportExportColumns = [
   "YETKİLİ KİŞİ",
   "YETKİLİ TELEFON",
   "HAT ADI",
+  "İŞ KALEMLERİ",
   "MAKİNA MARKA MODEL",
   "KULLANILAN ARAÇ",
   "ARAÇ ALIŞ KM",
@@ -76,6 +77,13 @@ export interface ExportReportRow {
   product_length: string | null;
   product_quantity: string | null;
   belt_code_snapshot: string | null;
+  belt_name_snapshot?: string | null;
+  work_items?: Array<{
+    line_name?: string | null;
+    belt_id?: string | null;
+    belt_code?: string | null;
+    belt_name?: string | null;
+  }> | null;
   product_types: string[] | null;
   process_actions: string[] | null;
   edge_cut_method: string | null;
@@ -125,6 +133,27 @@ function boolText(value: boolean | null | undefined) {
   return value ? "Evet" : "Hayır";
 }
 
+function workItemsText(report: ExportReportRow) {
+  const items = (report.work_items ?? [])
+    .map((item) => {
+      const lineName = item.line_name?.trim() ?? "";
+      const beltCode = item.belt_code?.trim() ?? "";
+      const beltName = item.belt_name?.trim() ?? "";
+      const beltLabel = beltCode ? (beltName ? `${beltCode} - ${beltName}` : beltCode) : "";
+      return [lineName, beltLabel].filter(Boolean).join(" / ");
+    })
+    .filter(Boolean);
+
+  if (items.length > 0) {
+    return items.join(" • ");
+  }
+
+  const fallbackBelt = report.belt_code_snapshot
+    ? [report.belt_code_snapshot, report.belt_name_snapshot ?? ""].filter(Boolean).join(" - ")
+    : "";
+  return [report.line_name ?? "", fallbackBelt].filter(Boolean).join(" / ");
+}
+
 export function mapReportToExcelRow(report: ExportReportRow) {
   const personnel = report.report_personnel?.map((item) => item.name_snapshot ?? "") ?? [];
   const tensioning = [
@@ -160,6 +189,7 @@ export function mapReportToExcelRow(report: ExportReportRow) {
     report.company_contact_name ?? "",
     report.company_contact_phone ?? "",
     report.line_name ?? "",
+    workItemsText(report),
     report.machine_brand_model ?? "",
     report.vehicle_plate ?? "",
     report.vehicle_start_km ?? "",

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ImageIcon, Trash2 } from "lucide-react";
+import type { ReportWorkItem } from "@tunca/types";
 import { AdminShell } from "../../../components/admin-shell";
 import { PageHeader } from "../../../components/page-header";
 import { getBrowserSupabase } from "../../../lib/supabase-browser";
@@ -138,6 +139,8 @@ export default function ReportDetailPage() {
               ["Yetkili Kişi", text(report.company_contact_name)],
               ["Yetkili Telefon", text(report.company_contact_phone)],
               ["Hat Adı", text(report.line_name)],
+              ["Bant Kodu", reportBeltCodesText(report)],
+              ["İş Kalemleri", reportWorkItemsText(report)],
               ["Makina Marka Model", text(report.machine_brand_model)],
               ["Araç Plakası", text(report.vehicle_plate)],
               ["Araç Alış KM", text(report.vehicle_start_km)],
@@ -159,6 +162,7 @@ export default function ReportDetailPage() {
             title="Ürün Bilgileri"
             rows={[
               ["Ürün Kodu", text(report.product_code)],
+              ["Bant Kodu", reportBeltCodesText(report)],
               ["Ölçü", text(report.product_measure)],
               ["En", text(report.product_width)],
               ["Boy", text(report.product_length)],
@@ -286,6 +290,90 @@ function PhotoSection({
       )}
     </section>
   );
+}
+
+function compactWorkItems(items: ReportWorkItem[]) {
+  return items
+    .map((item) => ({
+      line_name: item.line_name.trim(),
+      belt_id: item.belt_id.trim(),
+      belt_code: item.belt_code.trim(),
+      belt_name: item.belt_name.trim()
+    }))
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+}
+
+function workItemsFromValue(
+  value: unknown,
+  fallbackLineName: string,
+  fallbackBeltId: string,
+  fallbackBeltCode = "",
+  fallbackBeltName = ""
+): ReportWorkItem[] {
+  if (Array.isArray(value)) {
+    const items = value
+      .map((item) => toRecord(item))
+      .map((item) => ({
+        line_name: textValue(item.line_name),
+        belt_id: textValue(item.belt_id),
+        belt_code: textValue(item.belt_code),
+        belt_name: textValue(item.belt_name)
+      }))
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name);
+
+    if (items.length > 0) return items;
+  }
+
+  return [{ line_name: fallbackLineName, belt_id: fallbackBeltId, belt_code: fallbackBeltCode, belt_name: fallbackBeltName }];
+}
+
+function reportWorkItemsText(report: Record<string, unknown>) {
+  const items = compactWorkItems(
+    workItemsFromValue(
+      report.work_items,
+      textValue(report.line_name),
+      textValue(report.belt_id),
+      textValue(report.belt_code_snapshot),
+      textValue(report.belt_name_snapshot)
+    )
+  );
+
+  return items
+    .map((item) => {
+      const beltLabel = item.belt_code ? (item.belt_name ? `${item.belt_code} - ${item.belt_name}` : item.belt_code) : "";
+      return [item.line_name, beltLabel].filter(Boolean).join(" / ");
+    })
+    .filter(Boolean)
+    .join(" • ") || "-";
+}
+
+function reportBeltCodesText(report: Record<string, unknown>) {
+  const items = compactWorkItems(
+    workItemsFromValue(
+      report.work_items,
+      textValue(report.line_name),
+      textValue(report.belt_id),
+      textValue(report.belt_code_snapshot),
+      textValue(report.belt_name_snapshot)
+    )
+  );
+  const codes = items.map((item) => item.belt_code).filter(Boolean);
+
+  if (codes.length > 0) {
+    return Array.from(new Set(codes)).join(", ");
+  }
+
+  return text(report.belt_code_snapshot);
+}
+
+function toRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function textValue(value: unknown) {
+  return typeof value === "string" ? value : "";
 }
 
 function text(value: unknown) {
