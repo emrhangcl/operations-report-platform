@@ -206,6 +206,14 @@ button:disabled {
   margin: 0;
 }
 
+.header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .grid {
   display: grid;
   gap: 16px;
@@ -576,6 +584,13 @@ tr:last-child td {
   color: var(--ink);
 }
 
+.button.icon-only {
+  justify-content: center;
+  min-height: 40px;
+  padding: 9px;
+  width: 40px;
+}
+
 .status {
   border-radius: 999px;
   display: inline-flex;
@@ -615,6 +630,55 @@ tr:last-child td {
   color: #34404c;
 }
 
+.report-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.report-summary-card {
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(34, 39, 44, 0.05);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 104px;
+  padding: 14px;
+}
+
+.summary-icon {
+  align-items: center;
+  background: #fbf0f0;
+  border: 1px solid rgba(189, 51, 50, 0.16);
+  border-radius: 8px;
+  color: var(--brand-dark);
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.report-summary-card span,
+.report-summary-card small {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.report-summary-card strong {
+  color: var(--ink-dark);
+  display: block;
+  font-size: 15px;
+  line-height: 1.25;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
 .detail-sections {
   display: grid;
   gap: 16px;
@@ -625,12 +689,33 @@ tr:last-child td {
   grid-column: 1 / -1;
 }
 
-.detail-section h2 {
+.detail-section {
+  align-content: start;
+}
+
+.detail-section-title {
+  align-items: center;
   border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 0 0 10px;
+  padding-bottom: 10px;
+}
+
+.detail-section-title h2 {
   color: var(--ink-dark);
   font-size: 16px;
-  margin: 0 0 12px;
-  padding-bottom: 10px;
+  margin: 0;
+}
+
+.detail-section-title span {
+  background: var(--surface-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
 }
 
 .kv {
@@ -641,8 +726,8 @@ tr:last-child td {
 .kv div {
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(130px, 0.45fr) minmax(0, 1fr);
-  padding: 9px 0;
+  grid-template-columns: minmax(140px, 0.38fr) minmax(0, 1fr);
+  padding: 8px 0;
 }
 
 .kv div + div {
@@ -655,40 +740,83 @@ tr:last-child td {
   font-weight: 750;
 }
 
+.kv dd {
+  color: var(--ink-dark);
+  line-height: 1.45;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .report-photo-grid {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 210px));
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 188px));
   justify-content: start;
 }
 
 .report-photo-card {
+  background: #fff;
   border: 1px solid var(--line);
   border-radius: 8px;
+  color: inherit;
   display: grid;
   gap: 8px;
   overflow: hidden;
+  padding: 0;
+  text-align: left;
+}
+
+.report-photo-card:not(:disabled):hover {
+  border-color: rgba(189, 51, 50, 0.45);
+  box-shadow: 0 10px 22px rgba(34, 39, 44, 0.12);
+  transform: translateY(-1px);
+}
+
+.report-photo-card:disabled {
+  cursor: not-allowed;
+}
+
+.report-photo-image {
+  display: block;
+  position: relative;
 }
 
 .report-photo-card img {
   aspect-ratio: 4 / 3;
+  display: block;
   height: auto;
   object-fit: cover;
   width: 100%;
 }
 
-.report-photo-card div:last-child {
+.photo-open-badge {
+  align-items: center;
+  background: rgba(37, 41, 47, 0.82);
+  border-radius: 999px;
+  bottom: 8px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 5px;
+  padding: 5px 8px;
+  position: absolute;
+  right: 8px;
+}
+
+.report-photo-meta {
   display: grid;
   gap: 3px;
   padding: 0 10px 10px;
 }
 
-.report-photo-card strong {
+.report-photo-meta strong {
   color: var(--ink-dark);
   font-size: 13px;
 }
 
-.report-photo-card span {
+.report-photo-meta span {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
@@ -704,9 +832,70 @@ tr:last-child td {
   width: 100%;
 }
 
-.kv dd {
-  margin: 0;
-  min-width: 0;
+.photo-lightbox {
+  align-items: center;
+  background: rgba(17, 20, 24, 0.76);
+  display: grid;
+  inset: 0;
+  padding: 24px;
+  position: fixed;
+  z-index: 100;
+}
+
+.photo-lightbox-panel {
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
+  max-height: calc(100vh - 48px);
+  max-width: 1120px;
+  padding: 14px;
+  width: min(100%, 1120px);
+}
+
+.photo-lightbox-top {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.photo-lightbox-top strong,
+.photo-lightbox-top span {
+  display: block;
+}
+
+.photo-lightbox-top strong {
+  color: var(--ink-dark);
+  font-size: 16px;
+}
+
+.photo-lightbox-top span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+.photo-lightbox-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.photo-lightbox-image {
+  background: #15181c;
+  border-radius: 7px;
+  height: min(72vh, 760px);
+  overflow: hidden;
+  position: relative;
+}
+
+.photo-lightbox-image img {
+  object-fit: contain;
 }
 
 @media (max-width: 980px) {
@@ -729,6 +918,10 @@ tr:last-child td {
     grid-template-columns: 1fr;
   }
 
+  .report-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .span-2,
   .span-4 {
     grid-column: 1 / -1;
@@ -742,7 +935,28 @@ tr:last-child td {
     display: grid;
   }
 
+  .header-actions {
+    justify-content: flex-start;
+  }
+
   .kv div {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-lightbox {
+    padding: 12px;
+  }
+
+  .photo-lightbox-top,
+  .photo-lightbox-actions {
+    align-items: stretch;
+    display: grid;
+  }
+}
+
+@media (max-width: 560px) {
+  .report-summary,
+  .report-photo-grid {
     grid-template-columns: 1fr;
   }
 }
