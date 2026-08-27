@@ -14,15 +14,6 @@ const logoPath = resolve(process.cwd(), "public", "tunca-logo.png");
 
 let pdfMakeReady = false;
 
-export type PdfReportPhoto = {
-  category: string | null;
-  caption: string | null;
-  storage_path: string | null;
-  created_at: string | null;
-  dataUrl?: string | null;
-  error?: string | null;
-};
-
 export type PdfReportRow = Record<string, unknown> & {
   id: string;
   report_number: string | null;
@@ -33,9 +24,9 @@ export type PdfReportRow = Record<string, unknown> & {
   report_personnel?: Array<{ name_snapshot: string | null }>;
 };
 
-export async function createReportPdfBuffer(report: PdfReportRow, photos: PdfReportPhoto[]) {
+export async function createReportPdfBuffer(report: PdfReportRow) {
   initPdfMake();
-  const document = createReportDocument(report, photos);
+  const document = createReportDocument(report);
   return pdfMake.createPdf(document).getBuffer();
 }
 
@@ -61,75 +52,96 @@ function initPdfMake() {
   pdfMakeReady = true;
 }
 
-function createReportDocument(report: PdfReportRow, photos: PdfReportPhoto[]): TDocumentDefinitions {
+function createReportDocument(report: PdfReportRow): TDocumentDefinitions {
+  const workItems = reportWorkItems(report);
   const content: Content[] = [
     header(report),
     divider(),
-    ...section("Genel Bilgiler", [
-      ["Rapor No", report.report_number ?? "Taslak"],
-      ["Tarih", dateOnly(report.report_date)],
-      ["Firma", text(report.company_name_snapshot)],
-      ["Yetkili Kişi", text(report.company_contact_name)],
-      ["Yetkili Telefon", text(report.company_contact_phone)],
-      ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"],
-      ["Formu Dolduran", text(report.created_by_name_snapshot)]
-    ]),
-    ...section("Hat, Araç ve Zaman", [
-      ["Hat Adı", text(report.line_name)],
-      ["Bant Kodu", reportBeltCodesText(report)],
-      ["İş Kalemleri", reportWorkItemsText(report)],
-      ["Makina Marka Model", text(report.machine_brand_model)],
-      ["Araç Plakası", text(report.vehicle_plate)],
-      ["Araç Alış KM", text(report.vehicle_start_km)],
-      ["Araç Teslim KM", text(report.vehicle_end_km)],
-      ["Kullanılan Makine ve Ekipman", text(report.used_equipment)],
-      ["Atölyeden Çıkış", dateTime(report.workshop_departure_at)],
-      ["Müşteriye Varış", dateTime(report.customer_arrival_at)],
-      ["Müşteriden Çıkış", dateTime(report.customer_departure_at)],
-      ["Fabrikaya Dönüş", dateTime(report.factory_return_at)]
-    ]),
-    { text: "Ürün Kalemleri", style: "sectionTitle", margin: [0, 12, 0, 6] },
-    workItemsTable(report),
-    ...section("Yapılan İşlem ve Teknik Bilgiler", [
-      ["Ürün Türü", arrayText(report.product_types)],
-      ["Yapılan İşlem", arrayText(report.process_actions)],
-      ["Kenar Kesim", text(report.edge_cut_method)],
-      ["Açıklama", text(report.process_description)],
-      ["Değiştirme Sebebi", arrayText(report.replacement_reasons)],
-      ["Test Parçası", text(report.has_test_piece)],
-      ["Test Durumu", text(report.test_status)],
-      ["Gözlemci", fallbackText(text(report.observer_name_snapshot), text(report.observer_external_name))],
-      ["Pres Başlama", text(report.press_start_time)],
-      ["Pres Bitiş", text(report.press_end_time)],
-      ["Enerji Kesintisi", text(report.power_outage)],
-      ["Basınç Düşmesi", text(report.pressure_drop)],
-      ["Isı Dengesi", text(report.heat_balance_ok)],
-      ["Faturalandırma", text(report.billing_status)],
-      ["Teknik Detaylar", text(report.technical_details)]
-    ]),
-    ...section("Gerdirme", [
-      ["Gerdirme Yapıldı mı?", text(report.tensioning_done)],
-      ["Müşteri Sonra Yapacak", boolText(report.customer_will_tension)],
-      ["Müşteri Otomatik Sistemde Yaptı", boolText(report.customer_tensioned_auto)],
-      ["Uygulanan Basınç", [text(report.pressure_value), text(report.pressure_unit)].filter((value) => value !== "-").join(" ") || "-"],
-      ["Ön Gerdirme %", text(report.pre_tension_percent)],
-      ["Hat Çalışır Teslim Edildi", boolText(report.line_delivered_running)]
-    ]),
-    { text: "Fotoğraflar", style: "sectionTitle", margin: [0, 12, 0, 6] },
-    ...photoSection(photos),
-    { text: "İmza Alanları", style: "sectionTitle", margin: [0, 16, 0, 8] },
+    {
+      columns: [
+        compactSection("Genel Bilgiler", [
+          ["Rapor No", report.report_number ?? "Taslak"],
+          ["Tarih", dateOnly(report.report_date)],
+          ["Firma", text(report.company_name_snapshot)],
+          ["Yetkili", text(report.company_contact_name)],
+          ["Telefon", text(report.company_contact_phone)],
+          ["Giden Personel", clip(personnelText(report), 95)],
+          ["Formu Dolduran", text(report.created_by_name_snapshot)]
+        ]),
+        compactSection("Araç ve Zaman", [
+          ["Araç Plakası", text(report.vehicle_plate)],
+          ["Araç Alış KM", text(report.vehicle_start_km)],
+          ["Araç Teslim KM", text(report.vehicle_end_km)],
+          ["Atölyeden Çıkış", dateTime(report.workshop_departure_at)],
+          ["Müşteriye Varış", dateTime(report.customer_arrival_at)],
+          ["Müşteriden Çıkış", dateTime(report.customer_departure_at)],
+          ["Fabrikaya Dönüş", dateTime(report.factory_return_at)]
+        ])
+      ],
+      columnGap: 12
+    },
+    {
+      columns: [
+        compactSection("Hat ve Ekipman", [
+          ["Hat", text(report.line_name)],
+          ["Bant Kodu", reportBeltCodesText(report)],
+          ["İş Kalemleri", clip(reportWorkItemsText(report), 120)],
+          ["Makina Marka Model", text(report.machine_brand_model)],
+          ["Makine / Ekipman", clip(text(report.used_equipment), 120)]
+        ]),
+        compactSection("İşlem ve Teknik", [
+          ["Ürün Türü", clip(arrayText(report.product_types), 95)],
+          ["Yapılan İşlem", clip(arrayText(report.process_actions), 120)],
+          ["Kenar Kesim", text(report.edge_cut_method)],
+          ["Değiştirme Sebebi", clip(arrayText(report.replacement_reasons), 110)],
+          ["Açıklama", clip(text(report.process_description), 140)]
+        ])
+      ],
+      columnGap: 12,
+      margin: [0, 7, 0, 0]
+    },
+    { text: "Ürün Kalemleri", style: "sectionTitle", margin: [0, 8, 0, 3] },
+    workItemsTable(workItems),
+    {
+      columns: [
+        compactSection("Pres ve Kontrol", [
+          ["Test Parçası", text(report.has_test_piece)],
+          ["Test Durumu", text(report.test_status)],
+          ["Gözlemci", fallbackText(text(report.observer_name_snapshot), text(report.observer_external_name))],
+          ["Pres Başlama", text(report.press_start_time)],
+          ["Pres Bitiş", text(report.press_end_time)],
+          ["Enerji / Basınç / Isı", [text(report.power_outage), text(report.pressure_drop), text(report.heat_balance_ok)].join(" / ")]
+        ]),
+        compactSection("Gerdirme ve Teslim", [
+          ["Gerdirme", text(report.tensioning_done)],
+          ["Müşteri Sonra Yapacak", boolText(report.customer_will_tension)],
+          ["Otomatik Sistemde Yapıldı", boolText(report.customer_tensioned_auto)],
+          ["Basınç", [text(report.pressure_value), text(report.pressure_unit)].filter((value) => value !== "-").join(" ") || "-"],
+          ["Ön Gerdirme %", text(report.pre_tension_percent)],
+          ["Hat Çalışır Teslim", boolText(report.line_delivered_running)]
+        ]),
+        compactSection("Notlar", [
+          ["Faturalandırma", clip(text(report.billing_status), 90)],
+          ["Teknik Detay", clip(text(report.technical_details), 160)]
+        ])
+      ],
+      columnGap: 10,
+      margin: [0, 7, 0, 0]
+    },
+    { text: "İmza Alanları", style: "sectionTitle", margin: [0, 9, 0, 4] },
     {
       columns: [
         signatureBox("TUNCA Personel"),
         signatureBox("Müşteri Yetkilisi")
       ],
-      columnGap: 16
+      columnGap: 14
     }
   ];
 
   return {
+    pageOrientation: "landscape",
     pageSize: "A4",
-    pageMargins: [32, 34, 32, 42],
+    pageMargins: [24, 22, 24, 24],
     info: {
       title: report.report_number ?? "TUNCA Raporu",
       author: "TUNCA",
@@ -138,15 +150,16 @@ function createReportDocument(report: PdfReportRow, photos: PdfReportPhoto[]): T
     defaultStyle: {
       color: "#25282c",
       font: "Roboto",
-      fontSize: 8.8
+      fontSize: 7.2,
+      lineHeight: 1.08
     },
     footer: (currentPage, pageCount) => ({
       columns: [
         { text: `Oluşturma: ${dateTime(new Date().toISOString())}`, color: "#66707a" },
         { text: `${currentPage} / ${pageCount}`, alignment: "right", color: "#66707a" }
       ],
-      margin: [32, 12, 32, 0],
-      fontSize: 7.5
+      fontSize: 6.3,
+      margin: [24, 4, 24, 0]
     }),
     content,
     styles
@@ -157,29 +170,29 @@ const styles: StyleDictionary = {
   title: {
     bold: true,
     color: "#25292f",
-    fontSize: 18
+    fontSize: 15
   },
   subtitle: {
     color: "#66707a",
-    fontSize: 9
+    fontSize: 7.4
   },
   sectionTitle: {
     bold: true,
     color: "#8e2526",
-    fontSize: 11
+    fontSize: 8.7
   },
   tableLabel: {
     bold: true,
     color: "#4b535c",
-    fontSize: 8
+    fontSize: 6.8
   },
   tableValue: {
     color: "#25282c",
-    fontSize: 8.5
+    fontSize: 7.05
   },
   muted: {
     color: "#66707a",
-    fontSize: 8
+    fontSize: 6.7
   }
 };
 
@@ -188,7 +201,7 @@ function header(report: PdfReportRow): Content {
 
   return {
     columns: [
-      logo ? { image: logo, width: 136 } : { text: "TUNCA", style: "title" },
+      logo ? { image: logo, width: 118 } : { text: "TUNCA", style: "title" },
       {
         stack: [
           { text: "Montaj ve Tamir Raporu", style: "title", alignment: "right" },
@@ -198,39 +211,110 @@ function header(report: PdfReportRow): Content {
       }
     ],
     columnGap: 18,
-    margin: [0, 0, 0, 8]
+    margin: [0, 0, 0, 5]
   };
 }
 
 function divider(): Content {
   return {
-    canvas: [{ type: "line", x1: 0, y1: 0, x2: 531, y2: 0, lineColor: "#d8dde2", lineWidth: 1 }],
-    margin: [0, 0, 0, 8]
+    canvas: [{ type: "line", x1: 0, y1: 0, x2: 794, y2: 0, lineColor: "#d8dde2", lineWidth: 0.8 }],
+    margin: [0, 0, 0, 5]
   };
 }
 
-function section(title: string, rows: Array<[string, string]>): Content[] {
-  return [
-    { text: title, style: "sectionTitle", margin: [0, 10, 0, 5] },
-    infoTable(rows)
-  ];
+function compactSection(title: string, rows: Array<[string, string]>): Column {
+  return {
+    width: "*",
+    stack: [
+      { text: title, style: "sectionTitle", margin: [0, 0, 0, 2] },
+      {
+        table: {
+          widths: [82, "*"],
+          body: rows.map(([label, value]) => [
+            { text: label, style: "tableLabel" },
+            { text: value || "-", style: "tableValue" }
+          ])
+        },
+        layout: {
+          hLineColor: () => "#eef1f3",
+          hLineWidth: () => 0.35,
+          paddingBottom: () => 1.3,
+          paddingLeft: () => 2,
+          paddingRight: () => 2,
+          paddingTop: () => 1.3,
+          vLineWidth: () => 0
+        }
+      }
+    ]
+  };
 }
 
-function infoTable(rows: Array<[string, string]>): Content {
+function workItemsTable(items: ReportWorkItem[]): Content {
+  if (items.length === 0) {
+    return { text: "Ürün kalemi girilmemiş.", style: "muted" };
+  }
+
   return {
     table: {
-      widths: [136, "*"],
-      body: rows.map(([label, value]) => [
-        { text: label, style: "tableLabel" },
-        { text: value || "-", style: "tableValue" }
-      ])
+      headerRows: 1,
+      widths: ["*", 92, "*", 55, 60, 46],
+      body: [
+        ["Hat", "Bant Kodu", "Bant Adı", "En", "Boy", "Miktar"].map((label) => ({ text: label, style: "tableLabel" })),
+        ...items.map((item) => [
+          clip(text(item.line_name), 58),
+          clip(text(item.belt_code), 28),
+          clip(text(item.belt_name), 60),
+          text(item.product_width),
+          text(item.product_length),
+          text(item.product_quantity)
+        ])
+      ]
     },
-    layout: "lightHorizontalLines"
+    layout: {
+      fillColor: (rowIndex) => rowIndex === 0 ? "#f8f9fa" : null,
+      hLineColor: () => "#d8dde2",
+      hLineWidth: () => 0.45,
+      paddingBottom: () => 1.6,
+      paddingLeft: () => 3,
+      paddingRight: () => 3,
+      paddingTop: () => 1.6,
+      vLineColor: () => "#eef1f3",
+      vLineWidth: () => 0.35
+    }
   };
 }
 
-function workItemsTable(report: PdfReportRow): Content {
-  const items = compactWorkItems(
+function signatureBox(title: string): Column {
+  return {
+    width: "*",
+    table: {
+      widths: ["*"],
+      body: [[{
+        stack: [
+          { text: title, bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 16] },
+          { text: "Ad Soyad", style: "muted", margin: [0, 0, 0, 11] },
+          { canvas: [{ type: "line", x1: 0, y1: 0, x2: 330, y2: 0, lineColor: "#66707a", lineWidth: 0.7 }] },
+          { text: "İmza", style: "muted", margin: [0, 4, 0, 0] }
+        ],
+        margin: [8, 7, 8, 7]
+      }]]
+    },
+    layout: {
+      hLineColor: () => "#d8dde2",
+      hLineWidth: () => 0.6,
+      vLineColor: () => "#d8dde2",
+      vLineWidth: () => 0.6
+    }
+  };
+}
+
+function logoDataUrl() {
+  if (!existsSync(logoPath)) return null;
+  return `data:image/png;base64,${readFileSync(logoPath).toString("base64")}`;
+}
+
+function reportWorkItems(report: Record<string, unknown>) {
+  return compactWorkItems(
     workItemsFromValue(
       report.work_items,
       textValue(report.line_name),
@@ -242,93 +326,6 @@ function workItemsTable(report: PdfReportRow): Content {
       textValue(report.product_quantity)
     )
   );
-
-  if (items.length === 0) {
-    return { text: "Ürün kalemi girilmemiş.", style: "muted" };
-  }
-
-  return {
-    table: {
-      headerRows: 1,
-      widths: ["*", 78, "*", 48, 58, 45],
-      body: [
-        ["Hat", "Bant Kodu", "Bant Adı", "En", "Boy", "Miktar"].map((label) => ({ text: label, style: "tableLabel" })),
-        ...items.map((item) => [
-          text(item.line_name),
-          text(item.belt_code),
-          text(item.belt_name),
-          text(item.product_width),
-          text(item.product_length),
-          text(item.product_quantity)
-        ])
-      ]
-    },
-    layout: "lightHorizontalLines"
-  };
-}
-
-function photoSection(photos: PdfReportPhoto[]): Content[] {
-  if (photos.length === 0) {
-    return [{ text: "Fotoğraf eklenmemiş.", style: "muted" }];
-  }
-
-  const rows: Content[] = [];
-  for (let index = 0; index < photos.length; index += 2) {
-    const pair = photos.slice(index, index + 2);
-    rows.push({
-      columns: [
-        ...pair.map((photo, pairIndex) => photoCard(photo, index + pairIndex)),
-        ...(pair.length === 1 ? [{ text: "", width: "*" } as Column] : [])
-      ],
-      columnGap: 12,
-      margin: [0, 0, 0, 10]
-    });
-  }
-  return rows;
-}
-
-function photoCard(photo: PdfReportPhoto, index: number): Column {
-  const caption = photo.caption || `Fotoğraf ${index + 1}`;
-  const meta = [photo.category, dateTime(photo.created_at)].filter((value) => value && value !== "-").join(" · ");
-
-  return {
-    width: "*",
-    stack: [
-      photo.dataUrl
-        ? { image: photo.dataUrl, fit: [245, 150], alignment: "center", margin: [0, 0, 0, 5] }
-        : { text: photo.error || "Fotoğraf PDF içine eklenemedi.", style: "muted", margin: [0, 18, 0, 18] },
-      { text: caption, bold: true, fontSize: 8.5 },
-      { text: meta || "Rapor fotoğrafı", style: "muted" }
-    ],
-    margin: [0, 0, 0, 5]
-  };
-}
-
-function signatureBox(title: string): Column {
-  return {
-    width: "*",
-    table: {
-      widths: ["*"],
-      body: [[{
-        stack: [
-          { text: title, bold: true, color: "#25292f", margin: [0, 0, 0, 22] },
-          { text: "Ad Soyad", style: "muted", margin: [0, 0, 0, 16] },
-          { canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineColor: "#66707a", lineWidth: 0.8 }] },
-          { text: "İmza", style: "muted", margin: [0, 6, 0, 0] }
-        ],
-        margin: [10, 10, 10, 10]
-      }]]
-    },
-    layout: {
-      hLineColor: () => "#d8dde2",
-      vLineColor: () => "#d8dde2"
-    }
-  };
-}
-
-function logoDataUrl() {
-  if (!existsSync(logoPath)) return null;
-  return `data:image/png;base64,${readFileSync(logoPath).toString("base64")}`;
 }
 
 function compactWorkItems(items: ReportWorkItem[]) {
@@ -383,21 +380,12 @@ function workItemsFromValue(
   }];
 }
 
-function reportWorkItemsText(report: Record<string, unknown>) {
-  const items = compactWorkItems(
-    workItemsFromValue(
-      report.work_items,
-      textValue(report.line_name),
-      textValue(report.belt_id),
-      textValue(report.belt_code_snapshot),
-      textValue(report.belt_name_snapshot),
-      textValue(report.product_width),
-      textValue(report.product_length),
-      textValue(report.product_quantity)
-    )
-  );
+function personnelText(report: PdfReportRow) {
+  return report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-";
+}
 
-  return items
+function reportWorkItemsText(report: Record<string, unknown>) {
+  return reportWorkItems(report)
     .map((item) => {
       const beltLabel = item.belt_code ? (item.belt_name ? `${item.belt_code} - ${item.belt_name}` : item.belt_code) : "";
       return [item.line_name, beltLabel].filter(Boolean).join(" / ");
@@ -407,19 +395,7 @@ function reportWorkItemsText(report: Record<string, unknown>) {
 }
 
 function reportBeltCodesText(report: Record<string, unknown>) {
-  const items = compactWorkItems(
-    workItemsFromValue(
-      report.work_items,
-      textValue(report.line_name),
-      textValue(report.belt_id),
-      textValue(report.belt_code_snapshot),
-      textValue(report.belt_name_snapshot),
-      textValue(report.product_width),
-      textValue(report.product_length),
-      textValue(report.product_quantity)
-    )
-  );
-  const codes = items.map((item) => item.belt_code).filter(Boolean);
+  const codes = reportWorkItems(report).map((item) => item.belt_code).filter(Boolean);
   return codes.length > 0 ? Array.from(new Set(codes)).join(", ") : text(report.belt_code_snapshot);
 }
 
@@ -436,6 +412,10 @@ function textValue(value: unknown) {
 function text(value: unknown) {
   if (typeof value === "string" && value.trim()) return value;
   return "-";
+}
+
+function clip(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}...` : value;
 }
 
 function fallbackText(first: string, second: string) {
