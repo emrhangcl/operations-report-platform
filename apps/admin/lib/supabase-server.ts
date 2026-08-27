@@ -110,3 +110,45 @@ export async function requireAdmin(request: Request) {
 
   return { ok: true as const, userId: data.user.id, service };
 }
+
+export async function requireActiveProfile(request: Request) {
+  const { url, anonKey } = getSupabaseConfig();
+  if (!url || !anonKey) {
+    return { ok: false as const, message: "Supabase yapılandırması eksik." };
+  }
+
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return { ok: false as const, message: "Oturum bulunamadı." };
+  }
+
+  const authClient = createClient(url, anonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  const { data, error } = await authClient.auth.getUser(token);
+  if (error || !data.user) {
+    return { ok: false as const, message: "Oturum doğrulanamadı." };
+  }
+
+  const service = getServiceSupabase();
+  const { data: profile, error: profileError } = await service
+    .from("profiles")
+    .select("role,is_active")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.is_active) {
+    return { ok: false as const, message: "Aktif kullanıcı profili bulunamadı." };
+  }
+
+  return { ok: true as const, userId: data.user.id, role: profile.role as "ADMIN" | "PERSONNEL", service };
+}

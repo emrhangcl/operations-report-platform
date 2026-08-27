@@ -106,6 +106,7 @@ export interface ReportListItem {
   report_number: string | null;
   report_date: string;
   company_name_snapshot: string | null;
+  created_by_user_id: string | null;
   created_by_name_snapshot: string | null;
   status: ReportStatus;
   created_at: string;
@@ -118,7 +119,7 @@ export interface InstallationAssignment {
   id: string;
   title: string;
   status: InstallationAssignmentStatus;
-  assigned_to_profile_id: string;
+  assigned_to_profile_id: string | null;
   created_by_profile_id: string | null;
   report_id: string | null;
   scheduled_date: string | null;

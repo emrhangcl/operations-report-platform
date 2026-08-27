@@ -580,7 +580,9 @@ export default function AssignmentsPage() {
             </thead>
             <tbody>
               {assignments.map((assignment) => {
-                const assignedProfile = personnelById.get(assignment.assigned_to_profile_id);
+                const assignedProfile = assignment.assigned_to_profile_id
+                  ? personnelById.get(assignment.assigned_to_profile_id)
+                  : undefined;
 
                 return (
                   <tr key={assignment.id}>
@@ -592,7 +594,7 @@ export default function AssignmentsPage() {
                     <td>
                       {assignedProfile
                         ? `${assignedProfile.first_name} ${assignedProfile.last_name}`
-                        : "Personel bulunamadı"}
+                        : assignment.assigned_to_profile_id ? "Personel bulunamadı" : "Personel silinmiş"}
                     </td>
                     <td>
                       {assignment.company_name_snapshot ?? "-"}
@@ -697,7 +699,7 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
   return {
     ...emptyForm,
     title: assignment.title,
-    assigned_to_profile_id: assignment.assigned_to_profile_id,
+    assigned_to_profile_id: assignment.assigned_to_profile_id ?? "",
     scheduled_date: assignment.scheduled_date ?? "",
     notes: assignment.notes ?? "",
     company_id: (stringValue(values.company_id) || assignment.company_id) ?? "",

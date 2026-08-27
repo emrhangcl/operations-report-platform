@@ -7,12 +7,14 @@ import {
   CheckCircle2,
   ClipboardCheck,
   ClipboardList,
+  Download,
   FileText,
   ImageIcon,
   LogOut,
   Plus,
   Save,
   Send,
+  Share2,
   Trash2,
   Upload,
   X
@@ -36,6 +38,7 @@ import {
   reportFormSchema
 } from "@tunca/validation";
 import { TuncaLogo } from "../../components/logo";
+import { downloadOrShareReportPdf } from "../../lib/report-pdf-client";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 type Screen = "home" | "form" | "drafts" | "submitted" | "assignments" | "detail";
@@ -715,6 +718,7 @@ function ReportCards({
 function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () => void }) {
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [pdfLoading, setPdfLoading] = useState<"download" | "share" | null>(null);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -768,9 +772,42 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
     };
   }, [reportId]);
 
+  async function handlePdf(mode: "download" | "share") {
+    if (!report) return;
+
+    setMessage("");
+    setPdfLoading(mode);
+    try {
+      const result = await downloadOrShareReportPdf({
+        mode,
+        reportId,
+        reportNumber: report.report_number,
+        scope: "personnel"
+      });
+
+      if (!result.ok) {
+        setMessage(result.message);
+      }
+    } finally {
+      setPdfLoading(null);
+    }
+  }
+
   return (
     <section className="personnel-stack">
       <BackHeader title={report?.report_number ?? "Rapor Detayı"} onBack={onBack} />
+      {report ? (
+        <div className="personnel-detail-actions">
+          <button className="button secondary" disabled={pdfLoading !== null} onClick={() => handlePdf("download")} type="button">
+            <Download aria-hidden size={18} />
+            {pdfLoading === "download" ? "Hazırlanıyor" : "PDF İndir"}
+          </button>
+          <button className="button personnel-primary-action" disabled={pdfLoading !== null} onClick={() => handlePdf("share")} type="button">
+            <Share2 aria-hidden size={18} />
+            {pdfLoading === "share" ? "Hazırlanıyor" : "Paylaş"}
+          </button>
+        </div>
+      ) : null}
       {message ? <div className="message error">{message}</div> : null}
       {!report ? <div className="personnel-empty">Rapor yükleniyor.</div> : null}
       {report ? (

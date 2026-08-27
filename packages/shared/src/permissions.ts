@@ -7,7 +7,7 @@ export interface PermissionProfile {
 }
 
 export interface PermissionReport {
-  created_by_user_id: string;
+  created_by_user_id: string | null;
   status: ReportStatus;
 }
 

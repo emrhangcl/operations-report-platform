@@ -77,6 +77,12 @@ const publicEnv = Object.fromEntries(
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: publicEnv,
+  outputFileTracingIncludes: {
+    "/api/reports/[id]/pdf": [
+      "./node_modules/pdfmake/fonts/Roboto/*.ttf",
+      "./public/tunca-logo.png"
+    ]
+  },
   ...(supabaseImageHost
     ? {
         images: {

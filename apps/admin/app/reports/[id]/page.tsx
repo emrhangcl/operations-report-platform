@@ -4,10 +4,11 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Building2, CalendarDays, ChevronLeft, ClipboardList, Clock3, Gauge, ImageIcon, Maximize2, Trash2, UserRound, X } from "lucide-react";
+import { Building2, CalendarDays, ChevronLeft, ClipboardList, Clock3, Download, Gauge, ImageIcon, Maximize2, Share2, Trash2, UserRound, X } from "lucide-react";
 import type { ReportWorkItem } from "@tunca/types";
 import { AdminShell } from "../../../components/admin-shell";
 import { PageHeader } from "../../../components/page-header";
+import { downloadOrShareReportPdf } from "../../../lib/report-pdf-client";
 import { getBrowserSupabase } from "../../../lib/supabase-browser";
 
 type ReportDetail = Record<string, unknown> & {
@@ -41,6 +42,7 @@ export default function ReportDetailPage() {
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [activePhoto, setActivePhoto] = useState<ActivePhoto | null>(null);
+  const [pdfLoading, setPdfLoading] = useState<"download" | "share" | null>(null);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -131,6 +133,27 @@ export default function ReportDetailPage() {
     router.replace("/reports");
   }
 
+  async function handlePdf(mode: "download" | "share") {
+    if (!report) return;
+
+    setMessage("");
+    setPdfLoading(mode);
+    try {
+      const result = await downloadOrShareReportPdf({
+        mode,
+        reportId: params.id,
+        reportNumber: report.report_number,
+        scope: "admin"
+      });
+
+      if (!result.ok) {
+        setMessage(result.message);
+      }
+    } finally {
+      setPdfLoading(null);
+    }
+  }
+
   return (
     <AdminShell>
       <PageHeader
@@ -141,6 +164,14 @@ export default function ReportDetailPage() {
             <button className="button secondary" onClick={() => router.push("/reports")} type="button">
               <ChevronLeft aria-hidden size={18} />
               Raporlara Dön
+            </button>
+            <button className="button secondary" disabled={pdfLoading !== null} onClick={() => handlePdf("download")} type="button">
+              <Download aria-hidden size={18} />
+              {pdfLoading === "download" ? "Hazırlanıyor" : "PDF İndir"}
+            </button>
+            <button className="button secondary" disabled={pdfLoading !== null} onClick={() => handlePdf("share")} type="button">
+              <Share2 aria-hidden size={18} />
+              {pdfLoading === "share" ? "Hazırlanıyor" : "Paylaş"}
             </button>
             <button className="button danger" onClick={deleteReport} type="button">
               <Trash2 aria-hidden size={18} />

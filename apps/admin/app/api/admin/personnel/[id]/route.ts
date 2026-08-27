@@ -14,22 +14,23 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "Kendi admin hesabınızı buradan silemezsiniz." }, { status: 400 });
   }
 
-  const [{ count: reportCount }, { count: photoCount }] = await Promise.all([
-    admin.service
-      .from("reports")
-      .select("id", { count: "exact", head: true })
-      .eq("created_by_user_id", id),
-    admin.service
-      .from("report_photos")
-      .select("id", { count: "exact", head: true })
-      .eq("created_by", id)
-  ]);
+  const { data: profile, error: profileLookupError } = await admin.service
+    .from("profiles")
+    .select("id,first_name,last_name,email,role")
+    .eq("id", id)
+    .maybeSingle();
 
-  if ((reportCount ?? 0) > 0 || (photoCount ?? 0) > 0) {
-    return NextResponse.json(
-      { message: "Bu personelin rapor kaydı var. Önce ilgili raporları silin." },
-      { status: 409 }
-    );
+  if (profileLookupError) {
+    return NextResponse.json({ message: "Personel profili okunamadı." }, { status: 500 });
+  }
+
+  if (!profile) {
+    return NextResponse.json({ message: "Personel bulunamadı." }, { status: 404 });
+  }
+
+  const { error: userError } = await admin.service.auth.admin.deleteUser(id);
+  if (userError) {
+    return NextResponse.json({ message: "Kullanıcı hesabı silinemedi." }, { status: 500 });
   }
 
   const { error: profileError } = await admin.service
@@ -41,16 +42,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "Personel profili silinemedi." }, { status: 500 });
   }
 
-  const { error: userError } = await admin.service.auth.admin.deleteUser(id);
-  if (userError) {
-    return NextResponse.json({ message: "Kullanıcı hesabı silinemedi." }, { status: 500 });
-  }
-
   await admin.service.from("audit_logs").insert({
     actor_id: admin.userId,
     action: "user_deleted",
     entity_table: "profiles",
-    entity_id: id
+    entity_id: id,
+    before_data: profile
   });
 
   return NextResponse.json({ ok: true });

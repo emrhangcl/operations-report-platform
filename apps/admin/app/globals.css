@@ -1123,6 +1123,12 @@ tr:last-child td {
   margin: 0;
 }
 
+.personnel-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .personnel-card-list {
   display: grid;
   gap: 10px;
