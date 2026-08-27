@@ -10,10 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.0",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.4",
     "@react-native-community/netinfo": "^11.4.1",
-    "@supabase/supabase-js": "^2.47.10",
+    "@supabase/supabase-js": "^2.112.3",
     "@tunca/types": "workspace:*",
     "@tunca/validation": "workspace:*",
     "expo": "~54.0.37",
@@ -22,7 +22,7 @@
     "react": "^19.1.0",
     "react-native": "0.81.5",
     "react-native-url-polyfill": "^2.0.0",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/react": "^19.1.17",
