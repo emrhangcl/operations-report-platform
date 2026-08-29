@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { organizationRegistrationSchema } from "@tunca/validation";
 import { NextResponse } from "next/server";
+import { apiError } from "../../../../lib/api-response";
 import { getServiceSupabase, getSupabaseConfig } from "../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -184,7 +185,7 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
     if (createdUserId) {
       await service.auth.admin.deleteUser(createdUserId);
     }
@@ -194,9 +195,12 @@ export async function POST(request: Request) {
       await service.from("organizations").delete().eq("id", createdOrganizationId);
     }
 
-    return NextResponse.json(
-      { message: "Kayıt şu anda tamamlanamıyor. Lütfen daha sonra tekrar deneyin." },
-      { status: 500 }
+    return apiError(
+      request,
+      500,
+      "Kayıt şu anda tamamlanamıyor. Lütfen daha sonra tekrar deneyin.",
+      "organization_registration_failed",
+      error
     );
   }
 }

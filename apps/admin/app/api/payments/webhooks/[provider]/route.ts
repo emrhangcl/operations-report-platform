@@ -7,6 +7,7 @@ import {
   type NormalizedPaymentEvent
 } from "@tunca/payments";
 import { NextResponse } from "next/server";
+import { apiError, withRequestId } from "../../../../../lib/api-response";
 import { getServiceSupabase } from "../../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -21,47 +22,47 @@ export async function POST(
   const provider = rawProvider.trim().toLocaleLowerCase("en-US");
 
   if (!isPaymentProviderName(provider)) {
-    return NextResponse.json({ message: "Ödeme sağlayıcısı bulunamadı." }, { status: 404 });
+    return apiError(request, 404, "Ödeme sağlayıcısı bulunamadı.", "payment_webhook_unknown_provider");
   }
 
   const contentLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > MAX_WEBHOOK_BYTES) {
-    return NextResponse.json({ message: "Bildirim gövdesi çok büyük." }, { status: 413 });
+    return apiError(request, 413, "Bildirim gövdesi çok büyük.", "payment_webhook_body_too_large");
   }
 
   let rawBody: string;
   try {
     rawBody = await request.text();
   } catch {
-    return NextResponse.json({ message: "Bildirim okunamadı." }, { status: 400 });
+    return apiError(request, 400, "Bildirim okunamadı.", "payment_webhook_body_read_failed");
   }
 
   if (Buffer.byteLength(rawBody, "utf8") > MAX_WEBHOOK_BYTES) {
-    return NextResponse.json({ message: "Bildirim gövdesi çok büyük." }, { status: 413 });
+    return apiError(request, 413, "Bildirim gövdesi çok büyük.", "payment_webhook_body_too_large");
   }
 
   let event: NormalizedPaymentEvent;
   try {
     const adapter = createPaymentProviderAdapter(process.env.PAYMENT_PROVIDER);
     if (adapter.name !== provider) {
-      return NextResponse.json({ message: "Ödeme sağlayıcısı etkin değil." }, { status: 503 });
+      return apiError(request, 503, "Ödeme sağlayıcısı etkin değil.", "payment_webhook_provider_disabled");
     }
 
     event = await adapter.verifyWebhook({ rawBody, headers: request.headers });
   } catch (error) {
     if (error instanceof PaymentProviderNotConfiguredError) {
-      return NextResponse.json({ message: "Ödeme sağlayıcısı henüz yapılandırılmadı." }, { status: 503 });
+      return apiError(request, 503, "Ödeme sağlayıcısı henüz yapılandırılmadı.", "payment_webhook_provider_unconfigured");
     }
 
     if (error instanceof InvalidPaymentSignatureError) {
-      return NextResponse.json({ message: "Bildirim doğrulanamadı." }, { status: 401 });
+      return apiError(request, 401, "Bildirim doğrulanamadı.", "payment_webhook_invalid_signature");
     }
 
-    return NextResponse.json({ message: "Bildirim işlenemedi." }, { status: 400 });
+    return apiError(request, 400, "Bildirim işlenemedi.", "payment_webhook_verification_failed", error);
   }
 
   if (event.provider !== provider) {
-    return NextResponse.json({ message: "Bildirim sağlayıcısı eşleşmiyor." }, { status: 400 });
+    return apiError(request, 400, "Bildirim sağlayıcısı eşleşmiyor.", "payment_webhook_provider_mismatch");
   }
 
   const payloadHash = createHash("sha256").update(rawBody, "utf8").digest("hex");
@@ -69,7 +70,7 @@ export async function POST(
   try {
     service = getServiceSupabase();
   } catch {
-    return NextResponse.json({ message: "Ödeme hizmeti yapılandırılmamış." }, { status: 503 });
+    return apiError(request, 503, "Ödeme hizmeti yapılandırılmamış.", "payment_webhook_service_unconfigured");
   }
 
   const { data, error } = await service.rpc("process_verified_payment_event", {
@@ -88,9 +89,9 @@ export async function POST(
   });
 
   if (error) {
-    return NextResponse.json({ message: "Ödeme bildirimi kaydedilemedi." }, { status: 500 });
+    return apiError(request, 500, "Ödeme bildirimi kaydedilemedi.", "payment_webhook_persist_failed", error);
   }
 
   const result = data as { applied?: boolean } | null;
-  return NextResponse.json({ received: true, applied: result?.applied === true });
+  return withRequestId(request, NextResponse.json({ received: true, applied: result?.applied === true }));
 }
