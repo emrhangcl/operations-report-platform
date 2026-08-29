@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   },
   description: "Montaj atamalarını, saha operasyonlarını ve kurumsal raporları tek çalışma alanında yönetin.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/tunca-app-icon.svg",
+    apple: "/tunca-app-icon.png"
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

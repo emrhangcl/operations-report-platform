@@ -17,6 +17,7 @@ Kapsam: yerel `feat/saas-platform` dalı. Üretim verisi kullanılmadı.
 | Platform admin | firma durum/paket/lifetime işlemleri ve audit kaydı | Geçti |
 | Docker | non-root, read-only, capability drop, no-new-privileges | Geçti |
 | HTTP | health, security headers, request ID, 403 ve 413 kontrolleri | Geçti |
+| Browser smoke | Ana sayfa, kayıt formu, hatalı girişte genel mesaj ve `/platform` için login yönlendirmesi | Geçti |
 
 ## Manuel veya staging’de tamamlanacak akışlar
 
@@ -35,4 +36,3 @@ Kapsam: yerel `feat/saas-platform` dalı. Üretim verisi kullanılmadı.
 ## Release kuralı
 
 Otomatik kontrollerden biri başarısızsa release yapılmaz. Manuel akışlar staging’de gerçek olmayan test hesaplarıyla tamamlanır; production hesabı veya service-role anahtarı test verisine yazılmaz. Her release sonrasında build, DB testleri, dependency audit ve Docker/HTTP smoke testleri tekrarlanır.
-
