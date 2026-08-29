@@ -4,11 +4,15 @@ import {
   reportPdfFilename,
   type PdfReportRow
 } from "../../../../../lib/report-pdf";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { requireActiveProfile } from "../../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = enforceRateLimit(request, "report-pdf");
+  if (rateLimited) return rateLimited;
+
   const auth = await requireActiveProfile(request, "read");
   if (!auth.ok) {
     return NextResponse.json({ message: auth.message }, { status: 403 });

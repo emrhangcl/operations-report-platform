@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "../../../../../lib/supabase-server";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = enforceRateLimit(request, "admin-belt-delete");
+  if (rateLimited) return rateLimited;
+
   const admin = await requireAdmin(request);
   if (!admin.ok) {
     return NextResponse.json({ message: admin.message }, { status: 403 });

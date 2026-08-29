@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit } from "../../../../lib/rate-limit";
 import { requirePlatformAdmin } from "../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const rateLimited = enforceRateLimit(request, "platform-dashboard");
+  if (rateLimited) return rateLimited;
+
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
     return NextResponse.json({ message: auth.message }, { status: 403 });

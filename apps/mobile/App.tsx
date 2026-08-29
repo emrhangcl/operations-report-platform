@@ -337,7 +337,7 @@ export default function App() {
       const response = await fetch(photo.uri);
       const blob = await response.blob();
       const upload = await supabase.storage.from("report-photos").upload(storagePath, blob, {
-        upsert: true,
+        upsert: false,
         contentType: blob.type || "image/jpeg"
       });
       if (upload.error) continue;

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(37);
+select plan(40);
 
 select is(
   (select count(*) from public.organizations),
@@ -392,6 +392,46 @@ select throws_ok(
   '42501',
   'new row violates row-level security policy for table "objects"',
   'tenant A cannot upload into tenant B storage path'
+);
+
+select lives_ok(
+  $$
+    insert into storage.objects (bucket_id, name, owner_id)
+    values (
+      'report-photos',
+      '10000000-0000-4000-8000-000000000001/40000000-0000-4000-8000-000000000001/a2.jpg',
+      '20000000-0000-4000-8000-000000000001'
+    )
+  $$,
+  'tenant A can upload its own object into its own report path'
+);
+
+select throws_ok(
+  $$
+    insert into storage.objects (bucket_id, name, owner_id)
+    values (
+      'report-photos',
+      '10000000-0000-4000-8000-000000000001/40000000-0000-4000-8000-000000000001/a2.jpg',
+      '20000000-0000-4000-8000-000000000002'
+    )
+  $$,
+  '42501',
+  'new row violates row-level security policy for table "objects"',
+  'tenant A cannot upload an object owned by another user'
+);
+
+select throws_ok(
+  $$
+    insert into storage.objects (bucket_id, name, owner_id)
+    values (
+      'report-photos',
+      '10000000-0000-4000-8000-000000000001/40000000-0000-4000-8000-000000000001/a2.svg',
+      '20000000-0000-4000-8000-000000000001'
+    )
+  $$,
+  '42501',
+  'new row violates row-level security policy for table "objects"',
+  'tenant A cannot upload an unsupported storage extension'
 );
 
 reset role;

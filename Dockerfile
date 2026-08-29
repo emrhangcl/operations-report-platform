@@ -14,6 +14,7 @@ FROM base AS dependencies
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/admin/package.json apps/admin/package.json
+COPY packages/payments/package.json packages/payments/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/types/package.json packages/types/package.json
 COPY packages/validation/package.json packages/validation/package.json
@@ -33,6 +34,7 @@ ENV NEXT_STANDALONE=true
 
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=dependencies /app/apps/admin/node_modules ./apps/admin/node_modules
+COPY --from=dependencies /app/packages/payments/node_modules ./packages/payments/node_modules
 COPY --from=dependencies /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=dependencies /app/packages/types/node_modules ./packages/types/node_modules
 COPY --from=dependencies /app/packages/validation/node_modules ./packages/validation/node_modules
@@ -59,6 +61,9 @@ WORKDIR /app
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./apps/admin/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/public ./apps/admin/public
+
+RUN find /app -type f -name '*.map' -delete \
+  && find /app -type f -name '*.tsbuildinfo' -delete
 
 RUN mkdir -p /app/apps/admin/.next/cache \
   && chown -R nextjs:nodejs /app/apps/admin/.next/cache

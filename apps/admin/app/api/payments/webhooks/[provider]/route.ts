@@ -8,6 +8,8 @@ import {
 } from "@tunca/payments";
 import { NextResponse } from "next/server";
 import { apiError, withRequestId } from "../../../../../lib/api-response";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
+import { readTextBody } from "../../../../../lib/request-body";
 import { getServiceSupabase } from "../../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -25,21 +27,15 @@ export async function POST(
     return apiError(request, 404, "Ödeme sağlayıcısı bulunamadı.", "payment_webhook_unknown_provider");
   }
 
-  const contentLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_WEBHOOK_BYTES) {
-    return apiError(request, 413, "Bildirim gövdesi çok büyük.", "payment_webhook_body_too_large");
-  }
+  const rateLimited = enforceRateLimit(request, `payment-webhook:${provider}`);
+  if (rateLimited) return rateLimited;
 
-  let rawBody: string;
-  try {
-    rawBody = await request.text();
-  } catch {
-    return apiError(request, 400, "Bildirim okunamadı.", "payment_webhook_body_read_failed");
+  const body = await readTextBody(request, MAX_WEBHOOK_BYTES);
+  if (!body.ok) {
+    const event = body.status === 413 ? "payment_webhook_body_too_large" : "payment_webhook_body_read_failed";
+    return apiError(request, body.status, body.status === 413 ? "Bildirim gövdesi çok büyük." : "Bildirim okunamadı.", event);
   }
-
-  if (Buffer.byteLength(rawBody, "utf8") > MAX_WEBHOOK_BYTES) {
-    return apiError(request, 413, "Bildirim gövdesi çok büyük.", "payment_webhook_body_too_large");
-  }
+  const rawBody = body.value;
 
   let event: NormalizedPaymentEvent;
   try {

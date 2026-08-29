@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { organizationRegistrationSchema } from "@tunca/validation";
 import { NextResponse } from "next/server";
 import { apiError } from "../../../../lib/api-response";
+import { enforceRateLimit } from "../../../../lib/rate-limit";
+import { readJsonBody } from "../../../../lib/request-body";
 import { getServiceSupabase, getSupabaseConfig } from "../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -40,15 +42,13 @@ function canonicalOrigin(request: Request) {
 }
 
 export async function POST(request: Request) {
-  let requestBody: unknown;
+  const rateLimited = enforceRateLimit(request, "organization-register");
+  if (rateLimited) return rateLimited;
 
-  try {
-    requestBody = await request.json();
-  } catch {
-    return NextResponse.json({ message: "Geçerli bir kayıt isteği gönderin." }, { status: 400 });
-  }
+  const body = await readJsonBody(request, 32 * 1024);
+  if (!body.ok) return apiError(request, body.status, body.message, "organization_registration_invalid_body");
 
-  const parsed = organizationRegistrationSchema.safeParse(requestBody);
+  const parsed = organizationRegistrationSchema.safeParse(body.value);
   if (!parsed.success) {
     return NextResponse.json({ message: "Kayıt bilgilerini kontrol edin." }, { status: 400 });
   }

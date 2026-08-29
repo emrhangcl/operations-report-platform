@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "../../../../../lib/supabase-server";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
+import { readJsonBody } from "../../../../../lib/request-body";
 
 export const runtime = "nodejs";
 
@@ -9,12 +11,18 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  const rateLimited = enforceRateLimit(request, "admin-personnel-reset-password");
+  if (rateLimited) return rateLimited;
+
   const admin = await requireAdmin(request);
   if (!admin.ok) {
     return NextResponse.json({ message: admin.message }, { status: 403 });
   }
 
-  const parsed = schema.safeParse(await request.json());
+  const body = await readJsonBody(request, 8 * 1024);
+  if (!body.ok) return NextResponse.json({ message: body.message }, { status: body.status });
+
+  const parsed = schema.safeParse(body.value);
   if (!parsed.success) {
     return NextResponse.json({ message: "E-posta geçersiz." }, { status: 400 });
   }

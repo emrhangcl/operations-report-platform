@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { createReportsWorkbook, type ExportReportRow } from "@tunca/shared";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { requireAdmin } from "../../../../../lib/supabase-server";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const rateLimited = enforceRateLimit(request, "admin-report-export");
+  if (rateLimited) return rateLimited;
+
   const admin = await requireAdmin(request, "read");
   if (!admin.ok) {
     return NextResponse.json({ message: admin.message }, { status: 403 });

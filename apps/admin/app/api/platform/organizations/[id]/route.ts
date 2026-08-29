@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "../../../../../lib/supabase-server";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
+import { readJsonBody } from "../../../../../lib/request-body";
 
 export const runtime = "nodejs";
 
@@ -18,6 +20,9 @@ async function getOrganizationId(params: Promise<{ id: string }>) {
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = enforceRateLimit(request, "platform-organization-detail");
+  if (rateLimited) return rateLimited;
+
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
     return NextResponse.json({ message: auth.message }, { status: 403 });
@@ -104,6 +109,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = enforceRateLimit(request, "platform-organization-mutation");
+  if (rateLimited) return rateLimited;
+
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
     return NextResponse.json({ message: auth.message }, { status: 403 });
@@ -114,14 +122,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ message: "Firma kimliği geçersiz." }, { status: 400 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ message: "Geçerli bir işlem gönderin." }, { status: 400 });
-  }
+  const bodyResult = await readJsonBody(request, 8 * 1024);
+  if (!bodyResult.ok) return NextResponse.json({ message: "Geçerli bir işlem gönderin." }, { status: bodyResult.status });
 
-  const parsed = actionSchema.safeParse(body);
+  const parsed = actionSchema.safeParse(bodyResult.value);
   if (!parsed.success) {
     return NextResponse.json({ message: "Platform işlemi geçersiz." }, { status: 400 });
   }

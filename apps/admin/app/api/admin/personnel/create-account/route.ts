@@ -2,16 +2,24 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { userAccountSchema } from "@tunca/validation";
 import { requireAdmin } from "../../../../../lib/supabase-server";
+import { enforceRateLimit } from "../../../../../lib/rate-limit";
+import { readJsonBody } from "../../../../../lib/request-body";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const rateLimited = enforceRateLimit(request, "admin-personnel-create");
+  if (rateLimited) return rateLimited;
+
   const admin = await requireAdmin(request);
   if (!admin.ok) {
     return NextResponse.json({ message: admin.message }, { status: 403 });
   }
 
-  const body = await request.json() as unknown;
+  const bodyResult = await readJsonBody(request, 16 * 1024);
+  if (!bodyResult.ok) return NextResponse.json({ message: bodyResult.message }, { status: bodyResult.status });
+
+  const body = bodyResult.value;
   const parsed = userAccountSchema
     .extend({
       password: z.string().min(8)

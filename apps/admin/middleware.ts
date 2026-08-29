@@ -11,6 +11,10 @@ export function middleware(request: NextRequest) {
   requestHeaders.set("x-request-id", requestId);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("X-Request-ID", requestId);
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  if (request.nextUrl.protocol === "https:" || forwardedProtocol === "https") {
+    response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
   return response;
 }
 
