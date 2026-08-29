@@ -40,7 +40,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/admin ./apps/admin
 COPY packages ./packages
 
-RUN test -n "$NEXT_PUBLIC_SUPABASE_URL" && test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY"
+RUN node -e "if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) process.exit(1)"
 RUN corepack pnpm --filter @tunca/admin build
 
 FROM node:22-bookworm-slim AS runner
