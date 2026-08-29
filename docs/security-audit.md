@@ -24,6 +24,8 @@ Temel tenant izolasyonu, rol kontrolleri, abonelik erişimi, dosya erişimi, ist
 | Git secret taraması | Tracked dosyalarda gerçek key/token eşleşmesi bulunmadı; `.env` repository dışı tutuldu |
 | Browser source map kontrolü | Browser bundle içinde source map yok; Docker final image tüm `.map` dosyalarını siliyor |
 
+`trivy`, `semgrep`, `osv-scanner`, `gitleaks`, `grype` ve `syft` bu çalışma ortamında kurulu değildi; bu nedenle bu araçların çalıştırılmış sonucu raporlanmıyor. Dependency audit, Git geçmişi taraması, kaynak kodu desen taraması, Docker image içerik kontrolü ve hardened HTTP smoke testleri ayrı doğrulamalardır.
+
 ## Uygulanan korumalar
 
 - Tüm tenant tablolarında `organization_id`, foreign key, erişim politikaları ve cross-tenant pgTAP testleri.
