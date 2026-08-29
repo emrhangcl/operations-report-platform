@@ -74,6 +74,56 @@ export function getServiceSupabase() {
 type OrganizationMemberRole = "OWNER" | "ADMIN" | "PERSONNEL";
 type AccessRequirement = "read" | "write";
 
+export async function requirePlatformAdmin(request: Request) {
+  const { url, anonKey } = getSupabaseConfig();
+  if (!url || !anonKey) {
+    return { ok: false as const, message: "Supabase yapılandırması eksik." };
+  }
+
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return { ok: false as const, message: "Oturum bulunamadı." };
+  }
+
+  const authClient = createClient(url, anonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  const { data, error } = await authClient.auth.getUser(token);
+  if (error || !data.user) {
+    return { ok: false as const, message: "Oturum doğrulanamadı." };
+  }
+
+  let service;
+  try {
+    service = getServiceSupabase();
+  } catch {
+    return { ok: false as const, message: "Platform yönetimi yapılandırılmamış." };
+  }
+
+  const platformCheck = await service.rpc("is_platform_admin_for_user", {
+    candidate_user_id: data.user.id
+  });
+
+  if (platformCheck.error || platformCheck.data !== true) {
+    return { ok: false as const, message: "Platform yöneticisi yetkisi gerekli." };
+  }
+
+  return {
+    ok: true as const,
+    userId: data.user.id,
+    service
+  };
+}
+
 async function requireOrganizationProfile(request: Request, requiredAccess: AccessRequirement) {
   const { url, anonKey } = getSupabaseConfig();
   if (!url || !anonKey) {

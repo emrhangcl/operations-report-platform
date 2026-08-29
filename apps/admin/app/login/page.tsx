@@ -41,6 +41,18 @@ export default function LoginPage() {
         return;
       }
 
+      const platformAccessResponse = await fetch("/api/platform/access", {
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${signIn.session?.access_token ?? ""}`
+        }
+      });
+
+      if (platformAccessResponse.ok) {
+        router.replace("/platform");
+        return;
+      }
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("organization_id,is_active")
