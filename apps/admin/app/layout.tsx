@@ -21,13 +21,20 @@ export const viewport: Viewport = {
   themeColor: "#bd3332"
 };
 
+const vercelObservabilityEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true" || Boolean(process.env.VERCEL);
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" suppressHydrationWarning>
       <body>
         {children}
-        <Analytics />
-        <SpeedInsights />
+        {vercelObservabilityEnabled ? (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        ) : null}
       </body>
     </html>
   );

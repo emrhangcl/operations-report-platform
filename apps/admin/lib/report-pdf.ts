@@ -8,9 +8,16 @@ import type { ReportWorkItem } from "@tunca/types";
 
 const require = createRequire(import.meta.url);
 const pdfMake = require("pdfmake") as typeof import("pdfmake");
-const pdfMakeRoot = join(process.cwd(), "node_modules", "pdfmake");
+const runtimeRoot = process.cwd();
+const appRoot = existsSync(join(runtimeRoot, "apps", "admin"))
+  ? join(runtimeRoot, "apps", "admin")
+  : runtimeRoot;
+const pdfMakeRoot = [
+  join(runtimeRoot, "node_modules", "pdfmake"),
+  join(appRoot, "node_modules", "pdfmake")
+].find((candidate) => existsSync(candidate)) ?? join(runtimeRoot, "node_modules", "pdfmake");
 const fontRoot = join(pdfMakeRoot, "fonts", "Roboto");
-const logoPath = resolve(process.cwd(), "public", "tunca-logo.png");
+const logoPath = resolve(appRoot, "public", "tunca-logo.png");
 
 let pdfMakeReady = false;
 

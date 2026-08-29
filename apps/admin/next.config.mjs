@@ -3,7 +3,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const publicEnvKeys = new Set(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
+const publicEnvKeys = new Set([
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS"
+]);
 
 function loadProjectEnv() {
   const envPath = resolve(projectRoot, ".env");
@@ -70,18 +74,25 @@ const supabaseImageHost = (() => {
 const publicEnv = Object.fromEntries(
   Object.entries({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS
   }).filter((entry) => entry[1] !== undefined)
 );
 
 const isProduction = process.env.NODE_ENV === "production";
+const vercelObservabilityEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true" || Boolean(process.env.VERCEL);
+const vercelScriptSource = vercelObservabilityEnabled ? " https://va.vercel-scripts.com" : "";
+const vercelConnectSources = vercelObservabilityEnabled
+  ? " https://vitals.vercel-insights.com https://*.vercel-insights.com https://va.vercel-scripts.com"
+  : "";
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}${vercelScriptSource}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://vitals.vercel-insights.com https://*.vercel-insights.com https://va.vercel-scripts.com",
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${vercelConnectSources}`,
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -95,6 +106,8 @@ const contentSecurityPolicy = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: publicEnv,
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       {
@@ -144,7 +157,8 @@ const nextConfig = {
       }
     : {}),
   outputFileTracingRoot: projectRoot,
-  transpilePackages: ["@tunca/shared", "@tunca/types", "@tunca/validation"]
+  transpilePackages: ["@tunca/shared", "@tunca/types", "@tunca/validation"],
+  ...(process.env.NEXT_STANDALONE === "true" ? { output: "standalone" } : {})
 };
 
 export default nextConfig;
