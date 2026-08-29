@@ -261,6 +261,18 @@ export const userAccountSchema = personnelSchema.extend({
   role: z.enum(userRoles).default("PERSONNEL")
 });
 
+export const organizationRegistrationSchema = z.object({
+  organization_name: z.string().trim().min(2).max(160),
+  first_name: z.string().trim().min(1).max(80),
+  last_name: z.string().trim().min(1).max(80),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  phone: z.string().trim().max(32).optional().or(z.literal("")),
+  password: z.string().min(10).max(128),
+  billing_interval: z.enum(["monthly", "yearly"]),
+  plan_id: z.string().uuid().nullable().optional(),
+  terms_accepted: z.literal(true)
+});
+
 export const installationAssignmentSchema = z.object({
   title: z.string().trim().optional().or(z.literal("")),
   assigned_to_profile_id: z.string().uuid("Personel seçimi zorunludur."),

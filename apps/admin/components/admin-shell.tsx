@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, Car, ClipboardCheck, ClipboardList, Gauge, GitBranch, LogOut, Users, Waves } from "lucide-react";
+import { Building2, Car, ClipboardCheck, ClipboardList, CreditCard, Gauge, GitBranch, LogOut, Users, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "../lib/supabase-browser";
 import { TuncaLogo } from "./logo";
 
 const links = [
-  { href: "/", label: "Panel", icon: Gauge },
+  { href: "/app", label: "Panel", icon: Gauge },
   { href: "/assignments", label: "Montaj Atamaları", icon: ClipboardCheck },
   { href: "/reports", label: "Raporlar", icon: ClipboardList },
   { href: "/personnel", label: "Kullanıcılar", icon: Users },
   { href: "/companies", label: "Firmalar", icon: Building2 },
   { href: "/lines", label: "Hatlar", icon: GitBranch },
   { href: "/vehicles", label: "Araçlar", icon: Car },
-  { href: "/belts", label: "Bantlar", icon: Waves }
+  { href: "/belts", label: "Bantlar", icon: Waves },
+  { href: "/account/billing", label: "Faturalandırma", icon: CreditCard }
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -40,11 +41,39 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role,is_active")
+        .select("organization_id,is_active")
         .eq("id", data.user.id)
         .maybeSingle();
 
-      if (profile?.role !== "ADMIN" || profile.is_active !== true) {
+      if (!profile?.organization_id || profile.is_active !== true) {
+        setMessage("Bu panele erişmek için aktif admin hesabı gerekir.");
+        setReady(true);
+        return;
+      }
+
+      const [membershipResult, organizationResult] = await Promise.all([
+        supabase
+          .from("organization_members")
+          .select("role,is_active")
+          .eq("organization_id", profile.organization_id)
+          .eq("profile_id", data.user.id)
+          .maybeSingle(),
+        supabase
+          .from("organizations")
+          .select("status")
+          .eq("id", profile.organization_id)
+          .maybeSingle()
+      ]);
+
+      if (organizationResult.data?.status !== "active") {
+        router.replace("/subscription");
+        return;
+      }
+
+      if (
+        membershipResult.data?.is_active !== true ||
+        !["OWNER", "ADMIN"].includes(membershipResult.data.role)
+      ) {
         setMessage("Bu panele erişmek için aktif admin hesabı gerekir.");
         setReady(true);
         return;

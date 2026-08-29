@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { emptyReportFormValues, reportFormSchema } from "./index";
+import {
+  emptyReportFormValues,
+  organizationRegistrationSchema,
+  reportFormSchema
+} from "./index";
 
 describe("reportFormSchema", () => {
   const base = {
@@ -26,6 +30,33 @@ describe("reportFormSchema", () => {
     const result = reportFormSchema.safeParse({
       ...base,
       process_actions: ["Kenar Kesim"]
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("organizationRegistrationSchema", () => {
+  const registration = {
+    organization_name: "Yeni Firma",
+    first_name: "Ada",
+    last_name: "Yönetici",
+    email: "YONETICI@EXAMPLE.COM",
+    phone: "",
+    password: "Guvenli-Parola-2026",
+    billing_interval: "monthly",
+    plan_id: null,
+    terms_accepted: true
+  };
+
+  it("normalizes a valid organization registration", () => {
+    const result = organizationRegistrationSchema.parse(registration);
+    expect(result.email).toBe("yonetici@example.com");
+  });
+
+  it("rejects registration without accepted terms", () => {
+    const result = organizationRegistrationSchema.safeParse({
+      ...registration,
+      terms_accepted: false
     });
     expect(result.success).toBe(false);
   });
