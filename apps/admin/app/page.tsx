@@ -1,144 +1,44 @@
-"use client";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { FeaturesSection, WorkflowSection } from "../components/feature-sections";
+import { MarketingShell } from "../components/marketing-shell";
+import { PricingSection } from "../components/pricing-section";
 
-import { useEffect, useState } from "react";
-import { AdminShell } from "../components/admin-shell";
-import { PageHeader } from "../components/page-header";
-import { getBrowserSupabase } from "../lib/supabase-browser";
-
-interface DashboardCounts {
-  totalReports: number;
-  monthlyReports: number;
-  drafts: number;
-  assignments: number;
-  personnel: number;
-  companies: number;
-  lines: number;
-  vehicles: number;
-}
-
-const emptyCounts: DashboardCounts = {
-  totalReports: 0,
-  monthlyReports: 0,
-  drafts: 0,
-  assignments: 0,
-  personnel: 0,
-  companies: 0,
-  lines: 0,
-  vehicles: 0
-};
-
-export default function DashboardPage() {
-  const [counts, setCounts] = useState(emptyCounts);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    const client = supabase;
-
-    async function load() {
-      const today = new Date();
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-        .toISOString()
-        .slice(0, 10);
-
-      const [
-        totalReports,
-        monthlyReports,
-        drafts,
-        assignments,
-        personnel,
-        companies,
-        lines,
-        vehicles
-      ] = await Promise.all([
-        client.from("reports").select("id", { count: "exact", head: true }),
-        client
-          .from("reports")
-          .select("id", { count: "exact", head: true })
-          .gte("report_date", firstDay),
-        client
-          .from("reports")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "DRAFT"),
-        client
-          .from("installation_assignments")
-          .select("id", { count: "exact", head: true })
-          .in("status", ["ASSIGNED", "IN_PROGRESS"]),
-        client
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .eq("role", "PERSONNEL"),
-        client
-          .from("companies")
-          .select("id", { count: "exact", head: true }),
-        client
-          .from("company_lines")
-          .select("id", { count: "exact", head: true }),
-        client
-          .from("vehicles")
-          .select("id", { count: "exact", head: true })
-      ]);
-
-      const hasError = [
-        totalReports.error,
-        monthlyReports.error,
-        drafts.error,
-        assignments.error,
-        personnel.error,
-        companies.error,
-        lines.error,
-        vehicles.error
-      ].some(Boolean);
-
-      if (hasError) {
-        setError("Dashboard bilgileri alınamadı. Bağlantınızı kontrol edin.");
-        return;
-      }
-
-      setCounts({
-        totalReports: totalReports.count ?? 0,
-        monthlyReports: monthlyReports.count ?? 0,
-        drafts: drafts.count ?? 0,
-        assignments: assignments.count ?? 0,
-        personnel: personnel.count ?? 0,
-        companies: companies.count ?? 0,
-        lines: lines.count ?? 0,
-        vehicles: vehicles.count ?? 0
-      });
-    }
-
-    load().catch(() => {
-      setError("Dashboard bilgileri alınamadı. Bağlantınızı kontrol edin.");
-    });
-  }, []);
-
+export default function MarketingHomePage() {
   return (
-    <AdminShell>
-      <PageHeader
-        title="Yönetim Paneli"
-        description="Gerçek veritabanı kayıtlarından hesaplanan özet."
-      />
-      {error ? <div className="message error">{error}</div> : null}
-      <section className="grid stats">
-        <StatCard label="Toplam Rapor" value={counts.totalReports} />
-        <StatCard label="Bu Ayki Raporlar" value={counts.monthlyReports} />
-        <StatCard label="Taslaklar" value={counts.drafts} />
-        <StatCard label="Aktif Montajlar" value={counts.assignments} />
-        <StatCard label="Personel" value={counts.personnel} />
-        <StatCard label="Firma" value={counts.companies} />
-        <StatCard label="Hat" value={counts.lines} />
-        <StatCard label="Araç" value={counts.vehicles} />
+    <MarketingShell>
+      <section className="marketing-hero">
+        <Image alt="" aria-hidden className="marketing-hero-mark" height={520} priority src="/tunca-app-icon.png" width={520} />
+        <div className="marketing-hero-content">
+          <span className="marketing-kicker">Montaj ve saha operasyonları</span>
+          <h1>TUNCA Rapor Sistemi</h1>
+          <p>Montaj atamalarını planlayın, saha bilgilerini düzenli toplayın ve tamamlanan raporları güvenli şekilde paylaşın.</p>
+          <div className="marketing-hero-actions">
+            <Link className="button marketing-primary" href="/register">
+              Firma hesabı oluştur <ArrowRight aria-hidden size={18} />
+            </Link>
+            <Link className="button marketing-secondary" href="/login">Giriş yap</Link>
+          </div>
+          <ul className="marketing-proof-list">
+            <li><CheckCircle2 aria-hidden size={17} /> Mobil web erişimi</li>
+            <li><CheckCircle2 aria-hidden size={17} /> Organizasyon bazlı yetki</li>
+            <li><CheckCircle2 aria-hidden size={17} /> PDF ve Excel çıktısı</li>
+          </ul>
+        </div>
       </section>
-    </AdminShell>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="card">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-    </div>
+      <FeaturesSection />
+      <WorkflowSection />
+      <PricingSection />
+      <section className="public-cta-band">
+        <div className="public-container">
+          <div>
+            <span>Başlangıç</span>
+            <h2>Firmanız için düzenli bir rapor akışı kurun</h2>
+          </div>
+          <Link className="button" href="/register">Firma Kaydı</Link>
+        </div>
+      </section>
+    </MarketingShell>
   );
 }

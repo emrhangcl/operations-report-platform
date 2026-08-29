@@ -57,7 +57,7 @@ function loadProjectEnv() {
 
 loadProjectEnv();
 
-const supabaseImageHost = (() => {
+const supabaseEndpoint = (() => {
   const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!rawUrl) {
@@ -65,11 +65,16 @@ const supabaseImageHost = (() => {
   }
 
   try {
-    return new URL(rawUrl).hostname;
+    return new URL(rawUrl);
   } catch {
     return undefined;
   }
 })();
+
+const supabaseConnectSources = supabaseEndpoint
+  ? ` ${supabaseEndpoint.origin} ${supabaseEndpoint.protocol === "https:" ? "wss:" : "ws:"}//${supabaseEndpoint.host}`
+  : "";
+const supabaseImageSource = supabaseEndpoint ? ` ${supabaseEndpoint.origin}` : "";
 
 const publicEnv = Object.fromEntries(
   Object.entries({
@@ -90,9 +95,9 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}${vercelScriptSource}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co",
+  `img-src 'self' data: blob: https://*.supabase.co${supabaseImageSource}`,
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${vercelConnectSources}`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabaseConnectSources}${vercelConnectSources}`,
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -143,13 +148,14 @@ const nextConfig = {
       "./public/tunca-logo.png"
     ]
   },
-  ...(supabaseImageHost
+  ...(supabaseEndpoint
     ? {
         images: {
           remotePatterns: [
             {
-              protocol: "https",
-              hostname: supabaseImageHost,
+              protocol: supabaseEndpoint.protocol.slice(0, -1),
+              hostname: supabaseEndpoint.hostname,
+              port: supabaseEndpoint.port,
               pathname: "/storage/v1/object/sign/**"
             }
           ]

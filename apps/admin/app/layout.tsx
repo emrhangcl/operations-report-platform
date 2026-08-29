@@ -5,8 +5,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   applicationName: "TUNCA Rapor Sistemi",
-  title: "TUNCA Rapor Sistemi",
-  description: "TUNCA montaj ve tamir rapor yönetim paneli",
+  title: {
+    default: "TUNCA Rapor Sistemi",
+    template: "%s | TUNCA Rapor Sistemi"
+  },
+  description: "Montaj atamalarını, saha operasyonlarını ve kurumsal raporları tek çalışma alanında yönetin.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
