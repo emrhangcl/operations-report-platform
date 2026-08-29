@@ -19,9 +19,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "E-posta geçersiz." }, { status: 400 });
   }
 
+  const { data: profile, error: profileError } = await admin.service
+    .from("profiles")
+    .select("email")
+    .eq("organization_id", admin.organizationId)
+    .eq("email", parsed.data.email)
+    .maybeSingle();
+
+  if (profileError) {
+    return NextResponse.json({ message: "Personel profili okunamadı." }, { status: 500 });
+  }
+
+  if (!profile?.email) {
+    return NextResponse.json({ message: "Personel bulunamadı." }, { status: 404 });
+  }
+
   const { data, error } = await admin.service.auth.admin.generateLink({
     type: "recovery",
-    email: parsed.data.email
+    email: profile.email
   });
 
   if (error) {
@@ -29,10 +44,11 @@ export async function POST(request: Request) {
   }
 
   await admin.service.from("audit_logs").insert({
+    organization_id: admin.organizationId,
     actor_id: admin.userId,
     action: "personnel_password_reset",
     entity_table: "profiles",
-    after_data: { email: parsed.data.email }
+    after_data: { email: profile.email }
   });
 
   return NextResponse.json({ action_link: data.properties?.action_link ?? null });

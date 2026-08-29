@@ -416,11 +416,11 @@ export default function PersonnelWebPage() {
 
   async function uploadPhotos(reportId: string) {
     const supabase = getPersonnelSupabase();
-    if (!supabase || !sessionUserId) return;
+    if (!supabase || !sessionUserId || !profile?.organization_id) return;
 
     for (const photo of photos) {
       const extension = safeExtension(photo.file.name, photo.file.type);
-      const storagePath = `${reportId}/${photo.localId}.${extension}`;
+      const storagePath = `${profile.organization_id}/${reportId}/${photo.localId}.${extension}`;
       const upload = await supabase.storage.from("report-photos").upload(storagePath, photo.file, {
         contentType: photo.file.type || "image/jpeg",
         upsert: false

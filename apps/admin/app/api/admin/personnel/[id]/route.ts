@@ -18,6 +18,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     .from("profiles")
     .select("id,first_name,last_name,email,role")
     .eq("id", id)
+    .eq("organization_id", admin.organizationId)
     .maybeSingle();
 
   if (profileLookupError) {
@@ -36,13 +37,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { error: profileError } = await admin.service
     .from("profiles")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .eq("organization_id", admin.organizationId);
 
   if (profileError) {
     return NextResponse.json({ message: "Personel profili silinemedi." }, { status: 500 });
   }
 
   await admin.service.from("audit_logs").insert({
+    organization_id: admin.organizationId,
     actor_id: admin.userId,
     action: "user_deleted",
     entity_table: "profiles",

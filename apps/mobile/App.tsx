@@ -330,10 +330,10 @@ export default function App() {
   }
 
   async function uploadPhotos(reportId: string) {
-    if (!supabase || !session) return;
+    if (!supabase || !session || !profile?.organization_id) return;
     for (const photo of photos) {
       const extension = photo.uri.split(".").pop() ?? "jpg";
-      const storagePath = `${reportId}/${photo.localId}.${extension}`;
+      const storagePath = `${profile.organization_id}/${reportId}/${photo.localId}.${extension}`;
       const response = await fetch(photo.uri);
       const blob = await response.blob();
       const upload = await supabase.storage.from("report-photos").upload(storagePath, blob, {

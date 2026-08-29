@@ -60,15 +60,19 @@ async function main() {
   }
 
   const rl = createInterface({ input, output });
+  let createdUserId: string | null = null;
 
   try {
+    const organizationSlug = (
+      process.env.ORGANIZATION_SLUG ?? await rl.question("Organizasyon slug: ")
+    ).trim();
     const firstName = (await rl.question("Admin adı: ")).trim();
     const lastName = (await rl.question("Admin soyadı: ")).trim();
     const email = (await rl.question("Admin e-posta: ")).trim();
     const password = await rl.question("Admin şifre: ");
 
-    if (!firstName || !lastName || !email || password.length < 8) {
-      throw new Error("Ad, soyad, e-posta ve en az 8 karakter şifre zorunludur.");
+    if (!organizationSlug || !firstName || !lastName || !email || password.length < 8) {
+      throw new Error("Organizasyon, ad, soyad, e-posta ve en az 8 karakter şifre zorunludur.");
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -77,6 +81,17 @@ async function main() {
         persistSession: false
       }
     });
+
+    const { data: organization, error: organizationError } = await supabase
+      .from("organizations")
+      .select("id,name,status")
+      .eq("slug", organizationSlug)
+      .maybeSingle();
+
+    if (organizationError) throw organizationError;
+    if (!organization || organization.status !== "active") {
+      throw new Error("Aktif organizasyon bulunamadı. Önce organizasyonu oluşturun.");
+    }
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -91,9 +106,11 @@ async function main() {
     if (error) throw error;
     const userId = data.user?.id;
     if (!userId) throw new Error("Auth kullanıcısı oluşturulamadı.");
+    createdUserId = userId;
 
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: userId,
+      organization_id: organization.id,
       first_name: firstName,
       last_name: lastName,
       email,
@@ -103,8 +120,28 @@ async function main() {
 
     if (profileError) throw profileError;
 
-    console.log(`Admin hesabı oluşturuldu: ${email}`);
+    const { error: membershipError } = await supabase.from("organization_members").upsert({
+      organization_id: organization.id,
+      profile_id: userId,
+      role: "ADMIN",
+      is_active: true
+    });
+
+    if (membershipError) throw membershipError;
+
+    createdUserId = null;
+    console.log(`Admin hesabı oluşturuldu: ${email} (${organization.name})`);
   } catch (error) {
+    if (createdUserId) {
+      const cleanupClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+      await cleanupClient.auth.admin.deleteUser(createdUserId);
+    }
+
     const message = error instanceof Error ? error.message : "Bilinmeyen hata";
     console.error(`Admin oluşturulamadı: ${message}`);
     process.exitCode = 1;

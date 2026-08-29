@@ -40,6 +40,7 @@ export async function POST(request: Request) {
 
   const { error: profileError } = await admin.service.from("profiles").upsert({
     id: data.user.id,
+    organization_id: admin.organizationId,
     first_name,
     last_name,
     email,
@@ -49,10 +50,25 @@ export async function POST(request: Request) {
   });
 
   if (profileError) {
+    await admin.service.auth.admin.deleteUser(data.user.id);
     return NextResponse.json({ message: "Personel profili kaydedilemedi." }, { status: 500 });
   }
 
+  const { error: membershipError } = await admin.service.from("organization_members").upsert({
+    organization_id: admin.organizationId,
+    profile_id: data.user.id,
+    role: role === "ADMIN" ? "ADMIN" : "PERSONNEL",
+    is_active,
+    created_by_profile_id: admin.userId
+  });
+
+  if (membershipError) {
+    await admin.service.auth.admin.deleteUser(data.user.id);
+    return NextResponse.json({ message: "Organizasyon üyeliği kaydedilemedi." }, { status: 500 });
+  }
+
   await admin.service.from("audit_logs").insert({
+    organization_id: admin.organizationId,
     actor_id: admin.userId,
     action: "user_account_created",
     entity_table: "profiles",

@@ -16,6 +16,7 @@ export async function GET(request: Request) {
   let query = admin.service
     .from("reports")
     .select("*, report_personnel(name_snapshot), report_photos(category,caption,storage_path)")
+    .eq("organization_id", admin.organizationId)
     .order("created_at", { ascending: false });
 
   if (ids.length > 0) {

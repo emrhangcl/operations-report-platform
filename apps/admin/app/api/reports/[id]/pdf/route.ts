@@ -19,6 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     .from("reports")
     .select("*, report_personnel(name_snapshot)")
     .eq("id", id)
+    .eq("organization_id", auth.organizationId)
     .maybeSingle();
 
   if (error || !data) {

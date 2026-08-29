@@ -54,6 +54,7 @@ export type TestStatus = "Test Yapıldı" | "Test Yapılmadı";
 
 export interface Profile {
   id: string;
+  organization_id: string;
   first_name: string;
   last_name: string;
   email: string | null;

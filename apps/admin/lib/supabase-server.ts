@@ -69,7 +69,9 @@ export function getServiceSupabase() {
   });
 }
 
-export async function requireAdmin(request: Request) {
+type OrganizationMemberRole = "OWNER" | "ADMIN" | "PERSONNEL";
+
+async function requireOrganizationProfile(request: Request) {
   const { url, anonKey } = getSupabaseConfig();
   if (!url || !anonKey) {
     return { ok: false as const, message: "Supabase yapılandırması eksik." };
@@ -100,55 +102,72 @@ export async function requireAdmin(request: Request) {
   const service = getServiceSupabase();
   const { data: profile, error: profileError } = await service
     .from("profiles")
-    .select("role,is_active")
+    .select("organization_id,is_active")
     .eq("id", data.user.id)
     .maybeSingle();
 
-  if (profileError || profile?.role !== "ADMIN" || profile.is_active !== true) {
-    return { ok: false as const, message: "Bu işlem için admin yetkisi gereklidir." };
-  }
-
-  return { ok: true as const, userId: data.user.id, service };
-}
-
-export async function requireActiveProfile(request: Request) {
-  const { url, anonKey } = getSupabaseConfig();
-  if (!url || !anonKey) {
-    return { ok: false as const, message: "Supabase yapılandırması eksik." };
-  }
-
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!token) {
-    return { ok: false as const, message: "Oturum bulunamadı." };
-  }
-
-  const authClient = createClient(url, anonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    },
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
-
-  const { data, error } = await authClient.auth.getUser(token);
-  if (error || !data.user) {
-    return { ok: false as const, message: "Oturum doğrulanamadı." };
-  }
-
-  const service = getServiceSupabase();
-  const { data: profile, error: profileError } = await service
-    .from("profiles")
-    .select("role,is_active")
-    .eq("id", data.user.id)
-    .maybeSingle();
-
-  if (profileError || !profile?.is_active) {
+  if (profileError || !profile?.is_active || !profile.organization_id) {
     return { ok: false as const, message: "Aktif kullanıcı profili bulunamadı." };
   }
 
-  return { ok: true as const, userId: data.user.id, role: profile.role as "ADMIN" | "PERSONNEL", service };
+  const [membershipResult, organizationResult] = await Promise.all([
+    service
+      .from("organization_members")
+      .select("role,is_active")
+      .eq("organization_id", profile.organization_id)
+      .eq("profile_id", data.user.id)
+      .maybeSingle(),
+    service
+      .from("organizations")
+      .select("status")
+      .eq("id", profile.organization_id)
+      .maybeSingle()
+  ]);
+
+  const membership = membershipResult.data as {
+    role: OrganizationMemberRole;
+    is_active: boolean;
+  } | null;
+
+  if (
+    membershipResult.error ||
+    organizationResult.error ||
+    !membership?.is_active ||
+    organizationResult.data?.status !== "active"
+  ) {
+    return { ok: false as const, message: "Aktif organizasyon üyeliği bulunamadı." };
+  }
+
+  return {
+    ok: true as const,
+    userId: data.user.id,
+    organizationId: profile.organization_id as string,
+    memberRole: membership.role,
+    service
+  };
+}
+
+export async function requireAdmin(request: Request) {
+  const auth = await requireOrganizationProfile(request);
+  if (!auth.ok) {
+    return auth;
+  }
+
+  if (auth.memberRole !== "OWNER" && auth.memberRole !== "ADMIN") {
+    return { ok: false as const, message: "Bu işlem için admin yetkisi gereklidir." };
+  }
+
+  return auth;
+}
+
+export async function requireActiveProfile(request: Request) {
+  const auth = await requireOrganizationProfile(request);
+  if (!auth.ok) {
+    return auth;
+  }
+
+  return {
+    ...auth,
+    role: auth.memberRole === "PERSONNEL" ? "PERSONNEL" as const : "ADMIN" as const
+  };
 }
