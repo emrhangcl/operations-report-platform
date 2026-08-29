@@ -3,6 +3,8 @@ import "server-only";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { getSubscriptionAccessMode } from "@tunca/shared";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
 
 function readProjectEnv(name: string) {
   const paths = [resolve(process.cwd(), ".env"), resolve(process.cwd(), "../..", ".env")];
@@ -70,8 +72,9 @@ export function getServiceSupabase() {
 }
 
 type OrganizationMemberRole = "OWNER" | "ADMIN" | "PERSONNEL";
+type AccessRequirement = "read" | "write";
 
-async function requireOrganizationProfile(request: Request) {
+async function requireOrganizationProfile(request: Request, requiredAccess: AccessRequirement) {
   const { url, anonKey } = getSupabaseConfig();
   if (!url || !anonKey) {
     return { ok: false as const, message: "Supabase yapılandırması eksik." };
@@ -110,7 +113,15 @@ async function requireOrganizationProfile(request: Request) {
     return { ok: false as const, message: "Aktif kullanıcı profili bulunamadı." };
   }
 
-  const [membershipResult, organizationResult] = await Promise.all([
+  const { error: reconciliationError } = await service.rpc("reconcile_organization_subscription", {
+    target_organization_id: profile.organization_id
+  });
+
+  if (reconciliationError) {
+    return { ok: false as const, message: "Abonelik durumu doğrulanamadı." };
+  }
+
+  const [membershipResult, organizationResult, subscriptionResult] = await Promise.all([
     service
       .from("organization_members")
       .select("role,is_active")
@@ -121,6 +132,12 @@ async function requireOrganizationProfile(request: Request) {
       .from("organizations")
       .select("status")
       .eq("id", profile.organization_id)
+      .maybeSingle(),
+    service
+      .from("subscriptions")
+      .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,updated_at")
+      .eq("organization_id", profile.organization_id)
+      .eq("is_current", true)
       .maybeSingle()
   ]);
 
@@ -132,10 +149,31 @@ async function requireOrganizationProfile(request: Request) {
   if (
     membershipResult.error ||
     organizationResult.error ||
+    subscriptionResult.error ||
     !membership?.is_active ||
     organizationResult.data?.status !== "active"
   ) {
     return { ok: false as const, message: "Aktif organizasyon üyeliği bulunamadı." };
+  }
+
+  const accessMode = getSubscriptionAccessMode(
+    {
+      organizationStatus: organizationResult.data.status as OrganizationStatus,
+      status: (subscriptionResult.data?.status as SubscriptionStatus | undefined) ?? null,
+      billingInterval: (subscriptionResult.data?.billing_interval as BillingInterval | undefined) ?? null,
+      currentPeriodEndsAt: subscriptionResult.data?.current_period_ends_at ?? null,
+      gracePeriodEndsAt: subscriptionResult.data?.grace_period_ends_at ?? null,
+      updatedAt: subscriptionResult.data?.updated_at ?? null
+    },
+    new Date()
+  );
+
+  if (accessMode === "blocked") {
+    return { ok: false as const, message: "Geçerli bir abonelik bulunamadı." };
+  }
+
+  if (requiredAccess === "write" && accessMode !== "write") {
+    return { ok: false as const, message: "Bu hesap salt okunur durumdadır." };
   }
 
   return {
@@ -143,12 +181,14 @@ async function requireOrganizationProfile(request: Request) {
     userId: data.user.id,
     organizationId: profile.organization_id as string,
     memberRole: membership.role,
+    accessMode,
+    subscriptionStatus: (subscriptionResult.data?.status as SubscriptionStatus | null) ?? null,
     service
   };
 }
 
-export async function requireAdmin(request: Request) {
-  const auth = await requireOrganizationProfile(request);
+export async function requireAdmin(request: Request, requiredAccess: AccessRequirement = "write") {
+  const auth = await requireOrganizationProfile(request, requiredAccess);
   if (!auth.ok) {
     return auth;
   }
@@ -160,8 +200,8 @@ export async function requireAdmin(request: Request) {
   return auth;
 }
 
-export async function requireActiveProfile(request: Request) {
-  const auth = await requireOrganizationProfile(request);
+export async function requireActiveProfile(request: Request, requiredAccess: AccessRequirement = "write") {
+  const auth = await requireOrganizationProfile(request, requiredAccess);
   if (!auth.ok) {
     return auth;
   }

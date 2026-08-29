@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, Car, ClipboardCheck, ClipboardList, CreditCard, Gauge, GitBranch, LogOut, Users, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getSubscriptionAccessMode } from "@tunca/shared";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
 import { getBrowserSupabase } from "../lib/supabase-browser";
 import { TuncaLogo } from "./logo";
 
@@ -24,6 +26,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("");
+  const [accessNotice, setAccessNotice] = useState("");
 
   useEffect(() => {
     const supabase = getBrowserSupabase();
@@ -65,11 +68,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           .maybeSingle()
       ]);
 
-      if (organizationResult.data?.status !== "active") {
-        router.replace("/subscription");
-        return;
-      }
-
       if (
         membershipResult.data?.is_active !== true ||
         !["OWNER", "ADMIN"].includes(membershipResult.data.role)
@@ -78,6 +76,44 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         setReady(true);
         return;
       }
+
+      if (organizationResult.data?.status !== "active") {
+        router.replace("/subscription");
+        return;
+      }
+
+      const subscriptionResult = await supabase
+        .from("subscriptions")
+        .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,updated_at")
+        .eq("organization_id", profile.organization_id)
+        .eq("is_current", true)
+        .maybeSingle();
+
+      if (subscriptionResult.error) {
+        setMessage("Abonelik durumu alınamadı.");
+        setReady(true);
+        return;
+      }
+
+      const accessMode = getSubscriptionAccessMode({
+        organizationStatus: organizationResult.data.status as OrganizationStatus,
+        status: (subscriptionResult.data?.status as SubscriptionStatus | undefined) ?? null,
+        billingInterval: (subscriptionResult.data?.billing_interval as BillingInterval | undefined) ?? null,
+        currentPeriodEndsAt: subscriptionResult.data?.current_period_ends_at ?? null,
+        gracePeriodEndsAt: subscriptionResult.data?.grace_period_ends_at ?? null,
+        updatedAt: subscriptionResult.data?.updated_at ?? null
+      });
+
+      if (accessMode === "blocked") {
+        router.replace("/subscription");
+        return;
+      }
+
+      setAccessNotice(
+        accessMode === "read"
+          ? "Aboneliğiniz salt okunur durumda. Yeni kayıt ve değişiklik işlemleri kapalıdır."
+          : ""
+      );
 
       setReady(true);
     });
@@ -133,6 +169,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <main className="content">
+        {accessNotice ? <div className="message info">{accessNotice}</div> : null}
         {message ? <div className="message error">{message}</div> : null}
         {children}
       </main>

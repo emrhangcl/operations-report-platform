@@ -1,5 +1,18 @@
 export type UserRole = "ADMIN" | "PERSONNEL";
 
+export type OrganizationStatus = "active" | "suspended" | "closed";
+
+export type SubscriptionStatus =
+  | "pending"
+  | "active"
+  | "past_due"
+  | "grace_period"
+  | "read_only"
+  | "canceled"
+  | "lifetime";
+
+export type BillingInterval = "monthly" | "yearly" | "lifetime";
+
 export type ReportStatus = "DRAFT" | "SUBMITTED";
 
 export type InstallationAssignmentStatus =

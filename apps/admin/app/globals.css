@@ -2027,6 +2027,13 @@ tr:last-child td {
   color: #fff;
 }
 
+.personnel-disabled-form {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
 .personnel-tile span {
   font-size: 17px;
   font-weight: 850;

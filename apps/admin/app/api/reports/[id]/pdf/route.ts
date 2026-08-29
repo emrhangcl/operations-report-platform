@@ -9,7 +9,7 @@ import { requireActiveProfile } from "../../../../../lib/supabase-server";
 export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireActiveProfile(request);
+  const auth = await requireActiveProfile(request, "read");
   if (!auth.ok) {
     return NextResponse.json({ message: auth.message }, { status: 403 });
   }

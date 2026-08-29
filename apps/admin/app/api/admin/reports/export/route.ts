@@ -5,7 +5,7 @@ import { requireAdmin } from "../../../../../lib/supabase-server";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const admin = await requireAdmin(request);
+  const admin = await requireAdmin(request, "read");
   if (!admin.ok) {
     return NextResponse.json({ message: admin.message }, { status: 403 });
   }

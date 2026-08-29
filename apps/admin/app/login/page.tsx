@@ -4,6 +4,8 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { getSubscriptionAccessMode } from "@tunca/shared";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
 import { AuthShell } from "../../components/auth-shell";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
@@ -68,11 +70,6 @@ export default function LoginPage() {
         return;
       }
 
-      if (organizationResult.data?.status !== "active") {
-        router.replace("/subscription");
-        return;
-      }
-
       if (membership.role === "PERSONNEL") {
         await supabase.auth.signOut();
         const personnelClient = getBrowserSupabase("personnel");
@@ -87,6 +84,38 @@ export default function LoginPage() {
           return;
         }
         router.replace("/personel");
+        return;
+      }
+
+      if (organizationResult.data?.status !== "active") {
+        router.replace("/subscription");
+        return;
+      }
+
+      const subscriptionResult = await supabase
+        .from("subscriptions")
+        .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,updated_at")
+        .eq("organization_id", profile.organization_id)
+        .eq("is_current", true)
+        .maybeSingle();
+
+      if (subscriptionResult.error) {
+        await supabase.auth.signOut();
+        setError("Abonelik durumu alınamadı.");
+        return;
+      }
+
+      const accessMode = getSubscriptionAccessMode({
+        organizationStatus: organizationResult.data.status as OrganizationStatus,
+        status: (subscriptionResult.data?.status as SubscriptionStatus | undefined) ?? null,
+        billingInterval: (subscriptionResult.data?.billing_interval as BillingInterval | undefined) ?? null,
+        currentPeriodEndsAt: subscriptionResult.data?.current_period_ends_at ?? null,
+        gracePeriodEndsAt: subscriptionResult.data?.grace_period_ends_at ?? null,
+        updatedAt: subscriptionResult.data?.updated_at ?? null
+      });
+
+      if (accessMode === "blocked") {
+        router.replace("/subscription");
         return;
       }
 

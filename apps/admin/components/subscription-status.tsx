@@ -10,6 +10,7 @@ type Subscription = {
   billing_interval: "monthly" | "yearly" | "lifetime";
   current_period_ends_at: string | null;
   grace_period_ends_at: string | null;
+  updated_at: string;
   plans: { name: string } | Array<{ name: string }> | null;
 };
 
@@ -61,10 +62,9 @@ export function SubscriptionStatus() {
         supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
         supabase
           .from("subscriptions")
-          .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,plans(name)")
+          .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,updated_at,plans(name)")
           .eq("organization_id", profile.organization_id)
-          .order("created_at", { ascending: false })
-          .limit(1)
+          .eq("is_current", true)
           .maybeSingle()
       ]);
 
@@ -88,7 +88,7 @@ export function SubscriptionStatus() {
   if (!subscription) return <div className="public-empty"><strong>Abonelik kaydı bulunmuyor.</strong><Link className="button" href="/pricing">Paketleri Gör</Link></div>;
 
   const plan = Array.isArray(subscription.plans) ? subscription.plans[0]?.name : subscription.plans?.name;
-  const canOpenApp = subscription.status === "active" || subscription.status === "lifetime";
+  const canOpenApp = ["active", "past_due", "grace_period", "read_only", "lifetime"].includes(subscription.status);
 
   return (
     <div className="subscription-summary">

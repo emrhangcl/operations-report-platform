@@ -91,6 +91,7 @@ export default function PersonnelWebPage() {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accessMessage, setAccessMessage] = useState("");
+  const [readOnlyMode, setReadOnlyMode] = useState(false);
   const [screen, setScreen] = useState<Screen>("home");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -149,6 +150,26 @@ export default function PersonnelWebPage() {
     const supabase = getPersonnelSupabase();
     if (!supabase || !sessionUserId) return;
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessResponse = await fetch("/api/account/access", {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${sessionData.session?.access_token ?? ""}`
+      }
+    });
+    const accessBody = await accessResponse.json().catch(() => ({})) as {
+      accessMode?: string;
+      message?: string;
+    };
+
+    if (!accessResponse.ok || !["read", "write"].includes(accessBody.accessMode ?? "")) {
+      setReadOnlyMode(false);
+      setAccessMessage(accessBody.message ?? "Abonelik erişimi doğrulanamadı.");
+      return;
+    }
+
+    setReadOnlyMode(accessBody.accessMode === "read");
+
     const [
       profileResult,
       companyResult,
@@ -201,6 +222,7 @@ export default function PersonnelWebPage() {
     setProfile(nextProfile);
 
     if (!nextProfile || nextProfile.role !== "PERSONNEL" || nextProfile.is_active !== true) {
+      setReadOnlyMode(false);
       setAccessMessage("Bu alan aktif personel hesabı ile kullanılabilir.");
       return;
     }
@@ -240,6 +262,7 @@ export default function PersonnelWebPage() {
     await getPersonnelSupabase()?.auth.signOut();
     setProfile(null);
     setSessionUserId(null);
+    setReadOnlyMode(false);
     setActiveAssignment(null);
     setValues(newReportValues());
     clearPhotos();
@@ -261,6 +284,10 @@ export default function PersonnelWebPage() {
   }
 
   function startNewReport() {
+    if (readOnlyMode) {
+      showMessage("Aboneliğiniz salt okunur durumda. Yeni rapor oluşturamazsınız.", "error");
+      return;
+    }
     setActiveAssignment(null);
     setValues(newReportValues());
     clearPhotos();
@@ -269,6 +296,10 @@ export default function PersonnelWebPage() {
   }
 
   function openDraft(report: ReportRow) {
+    if (readOnlyMode) {
+      showMessage("Aboneliğiniz salt okunur durumda. Taslaklar düzenlenemez.", "error");
+      return;
+    }
     setActiveAssignment(null);
     setValues(reportToValues(report));
     clearPhotos();
@@ -288,7 +319,7 @@ export default function PersonnelWebPage() {
     setMessage("");
     setScreen("form");
 
-    if (assignment.status !== "ASSIGNED") return;
+    if (assignment.status !== "ASSIGNED" || readOnlyMode) return;
 
     const supabase = getPersonnelSupabase();
     if (!supabase) return;
@@ -332,6 +363,11 @@ export default function PersonnelWebPage() {
   async function submitReport(status: ReportStatus) {
     const supabase = getPersonnelSupabase();
     if (!supabase || !profile) return;
+
+    if (readOnlyMode) {
+      showMessage("Aboneliğiniz salt okunur durumda. Rapor kaydedilemez.", "error");
+      return;
+    }
 
     setMessage("");
     const preparedValues = prepareReportValues(values, belts);
@@ -474,6 +510,11 @@ export default function PersonnelWebPage() {
       </header>
 
       {message ? <div className={`message ${messageTone}`}>{message}</div> : null}
+      {readOnlyMode ? (
+        <div className="message info">
+          Aboneliğiniz salt okunur durumda. Mevcut rapor ve montajları görüntüleyebilirsiniz; yeni kayıt ve değişiklik yapamazsınız.
+        </div>
+      ) : null}
 
       {screen === "home" ? (
         <PersonnelHome
@@ -484,6 +525,7 @@ export default function PersonnelWebPage() {
           onNewReport={startNewReport}
           onSubmitted={() => setScreen("submitted")}
           profile={profile}
+          readOnlyMode={readOnlyMode}
           submittedCount={submittedReports.length}
         />
       ) : null}
@@ -531,6 +573,7 @@ export default function PersonnelWebPage() {
           personnel={personnel}
           photos={photos}
           profile={profile}
+          readOnly={readOnlyMode}
           values={values}
           vehicles={vehicles}
           assignmentTitle={activeAssignment?.title ?? null}
@@ -607,6 +650,7 @@ function PersonnelHome({
   onNewReport,
   onSubmitted,
   profile,
+  readOnlyMode,
   submittedCount
 }: {
   assignmentCount: number;
@@ -616,6 +660,7 @@ function PersonnelHome({
   onNewReport: () => void;
   onSubmitted: () => void;
   profile: Profile | null;
+  readOnlyMode: boolean;
   submittedCount: number;
 }) {
   const firstName = profile?.first_name?.trim() || "Personel";
@@ -627,7 +672,7 @@ function PersonnelHome({
         <h1>Merhaba {firstName}</h1>
         <p>{formatDateDisplay(formatDateValue(new Date()))}</p>
       </div>
-      <button className="personnel-tile primary" onClick={onNewReport} type="button">
+      <button className="personnel-tile primary" disabled={readOnlyMode} onClick={onNewReport} type="button">
         <Plus aria-hidden size={24} />
         Yeni Rapor
       </button>
@@ -923,6 +968,7 @@ function ReportForm({
   personnel,
   photos,
   profile,
+  readOnly,
   removePhoto,
   submitReport,
   toggleArray,
@@ -941,6 +987,7 @@ function ReportForm({
   personnel: Profile[];
   photos: PhotoDraft[];
   profile: Profile | null;
+  readOnly: boolean;
   removePhoto: (localId: string) => void;
   submitReport: (status: ReportStatus) => Promise<void>;
   toggleArray: (
@@ -1063,6 +1110,7 @@ function ReportForm({
         <div className="message error">Firma bulunamadı. Yetkili amirden firma eklemesini isteyin.</div>
       ) : null}
 
+      <fieldset className="personnel-disabled-form" disabled={readOnly}>
       <details className="personnel-section" open>
         <summary><span className="section-number">1</span><span>Genel Bilgiler</span></summary>
         <div className="personnel-form-grid">
@@ -1316,6 +1364,7 @@ function ReportForm({
           {loading ? "Gönderiliyor" : "Raporu Gönder"}
         </button>
       </div>
+      </fieldset>
     </section>
   );
 }

@@ -16,7 +16,8 @@
     "paths": {
       "@tunca/types": ["packages/types/src/index.ts"],
       "@tunca/validation": ["packages/validation/src/index.ts"],
-      "@tunca/shared": ["packages/shared/src/index.ts"]
+      "@tunca/shared": ["packages/shared/src/index.ts"],
+      "@tunca/payments": ["packages/payments/src/index.ts"]
     }
   }
 }

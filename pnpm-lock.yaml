@@ -41,6 +41,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.112.3
         version: 2.112.3
+      '@tunca/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@tunca/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -148,6 +151,18 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+
+  packages/payments:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.33.0)(supports-color@8.1.1)(terser@5.50.0)
 
   packages/shared:
     dependencies:
