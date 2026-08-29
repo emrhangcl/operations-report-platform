@@ -19,7 +19,7 @@ Temel tenant izolasyonu, rol kontrolleri, abonelik erişimi, dosya erişimi, ist
 | `corepack pnpm exec supabase db diff --local --schema public` | Şema farkı yok |
 | `corepack pnpm exec supabase db lint --local` | Çalıştı; bir adet aşağıdaki uyarı kaldı |
 | Docker hardened smoke test | Geçti: non-root, read-only filesystem, capability drop, no-new-privileges |
-| HTTP smoke test | Geçti: health 200, request ID, unauthenticated admin/platform 403, oversized body 413 |
+| HTTP smoke test | Geçti: health 200, request ID, unauthenticated admin/platform 403, normal/chunked oversized body 413 |
 | Kaynak kodu tehlikeli API taraması | `eval`, `new Function`, raw `innerHTML` ve `dangerouslySetInnerHTML` bulunmadı |
 | Git secret taraması | Tracked dosyalarda gerçek key/token eşleşmesi bulunmadı; `.env` repository dışı tutuldu |
 | Browser source map kontrolü | Browser bundle içinde source map yok; Docker final image tüm `.map` dosyalarını siliyor |
@@ -85,4 +85,3 @@ Bunlar doğrudan runtime açığı olarak doğrulanmadı; ana paketler güncelle
 - [ ] Staging’de gerçek kullanıcı rolleriyle uçtan uca test yapıldı.
 - [ ] Auth, webhook, storage, export ve admin audit logları izleniyor.
 - [ ] `pnpm audit`, dependency review ve advisory takibi release sürecine eklendi.
-
