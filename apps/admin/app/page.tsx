@@ -8,7 +8,22 @@ export default function MarketingHomePage() {
   return (
     <MarketingShell>
       <section className="marketing-hero">
-        <div aria-hidden className="marketing-hero-media" />
+        <div aria-hidden className="marketing-hero-scene">
+          <div className="hero-flow-panel hero-flow-panel-main">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="hero-flow-panel hero-flow-panel-side">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="hero-flow-panel hero-flow-panel-mini">
+            <span />
+            <span />
+          </div>
+        </div>
         <div className="marketing-hero-content">
           <span className="marketing-kicker">Saha operasyonlarında tek çalışma alanı</span>
           <h1>Operasyon Portalı</h1>
