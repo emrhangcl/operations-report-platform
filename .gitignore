@@ -10,7 +10,8 @@ coverage
 !.env.example
 *.tsbuildinfo
 *.log
-TUNCA_Raporlar_*.xlsx
+Operasyon_Raporlari_*.xlsx
 admin-login-qr.png
 expo-go-qr.png
 .playwright-cli/
+artifacts/
