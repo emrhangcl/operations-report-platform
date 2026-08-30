@@ -898,6 +898,13 @@
     width: 100%;
   }
 
+  .marketing-hero-actions .button {
+    align-items: center;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
   .marketing-proof-list {
     display: grid;
   }
