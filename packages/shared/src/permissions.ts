@@ -1,4 +1,4 @@
-import type { ReportStatus, UserRole } from "@tunca/types";
+import type { ReportStatus, UserRole } from "@operations/types";
 
 export interface PermissionProfile {
   id: string;

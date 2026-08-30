@@ -1,5 +1,5 @@
 {
-  "name": "@tunca/payments",
+  "name": "@operations/payments",
   "version": "0.1.0",
   "private": true,
   "type": "module",

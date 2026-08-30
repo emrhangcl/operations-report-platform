@@ -36,7 +36,7 @@ export async function downloadOrShareReportPdf({
   }
 
   const blob = await response.blob();
-  const filename = `${(reportNumber || `TUNCA-Rapor-${reportId.slice(0, 8)}`).replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`;
+  const filename = `${(reportNumber || `Rapor-${reportId.slice(0, 8)}`).replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`;
 
   if (mode === "share" && "File" in window) {
     const file = new File([blob], filename, { type: "application/pdf" });
@@ -45,8 +45,8 @@ export async function downloadOrShareReportPdf({
     if (canShare) {
       await navigator.share({
         files: [file],
-        text: "TUNCA montaj ve tamir raporu",
-        title: reportNumber ?? "TUNCA Raporu"
+        text: "Montaj ve saha operasyonu raporu",
+        title: reportNumber ?? "Operasyon Raporu"
       });
       return { ok: true as const };
     }

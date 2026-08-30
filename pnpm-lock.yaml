@@ -42,16 +42,16 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.112.3
         version: 2.112.3
-      '@tunca/payments':
+      '@operations/payments':
         specifier: workspace:*
         version: link:../../packages/payments
-      '@tunca/shared':
+      '@operations/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@tunca/types':
+      '@operations/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@tunca/validation':
+      '@operations/validation':
         specifier: workspace:*
         version: link:../../packages/validation
       '@vercel/analytics':
@@ -118,10 +118,10 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.112.3
         version: 2.112.3
-      '@tunca/types':
+      '@operations/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@tunca/validation':
+      '@operations/validation':
         specifier: workspace:*
         version: link:../../packages/validation
       expo:
@@ -167,7 +167,7 @@ importers:
 
   packages/shared:
     dependencies:
-      '@tunca/types':
+      '@operations/types':
         specifier: workspace:*
         version: link:../types
       exceljs:
@@ -189,7 +189,7 @@ importers:
 
   packages/validation:
     dependencies:
-      '@tunca/types':
+      '@operations/types':
         specifier: workspace:*
         version: link:../types
       zod:

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { userAccountSchema } from "@tunca/validation";
+import { userAccountSchema } from "@operations/validation";
 import { requireAdmin } from "../../../../../lib/supabase-server";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../../lib/request-body";

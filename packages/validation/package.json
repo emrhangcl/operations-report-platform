@@ -1,5 +1,5 @@
 {
-  "name": "@tunca/validation",
+  "name": "@operations/validation",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tunca/types": "workspace:*",
+    "@operations/types": "workspace:*",
     "zod": "^3.25.76"
   },
   "devDependencies": {

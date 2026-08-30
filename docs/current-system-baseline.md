@@ -1,4 +1,4 @@
-# TNCSYSTEM Mevcut Sistem Baseline
+# Mevcut Sistem Baseline
 
 Bu belge, SaaS donusumu baslamadan once calisan sistemin geri donus ve regresyon referansidir.
 
@@ -7,7 +7,7 @@ Bu belge, SaaS donusumu baslamadan once calisan sistemin geri donus ve regresyon
 | Alan | Deger |
 | --- | --- |
 | Tarih | 2026-08-29 (Europe/Istanbul) |
-| Kaynak depo | `https://github.com/emrhangcl/tncsystem.git` |
+| Kaynak depo | `https://github.com/emrhangcl/operations-report-platform.git` |
 | Baseline commit | `cdc51f1d3543399489558f73e8222abb9d61ab1d` |
 | Geri donus etiketi | `baseline/pre-saas-20260829` |
 | Gelistirme branch'i | `feat/saas-platform` |
@@ -76,8 +76,8 @@ Supabase changelog kontrolunde ilerideki calismayi etkileyen iki guncel konu kay
 
 Admin sayfalari `AdminShell` icinde istemci tarafinda `auth.getUser()` ve `profiles.role/is_active` kontrolu yapar. Kimliksiz kullanici `/login` sayfasina yonlendirilir. Personel ve admin oturumlari ayni tarayicida birbirini dusurmemesi icin farkli local storage anahtarlari kullanir:
 
-- Admin: `tunca-admin-auth`
-- Personel: `tunca-personnel-auth`
+- Admin: `operations-admin-auth`
+- Personel: `operations-personnel-auth`
 
 ## API Endpoint'leri
 
@@ -136,7 +136,7 @@ Rapor formu sekiz acilir bolumden olusur:
 7. Gerdirme ve blanket: gerdirme, basinc, on gerdirme, calisir teslim ve bilgilendirme.
 8. Fotograflar: kamera veya galeriden coklu secim, aciklama ve secilen fotografi kaldirma.
 
-Rapor `client_request_id` uzerinden upsert edilir. DB trigger'i raporu olusturan kullaniciyi oturumdan belirler, snapshot alanlarini doldurur ve `SUBMITTED` durumunda transaction-safe sayacla `TNC-YYYY-000001` biciminde rapor numarasi uretir.
+Rapor `client_request_id` uzerinden upsert edilir. DB trigger'i raporu olusturan kullaniciyi oturumdan belirler, snapshot alanlarini doldurur ve `SUBMITTED` durumunda transaction-safe sayacla `RPR-YYYY-000001` biciminde rapor numarasi uretir.
 
 Montaj atamasindan rapor acildiginda adminin girdigi on bilgiler forma tasinir. Personel raporu gonderince atama rapora baglanir ve `COMPLETED` durumuna gecirilir.
 

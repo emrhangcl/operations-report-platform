@@ -4,8 +4,8 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { getSubscriptionAccessMode } from "@tunca/shared";
-import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
+import { getSubscriptionAccessMode } from "@operations/shared";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
 import { AuthShell } from "../../components/auth-shell";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 

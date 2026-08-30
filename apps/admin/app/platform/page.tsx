@@ -20,8 +20,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
-import { TuncaLogo } from "../../components/logo";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
+import { ProductBrand } from "../../components/logo";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 interface PlatformMetrics {
@@ -455,8 +455,8 @@ export default function PlatformPage() {
     <main className="platform-page">
       <header className="platform-topbar">
         <Link className="platform-brand" href="/platform">
-          <TuncaLogo />
-          <span>Platform Yönetimi</span>
+          <ProductBrand />
+          <span className="platform-context-label">Platform Yönetimi</span>
         </Link>
         <nav className="platform-topbar-actions" aria-label="Platform menüsü">
           <Link className="button secondary" href="/app">
@@ -471,7 +471,7 @@ export default function PlatformPage() {
       <div className="platform-container">
         <section className="platform-page-heading">
           <div>
-            <span className="platform-eyebrow">TUNCA SaaS merkezi</span>
+            <span className="platform-eyebrow">Merkezi platform yönetimi</span>
             <h1>Platform paneli</h1>
             <p>Firma, abonelik, ödeme ve güvenlik durumunu yalnızca doğrulanmış kayıtlar üzerinden yönetin.</p>
           </div>

@@ -4,6 +4,12 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(30);
 
+create temporary table platform_test_baseline as
+select count(*)::integer as organization_count
+  from public.organizations;
+
+grant select on platform_test_baseline to service_role;
+
 select is(
   has_function_privilege(
     'anon',
@@ -266,7 +272,7 @@ select is(
 );
 select is(
   (public.platform_dashboard_metrics()->>'total_organizations')::integer,
-  2,
+  2 + (select organization_count from platform_test_baseline),
   'dashboard counts real organizations'
 );
 select is(

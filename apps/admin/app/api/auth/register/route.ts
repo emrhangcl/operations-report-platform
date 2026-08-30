@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { organizationRegistrationSchema } from "@tunca/validation";
+import { organizationRegistrationSchema } from "@operations/validation";
 import { NextResponse } from "next/server";
 import { apiError } from "../../../../lib/api-response";
 import { enforceRateLimit } from "../../../../lib/rate-limit";

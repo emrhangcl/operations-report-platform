@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Download, FilterX, Trash2 } from "lucide-react";
-import type { Belt, Company, Profile, ReportListItem } from "@tunca/types";
+import type { Belt, Company, Profile, ReportListItem } from "@operations/types";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
@@ -149,7 +149,7 @@ export default function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `TUNCA_Raporlar_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    link.download = `Operasyon_Raporlari_${new Date().toISOString().slice(0, 10)}.xlsx`;
     link.click();
     URL.revokeObjectURL(url);
   }

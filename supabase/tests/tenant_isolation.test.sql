@@ -5,15 +5,29 @@ create extension if not exists pgtap with schema extensions;
 select plan(40);
 
 select is(
-  (select count(*) from public.organizations),
+  (
+    select count(*)
+      from public.organizations
+     where id in (
+       '10000000-0000-4000-8000-000000000001',
+       '10000000-0000-4000-8000-000000000002'
+     )
+  ),
   0::bigint,
-  'clean database has no organizations'
+  'test tenant organizations do not exist yet'
 );
 
 select is(
-  (select count(*) from public.subscriptions),
+  (
+    select count(*)
+      from public.subscriptions
+     where organization_id in (
+       '10000000-0000-4000-8000-000000000001',
+       '10000000-0000-4000-8000-000000000002'
+     )
+  ),
   0::bigint,
-  'clean database has no subscriptions'
+  'test tenant subscriptions do not exist yet'
 );
 
 select is(
@@ -254,13 +268,13 @@ values
 
 select is(
   (select report_number from public.reports where id = '40000000-0000-4000-8000-000000000001'),
-  'TNC-2026-000001',
+  'RPR-2026-000001',
   'tenant A starts its report sequence at one'
 );
 
 select is(
   (select report_number from public.reports where id = '40000000-0000-4000-8000-000000000002'),
-  'TNC-2026-000001',
+  'RPR-2026-000001',
   'tenant B has an independent report sequence'
 );
 

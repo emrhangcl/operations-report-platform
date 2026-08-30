@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TuncaLogo } from "./logo";
+import { ProductBrand } from "./logo";
 
 export function AuthShell({
   children,
@@ -15,7 +15,7 @@ export function AuthShell({
   return (
     <main className="public-auth-page">
       <Link aria-label="Ana sayfa" className="public-auth-brand" href="/">
-        <TuncaLogo />
+        <ProductBrand />
       </Link>
       <section className="public-auth-panel">
         <header>

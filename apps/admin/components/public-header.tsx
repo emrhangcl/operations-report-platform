@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { TuncaLogo } from "./logo";
+import { ProductBrand } from "./logo";
 
 const links = [
   { href: "/features", label: "Özellikler" },
@@ -17,8 +17,8 @@ export function PublicHeader() {
   return (
     <header className="public-header">
       <div className="public-header-inner">
-        <Link aria-label="TUNCA Rapor Sistemi ana sayfa" className="public-brand" href="/">
-          <TuncaLogo />
+        <Link aria-label="Operasyon Portalı ana sayfa" className="public-brand" href="/">
+          <ProductBrand />
         </Link>
         <button
           aria-expanded={open}

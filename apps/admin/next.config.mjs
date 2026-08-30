@@ -156,8 +156,7 @@ const nextConfig = {
   },
   outputFileTracingIncludes: {
     "/api/reports/[id]/pdf": [
-      "./node_modules/pdfmake/fonts/Roboto/*.ttf",
-      "./public/tunca-logo.png"
+      "./node_modules/pdfmake/fonts/Roboto/*.ttf"
     ]
   },
   ...(supabaseEndpoint
@@ -175,7 +174,7 @@ const nextConfig = {
       }
     : {}),
   outputFileTracingRoot: projectRoot,
-  transpilePackages: ["@tunca/shared", "@tunca/types", "@tunca/validation"],
+  transpilePackages: ["@operations/shared", "@operations/types", "@operations/validation"],
   ...(process.env.NEXT_STANDALONE === "true" ? { output: "standalone" } : {})
 };
 

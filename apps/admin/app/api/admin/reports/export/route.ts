@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createReportsWorkbook, type ExportReportRow } from "@tunca/shared";
+import { createReportsWorkbook, type ExportReportRow } from "@operations/shared";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { requireAdmin } from "../../../../../lib/supabase-server";
 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
   const workbook = await createReportsWorkbook((data ?? []) as ExportReportRow[]);
   const buffer = await workbook.xlsx.writeBuffer();
-  const fileName = `TUNCA_Raporlar_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const fileName = `Operasyon_Raporlari_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
   return new NextResponse(buffer, {
     headers: {

@@ -2,7 +2,7 @@ import type {
   BillingInterval,
   OrganizationStatus,
   SubscriptionStatus
-} from "@tunca/types";
+} from "@operations/types";
 
 export type SubscriptionAccessMode = "write" | "read" | "blocked";
 

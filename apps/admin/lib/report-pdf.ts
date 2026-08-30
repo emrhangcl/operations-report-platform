@@ -1,10 +1,10 @@
 import "server-only";
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import type { Column, Content, StyleDictionary, TDocumentDefinitions } from "pdfmake/interfaces";
-import type { ReportWorkItem } from "@tunca/types";
+import type { ReportWorkItem } from "@operations/types";
 
 const require = createRequire(import.meta.url);
 const pdfMake = require("pdfmake") as typeof import("pdfmake");
@@ -17,8 +17,6 @@ const pdfMakeRoot = [
   join(appRoot, "node_modules", "pdfmake")
 ].find((candidate) => existsSync(candidate)) ?? join(runtimeRoot, "node_modules", "pdfmake");
 const fontRoot = join(pdfMakeRoot, "fonts", "Roboto");
-const logoPath = resolve(appRoot, "public", "tunca-logo.png");
-
 let pdfMakeReady = false;
 
 export type PdfReportRow = Record<string, unknown> & {
@@ -38,7 +36,7 @@ export async function createReportPdfBuffer(report: PdfReportRow) {
 }
 
 export function reportPdfFilename(report: Pick<PdfReportRow, "report_number" | "id">) {
-  const base = report.report_number || `TUNCA-Rapor-${report.id.slice(0, 8)}`;
+  const base = report.report_number || `Rapor-${report.id.slice(0, 8)}`;
   return `${base.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`;
 }
 
@@ -138,7 +136,7 @@ function createReportDocument(report: PdfReportRow): TDocumentDefinitions {
     { text: "İmza Alanları", style: "sectionTitle", margin: [0, 9, 0, 4] },
     {
       columns: [
-        signatureBox("TUNCA Personel"),
+        signatureBox("Saha Personeli"),
         signatureBox("Müşteri Yetkilisi")
       ],
       columnGap: 14
@@ -150,8 +148,8 @@ function createReportDocument(report: PdfReportRow): TDocumentDefinitions {
     pageSize: "A4",
     pageMargins: [24, 22, 24, 24],
     info: {
-      title: report.report_number ?? "TUNCA Raporu",
-      author: "TUNCA",
+      title: report.report_number ?? "Operasyon Raporu",
+      author: "Operasyon Portalı",
       subject: "Montaj ve Tamir Raporu"
     },
     defaultStyle: {
@@ -185,7 +183,7 @@ const styles: StyleDictionary = {
   },
   sectionTitle: {
     bold: true,
-    color: "#8e2526",
+    color: "#0b5f59",
     fontSize: 8.7
   },
   tableLabel: {
@@ -204,11 +202,14 @@ const styles: StyleDictionary = {
 };
 
 function header(report: PdfReportRow): Content {
-  const logo = logoDataUrl();
-
   return {
     columns: [
-      logo ? { image: logo, width: 118 } : { text: "TUNCA", style: "title" },
+      {
+        stack: [
+          { text: "OPERASYON PORTALI", style: "title" },
+          { text: "Saha ve rapor yönetimi", style: "subtitle" }
+        ]
+      },
       {
         stack: [
           { text: "Montaj ve Tamir Raporu", style: "title", alignment: "right" },
@@ -313,11 +314,6 @@ function signatureBox(title: string): Column {
       vLineWidth: () => 0.6
     }
   };
-}
-
-function logoDataUrl() {
-  if (!existsSync(logoPath)) return null;
-  return `data:image/png;base64,${readFileSync(logoPath).toString("base64")}`;
 }
 
 function reportWorkItems(report: Record<string, unknown>) {

@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { KeyRound, Pencil, Save, Trash2, UserPlus, X } from "lucide-react";
-import type { Profile, UserRole } from "@tunca/types";
-import { userAccountSchema } from "@tunca/validation";
+import type { Profile, UserRole } from "@operations/types";
+import { userAccountSchema } from "@operations/validation";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";

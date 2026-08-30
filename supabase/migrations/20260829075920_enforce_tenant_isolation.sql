@@ -470,7 +470,7 @@ begin
 
     new.report_year = target_report_year;
     new.sequence_number = seq;
-    new.report_number = 'TNC-' || target_report_year::text || '-' || lpad(seq::text, 6, '0');
+    new.report_number = 'RPR-' || target_report_year::text || '-' || lpad(seq::text, 6, '0');
     new.submitted_at = coalesce(new.submitted_at, now());
   end if;
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { FixedWindowRateLimiter } from "@tunca/shared";
+import { FixedWindowRateLimiter } from "@operations/shared";
 import { NextResponse } from "next/server";
 import { getRequestId } from "./observability";
 

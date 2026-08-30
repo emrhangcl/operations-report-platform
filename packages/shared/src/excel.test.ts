@@ -5,8 +5,8 @@ describe("Excel export mapping", () => {
   it("keeps the first two personnel in legacy columns and moves the rest", () => {
     const row = mapReportToExcelRow({
       report_date: "2026-08-19",
-      report_number: "TNC-2026-000001",
-      company_name_snapshot: "TUNCA",
+      report_number: "RPR-2026-000001",
+      company_name_snapshot: "Örnek Firma",
       created_by_name_snapshot: "Operatör",
       workshop_departure_at: null,
       customer_arrival_at: null,

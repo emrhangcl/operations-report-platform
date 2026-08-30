@@ -1,6 +1,6 @@
 # Ödeme Sağlayıcısı Değerlendirmesi
 
-Bu doküman, TUNCA SaaS abonelikleri için gerçek entegrasyon seçilmeden önce hazırlanmış teknik karşılaştırmadır. Üretim veya sandbox anahtarı bu depoya eklenmez.
+Bu doküman, platform abonelikleri için gerçek entegrasyon seçilmeden önce hazırlanmış teknik karşılaştırmadır. Üretim veya sandbox anahtarı bu depoya eklenmez.
 
 ## Kısa karar
 
@@ -16,7 +16,7 @@ Bu bir canlı entegrasyon kararı değildir. Sağlayıcı seçimi ve sandbox bil
 - Abonelik bildirimleri `subscription.order.success` ve `subscription.order.failure` olaylarıyla alınabiliyor.
 - Webhook doğrulamasında `X-IYZ-SIGNATURE-V3` kullanılmalı.
 - İmza, sağlayıcının tanımladığı alan sırası ve merchant secret ile HMAC-SHA256 olarak doğrulanmalı.
-- Kart bilgisi TUNCA veritabanına alınmamalı; hosted checkout kullanılmalı.
+- Kart bilgisi uygulama veritabanına alınmamalı; hosted checkout kullanılmalı.
 
 Kaynaklar:
 

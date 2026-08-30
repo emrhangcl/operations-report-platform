@@ -4,28 +4,28 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  applicationName: "TUNCA Rapor Sistemi",
+  applicationName: "Operasyon Portalı",
   title: {
-    default: "TUNCA Rapor Sistemi",
-    template: "%s | TUNCA Rapor Sistemi"
+    default: "Operasyon Portalı",
+    template: "%s | Operasyon Portalı"
   },
   description: "Montaj atamalarını, saha operasyonlarını ve kurumsal raporları tek çalışma alanında yönetin.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/tunca-app-icon.svg",
-    apple: "/tunca-app-icon.png"
+    icon: "/operations-app-icon.png",
+    apple: "/operations-app-icon.png"
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "TUNCA Rapor"
+    title: "Operasyon Portalı"
   }
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#bd3332"
+  themeColor: "#0f766e"
 };
 
 const vercelObservabilityEnabled =

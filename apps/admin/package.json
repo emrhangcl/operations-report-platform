@@ -1,5 +1,5 @@
 {
-  "name": "@tunca/admin",
+  "name": "@operations/admin",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
-    "@tunca/payments": "workspace:*",
-    "@tunca/shared": "workspace:*",
-    "@tunca/types": "workspace:*",
-    "@tunca/validation": "workspace:*",
+    "@operations/payments": "workspace:*",
+    "@operations/shared": "workspace:*",
+    "@operations/types": "workspace:*",
+    "@operations/validation": "workspace:*",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "exceljs": "^4.4.0",

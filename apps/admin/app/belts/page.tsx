@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import type { Belt } from "@tunca/types";
-import { beltSchema } from "@tunca/validation";
+import type { Belt } from "@operations/types";
+import { beltSchema } from "@operations/validation";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";

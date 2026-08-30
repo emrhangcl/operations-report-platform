@@ -5,7 +5,7 @@ alter table public.installation_assignments
 
 do $$
 declare
-  tunca_organization_id uuid;
+  imported_organization_id uuid;
   has_legacy_data boolean;
 begin
   select
@@ -24,16 +24,16 @@ begin
   end if;
 
   insert into public.organizations (name, slug, status)
-  values ('TUNCA', 'tunca', 'active')
+  values ('İçe Aktarılan Çalışma Alanı', 'imported-workspace', 'active')
   on conflict (slug) do nothing;
 
   select id
-    into strict tunca_organization_id
+    into strict imported_organization_id
     from public.organizations
-   where slug = 'tunca';
+   where slug = 'imported-workspace';
 
   update public.profiles
-     set organization_id = tunca_organization_id
+     set organization_id = imported_organization_id
    where organization_id is null;
 
   insert into public.organization_members (
@@ -43,7 +43,7 @@ begin
     is_active
   )
   select
-    tunca_organization_id,
+    imported_organization_id,
     profiles.id,
     case
       when profiles.role = 'ADMIN' then 'ADMIN'::public.organization_member_role
@@ -57,11 +57,11 @@ begin
         updated_at = now();
 
   update public.companies
-     set organization_id = tunca_organization_id
+     set organization_id = imported_organization_id
    where organization_id is null;
 
   update public.belts
-     set organization_id = tunca_organization_id
+     set organization_id = imported_organization_id
    where organization_id is null;
 
   update public.company_lines
@@ -71,12 +71,12 @@ begin
            from public.companies
           where companies.id = company_lines.company_id
        ),
-       tunca_organization_id
+       imported_organization_id
      )
    where organization_id is null;
 
   update public.vehicles
-     set organization_id = tunca_organization_id
+     set organization_id = imported_organization_id
    where organization_id is null;
 
   update public.reports
@@ -91,7 +91,7 @@ begin
            from public.companies
           where companies.id = reports.company_id
        ),
-       tunca_organization_id
+       imported_organization_id
      )
    where organization_id is null;
 
@@ -136,12 +136,12 @@ begin
            from public.companies
           where companies.id = installation_assignments.company_id
        ),
-       tunca_organization_id
+       imported_organization_id
      )
    where organization_id is null;
 
   update public.report_number_counters
-     set organization_id = tunca_organization_id
+     set organization_id = imported_organization_id
    where organization_id is null;
 
   update public.audit_logs
@@ -151,7 +151,7 @@ begin
            from public.profiles
           where profiles.id = audit_logs.actor_id
        ),
-       tunca_organization_id
+       imported_organization_id
      )
    where organization_id is null;
 
@@ -162,14 +162,14 @@ begin
     starts_at
   )
   select
-    tunca_organization_id,
+    imported_organization_id,
     'lifetime',
     'lifetime',
     now()
   where not exists (
     select 1
       from public.subscriptions
-     where organization_id = tunca_organization_id
+     where organization_id = imported_organization_id
        and status = 'lifetime'
   );
 end

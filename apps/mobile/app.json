@@ -1,30 +1,30 @@
 {
   "expo": {
-    "name": "TUNCA Rapor",
-    "slug": "tunca-rapor",
+    "name": "Operasyon Portalı",
+    "slug": "operations-portal",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/tunca-app-icon.png",
-    "scheme": "tunca-rapor",
+    "icon": "./assets/operations-app-icon.png",
+    "scheme": "operations-portal",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tunca.rapor"
+      "bundleIdentifier": "com.operations.portal"
     },
     "android": {
-      "package": "com.tunca.rapor",
+      "package": "com.operations.portal",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/tunca-app-icon.png",
-        "backgroundColor": "#f2f3f5"
+        "foregroundImage": "./assets/operations-app-icon.png",
+        "backgroundColor": "#f3f6f5"
       }
     },
     "splash": {
-      "image": "./assets/tunca-logo.png",
+      "image": "./assets/operations-app-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f2f3f5"
+      "backgroundColor": "#f3f6f5"
     },
     "plugins": [
       [

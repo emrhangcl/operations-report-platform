@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { FeaturesSection, WorkflowSection } from "../components/feature-sections";
@@ -9,11 +8,11 @@ export default function MarketingHomePage() {
   return (
     <MarketingShell>
       <section className="marketing-hero">
-        <Image alt="" aria-hidden className="marketing-hero-mark" height={520} priority src="/tunca-app-icon.png" width={520} />
+        <div aria-hidden className="marketing-hero-media" />
         <div className="marketing-hero-content">
-          <span className="marketing-kicker">Montaj ve saha operasyonları</span>
-          <h1>TUNCA Rapor Sistemi</h1>
-          <p>Montaj atamalarını planlayın, saha bilgilerini düzenli toplayın ve tamamlanan raporları güvenli şekilde paylaşın.</p>
+          <span className="marketing-kicker">Saha operasyonlarında tek çalışma alanı</span>
+          <h1>Operasyon Portalı</h1>
+          <p>Montaj atamalarını planlayın, sahadan gelen bilgileri düzenli toplayın ve tamamlanan raporları güvenle paylaşın.</p>
           <div className="marketing-hero-actions">
             <Link className="button marketing-primary" href="/register">
               Firma hesabı oluştur <ArrowRight aria-hidden size={18} />

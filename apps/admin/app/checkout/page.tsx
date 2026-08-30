@@ -12,7 +12,7 @@ export default function CheckoutPage() {
           <h1>Ödeme Başlangıcı</h1>
           <p>Ödeme sağlayıcısı seçimi ve canlı API bilgileri henüz tanımlanmadı. Bu ekran sahte başarılı ödeme üretmez.</p>
         </div>
-        <div className="message info">Kart bilgileri TNCSYSTEM veritabanında saklanmayacak. Ödeme, seçilecek sağlayıcının güvenli sayfasında tamamlanacak.</div>
+        <div className="message info">Kart bilgileri sistem veritabanında saklanmayacak. Ödeme, seçilecek sağlayıcının güvenli sayfasında tamamlanacak.</div>
         <div className="actions"><Link className="button" href="/pricing">Paketleri Gör</Link><Link className="button secondary" href="/contact">Destek</Link></div>
       </section>
     </MarketingShell>

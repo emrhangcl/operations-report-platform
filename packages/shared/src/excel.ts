@@ -222,7 +222,7 @@ export function mapReportToExcelRow(report: ExportReportRow) {
 
 export async function createReportsWorkbook(reports: ExportReportRow[]) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "TUNCA Rapor Sistemi";
+  workbook.creator = "Operasyon Portalı";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet("Raporlar");

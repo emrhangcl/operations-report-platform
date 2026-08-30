@@ -6,8 +6,8 @@
     "exactOptionalPropertyTypes": true,
     "baseUrl": ".",
     "paths": {
-      "@tunca/types": ["../../packages/types/src/index.ts"],
-      "@tunca/validation": ["../../packages/validation/src/index.ts"]
+      "@operations/types": ["../../packages/types/src/index.ts"],
+      "@operations/validation": ["../../packages/validation/src/index.ts"]
     }
   },
   "include": ["App.tsx", "src/**/*.ts", "src/**/*.tsx"]

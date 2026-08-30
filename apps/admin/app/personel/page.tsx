@@ -30,14 +30,14 @@ import type {
   ReportStatus,
   ReportWorkItem,
   Vehicle
-} from "@tunca/types";
+} from "@operations/types";
 import {
   emptyReportFormValues,
   processActions,
   productTypes,
   reportFormSchema
-} from "@tunca/validation";
-import { TuncaLogo } from "../../components/logo";
+} from "@operations/validation";
+import { ProductBrand } from "../../components/logo";
 import { downloadOrShareReportPdf } from "../../lib/report-pdf-client";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
@@ -485,7 +485,7 @@ export default function PersonnelWebPage() {
       <main className="personnel-page personnel-center">
         <section className="personnel-login-panel">
           <div className="personnel-brand">
-            <TuncaLogo />
+            <ProductBrand />
           </div>
           <div className="message error">{accessMessage}</div>
           <button className="button" onClick={signOut} type="button">
@@ -501,7 +501,7 @@ export default function PersonnelWebPage() {
     <main className="personnel-page">
       <header className="personnel-topbar">
         <div className="personnel-brand">
-          <TuncaLogo />
+          <ProductBrand />
         </div>
         <button className="button subtle" onClick={signOut} type="button">
           <LogOut aria-hidden size={18} />
@@ -611,7 +611,7 @@ function PersonnelLogin({
     <main className="personnel-page personnel-center">
       <form className="personnel-login-panel" onSubmit={signIn}>
         <div className="personnel-brand">
-          <TuncaLogo />
+          <ProductBrand />
         </div>
         <h1>Personel Girişi</h1>
         <Field label="E-posta">
@@ -668,7 +668,7 @@ function PersonnelHome({
   return (
     <section className="personnel-stack">
       <div className="personnel-hero">
-        <span>TUNCA Rapor</span>
+        <span>Operasyon Portalı</span>
         <h1>Merhaba {firstName}</h1>
         <p>{formatDateDisplay(formatDateValue(new Date()))}</p>
       </div>

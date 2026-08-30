@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, Car, ClipboardCheck, ClipboardList, CreditCard, Gauge, GitBranch, LogOut, Users, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getSubscriptionAccessMode } from "@tunca/shared";
-import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
+import { getSubscriptionAccessMode } from "@operations/shared";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
 import { getBrowserSupabase } from "../lib/supabase-browser";
-import { TuncaLogo } from "./logo";
+import { ProductBrand } from "./logo";
 
 const links = [
   { href: "/app", label: "Panel", icon: Gauge },
@@ -134,7 +134,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <main className="auth-page">
         <div className="login-panel">
           <div className="brand" style={{ marginBottom: 24 }}>
-            <TuncaLogo />
+            <ProductBrand />
           </div>
           <div className="message error">{message}</div>
           <button className="button" onClick={signOut} style={{ marginTop: 16 }} type="button">
@@ -149,7 +149,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <TuncaLogo />
+          <ProductBrand />
         </div>
         <nav className="nav" aria-label="Ana menü">
           {links.map((link) => {

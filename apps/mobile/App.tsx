@@ -21,13 +21,13 @@ import {
   TextInput,
   View
 } from "react-native";
-import type { Belt, Company, CompanyLine, OfflineDraft, Profile, ReportFormValues, ReportWorkItem, Vehicle } from "@tunca/types";
+import type { Belt, Company, CompanyLine, OfflineDraft, Profile, ReportFormValues, ReportWorkItem, Vehicle } from "@operations/types";
 import {
   emptyReportFormValues,
   processActions,
   productTypes,
   reportFormSchema
-} from "@tunca/validation";
+} from "@operations/validation";
 import type { PhotoDraft } from "./src/types";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
@@ -43,7 +43,7 @@ const supabase = supabaseUrl && supabaseAnonKey
     })
   : null;
 
-const draftKey = "tunca.offlineDrafts";
+const draftKey = "operations.offlineDrafts";
 const defaultPhotoCategory = "Genel";
 const turkeyTimeZone = "Europe/Istanbul";
 const turkishMonths = [
@@ -743,22 +743,17 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
-  const [failed, setFailed] = useState(false);
   return (
     <View style={[styles.brand, compact && styles.brandCompact]}>
-      {!failed ? (
-        <Image
-          onError={() => setFailed(true)}
-          resizeMode="contain"
-          source={require("./assets/tunca-logo.png")}
-          style={(compact ? styles.logoSmall : styles.logo) as ImageStyle}
-        />
-      ) : (
-        <View>
-          <Text style={styles.brandTitle}>TUNCA</Text>
-          <Text style={styles.brandSub}>Montaj ve Tamir Rapor Sistemi</Text>
-        </View>
-      )}
+      <Image
+        resizeMode="cover"
+        source={require("./assets/operations-app-icon.png")}
+        style={(compact ? styles.logoSmall : styles.logo) as ImageStyle}
+      />
+      <View style={styles.brandText}>
+        <Text style={[styles.brandTitle, compact && styles.brandTitleCompact]}>Operasyon Portalı</Text>
+        <Text style={styles.brandSub}>Saha ve rapor yönetimi</Text>
+      </View>
     </View>
   );
 }
@@ -783,7 +778,7 @@ function Home({
       <View style={styles.homeHero}>
         <View style={styles.homeHeroTop}>
           <View style={styles.homeHeroText}>
-            <Text style={styles.homeKicker}>TUNCA Rapor</Text>
+            <Text style={styles.homeKicker}>Operasyon Portalı</Text>
             <Text style={styles.homeTitle}>Merhaba {firstName}</Text>
             <Text style={styles.homeDate}>{formatDateDisplay(formatDateValue(new Date()))}</Text>
           </View>
@@ -951,7 +946,7 @@ function SubmittedReportDetail({
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <BackHeader title="Rapor Detayı" onBack={onBack} />
-      {loading ? <ActivityIndicator color="#bd3332" /> : null}
+      {loading ? <ActivityIndicator color="#0f766e" /> : null}
       {message ? <Text style={styles.error}>{message}</Text> : null}
       {report ? (
         <>
@@ -1752,7 +1747,7 @@ function syncLabel(status: OfflineDraft["status"]) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f2f3f5"
+    backgroundColor: "#f3f6f5"
   },
   centered: {
     flexGrow: 1,
@@ -1776,24 +1771,35 @@ const styles = StyleSheet.create({
   },
   brand: {
     alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "center",
     marginBottom: 20
   },
   brandCompact: {
-    alignItems: "flex-start",
+    justifyContent: "flex-start",
     marginBottom: 0
   },
   logo: {
-    height: 64,
-    width: 220
+    borderRadius: 8,
+    height: 52,
+    width: 52
   },
   logoSmall: {
-    height: 42,
-    width: 178
+    borderRadius: 7,
+    height: 38,
+    width: 38
+  },
+  brandText: {
+    gap: 2
   },
   brandTitle: {
-    color: "#30343a",
-    fontSize: 28,
+    color: "#263333",
+    fontSize: 21,
     fontWeight: "800"
+  },
+  brandTitleCompact: {
+    fontSize: 16
   },
   brandSub: {
     color: "#6e747c",
@@ -1808,7 +1814,7 @@ const styles = StyleSheet.create({
     padding: 18
   },
   title: {
-    color: "#25282c",
+    color: "#1d2928",
     fontSize: 24,
     fontWeight: "800"
   },
@@ -1827,7 +1833,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#bd3332",
+    backgroundColor: "#0f766e",
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 48,
@@ -1835,7 +1841,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonSmall: {
     alignItems: "center",
-    backgroundColor: "#bd3332",
+    backgroundColor: "#0f766e",
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 40,
@@ -1856,9 +1862,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12
   },
   iconButton: {
-    backgroundColor: "#30343a",
+    backgroundColor: "#263333",
     borderRadius: 6,
-    borderTopColor: "#bd3332",
+    borderTopColor: "#0f766e",
     borderTopWidth: 2,
     paddingHorizontal: 12,
     paddingVertical: 9
@@ -1875,15 +1881,15 @@ const styles = StyleSheet.create({
   error: {
     backgroundColor: "#faeaea",
     borderRadius: 6,
-    color: "#8e2526",
+    color: "#8f1d14",
     padding: 10
   },
   grid: {
     gap: 12
   },
   homeHero: {
-    backgroundColor: "#2f3338",
-    borderColor: "#3e444b",
+    backgroundColor: "#1c2928",
+    borderColor: "#344442",
     borderRadius: 8,
     borderWidth: 1,
     overflow: "hidden",
@@ -1900,7 +1906,7 @@ const styles = StyleSheet.create({
     gap: 5
   },
   homeKicker: {
-    color: "#f0c9c9",
+    color: "#8fd8d0",
     fontSize: 12,
     fontWeight: "800"
   },
@@ -1937,7 +1943,7 @@ const styles = StyleSheet.create({
     color: "#19735a"
   },
   connectionTextOff: {
-    color: "#8e2526"
+    color: "#8f1d14"
   },
   homeGrid: {
     gap: 12
@@ -1958,13 +1964,13 @@ const styles = StyleSheet.create({
   },
   tilePrimary: {
     alignItems: "center",
-    backgroundColor: "#bd3332",
-    borderColor: "#a22d2c",
+    backgroundColor: "#0f766e",
+    borderColor: "#0b5f59",
     justifyContent: "center",
     minHeight: 88
   },
   tileAccent: {
-    backgroundColor: "#bd3332",
+    backgroundColor: "#0f766e",
     borderRadius: 99,
     height: 4,
     marginBottom: 14,
@@ -1981,7 +1987,7 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   tileValue: {
-    color: "#bd3332",
+    color: "#0f766e",
     fontSize: 36,
     fontWeight: "800",
     marginTop: 8
@@ -2004,11 +2010,11 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   cardText: {
-    color: "#30343a",
+    color: "#263333",
     fontWeight: "600"
   },
   cardActionText: {
-    color: "#bd3332",
+    color: "#0f766e",
     fontWeight: "800",
     marginTop: 4
   },
@@ -2027,7 +2033,7 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   detailValue: {
-    color: "#30343a",
+    color: "#263333",
     fontSize: 15,
     fontWeight: "600"
   },
@@ -2062,13 +2068,13 @@ const styles = StyleSheet.create({
     padding: 14
   },
   sectionTitle: {
-    color: "#25282c",
+    color: "#1d2928",
     flex: 1,
     fontSize: 18,
     fontWeight: "800"
   },
   sectionAction: {
-    color: "#bd3332",
+    color: "#0f766e",
     fontSize: 13,
     fontWeight: "800"
   },
@@ -2083,7 +2089,7 @@ const styles = StyleSheet.create({
   readonly: {
     backgroundColor: "#eef0f2",
     borderRadius: 6,
-    color: "#30343a",
+    color: "#263333",
     padding: 10
   },
   inputLike: {
@@ -2100,7 +2106,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   inputLikeText: {
-    color: "#30343a",
+    color: "#263333",
     flex: 1,
     fontWeight: "600"
   },
@@ -2109,7 +2115,7 @@ const styles = StyleSheet.create({
     fontWeight: "500"
   },
   inputAction: {
-    color: "#bd3332",
+    color: "#0f766e",
     fontSize: 13,
     fontWeight: "800"
   },
@@ -2142,7 +2148,7 @@ const styles = StyleSheet.create({
     width: 42
   },
   sheetTitle: {
-    color: "#25282c",
+    color: "#1d2928",
     fontSize: 18,
     fontWeight: "800",
     marginBottom: 12
@@ -2175,25 +2181,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   optionRowActive: {
-    backgroundColor: "#faeeee",
-    borderColor: "#bd3332"
+    backgroundColor: "#edf7f4",
+    borderColor: "#0f766e"
   },
   optionText: {
-    color: "#30343a",
+    color: "#263333",
     flex: 1,
     fontWeight: "600"
   },
   optionTextActive: {
-    color: "#8e2526"
+    color: "#0b5f59"
   },
   optionCheck: {
-    color: "#bd3332",
+    color: "#0f766e",
     fontSize: 12,
     fontWeight: "800"
   },
   optionFooter: {
     alignItems: "center",
-    backgroundColor: "#bd3332",
+    backgroundColor: "#0f766e",
     borderRadius: 6,
     justifyContent: "center",
     marginTop: 4,
@@ -2213,11 +2219,11 @@ const styles = StyleSheet.create({
     width: 22
   },
   checkboxOn: {
-    backgroundColor: "#bd3332",
-    borderColor: "#bd3332"
+    backgroundColor: "#0f766e",
+    borderColor: "#0f766e"
   },
   switchText: {
-    color: "#30343a",
+    color: "#263333",
     flex: 1
   },
   photoRow: {

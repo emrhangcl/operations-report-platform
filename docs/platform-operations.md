@@ -35,8 +35,8 @@ Bu durumlar sahte başarı, sahte ödeme veya demo metrikle gizlenmez.
 ```powershell
 corepack pnpm exec supabase db reset --local --no-seed
 corepack pnpm exec supabase test db --local
-corepack pnpm --filter @tunca/admin typecheck
-corepack pnpm --filter @tunca/admin lint
+corepack pnpm --filter @operations/admin typecheck
+corepack pnpm --filter @operations/admin lint
 ```
 
 Production Supabase üzerinde migration çalıştırılmadan önce staging backup, provider sandbox callback’i ve ilk platform hesabının doğrulanması gerekir.

@@ -5,7 +5,7 @@ export function PublicFooter() {
     <footer className="public-footer">
       <div className="public-footer-inner">
         <div>
-          <strong>TUNCA Rapor Sistemi</strong>
+          <strong>Operasyon Portalı</strong>
           <span>Montaj ve saha raporlarının güvenli çalışma alanı.</span>
         </div>
         <nav aria-label="Alt menü">

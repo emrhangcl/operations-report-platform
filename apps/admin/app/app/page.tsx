@@ -1,5 +1,8 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import { Building2, CalendarDays, Car, ClipboardCheck, FileClock, FileText, GitBranch, Users } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
@@ -72,22 +75,38 @@ export default function DashboardPage() {
 
   return (
     <AdminShell>
-      <PageHeader title="Yönetim Paneli" description="Gerçek veritabanı kayıtlarından hesaplanan özet." />
+      <PageHeader
+        title="Yönetim Paneli"
+        description="Güncel operasyon, rapor ve kayıt özeti."
+        action={(
+          <Link className="button" href="/assignments">
+            <ClipboardCheck aria-hidden size={18} /> Montaj Ata
+          </Link>
+        )}
+      />
       {error ? <div className="message error">{error}</div> : null}
       <section className="grid stats">
-        <StatCard label="Toplam Rapor" value={counts.totalReports} />
-        <StatCard label="Bu Ayki Raporlar" value={counts.monthlyReports} />
-        <StatCard label="Taslaklar" value={counts.drafts} />
-        <StatCard label="Aktif Montajlar" value={counts.assignments} />
-        <StatCard label="Personel" value={counts.personnel} />
-        <StatCard label="Firma" value={counts.companies} />
-        <StatCard label="Hat" value={counts.lines} />
-        <StatCard label="Araç" value={counts.vehicles} />
+        <StatCard href="/reports" icon={FileText} label="Toplam Rapor" value={counts.totalReports} />
+        <StatCard href="/reports" icon={CalendarDays} label="Bu Ayki Raporlar" value={counts.monthlyReports} />
+        <StatCard href="/reports" icon={FileClock} label="Taslaklar" value={counts.drafts} />
+        <StatCard href="/assignments" icon={ClipboardCheck} label="Aktif Montajlar" value={counts.assignments} />
+        <StatCard href="/personnel" icon={Users} label="Personel" value={counts.personnel} />
+        <StatCard href="/companies" icon={Building2} label="Firma" value={counts.companies} />
+        <StatCard href="/lines" icon={GitBranch} label="Hat" value={counts.lines} />
+        <StatCard href="/vehicles" icon={Car} label="Araç" value={counts.vehicles} />
       </section>
     </AdminShell>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return <div className="card"><div className="stat-label">{label}</div><div className="stat-value">{value}</div></div>;
+function StatCard({ href, icon: Icon, label, value }: { href: string; icon: LucideIcon; label: string; value: number }) {
+  return (
+    <Link className="card stat-card" href={href}>
+      <span className="stat-icon"><Icon aria-hidden size={18} /></span>
+      <span className="stat-content">
+        <span className="stat-label">{label}</span>
+        <strong className="stat-value">{value}</strong>
+      </span>
+    </Link>
+  );
 }

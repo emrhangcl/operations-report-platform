@@ -1,4 +1,4 @@
-# TNCSYSTEM Self-Hosting Rehberi
+# OPERASYON PORTALI Self-Hosting Rehberi
 
 Bu rehber Next.js uygulamasini Vercel'i kapatmadan, tek bir Linux sunucuda Docker ile paralel olarak calistirmak icindir. Production Vercel yayini yeni kurulum dogrulanana kadar degistirilmemelidir.
 
@@ -7,7 +7,7 @@ Bu rehber Next.js uygulamasini Vercel'i kapatmadan, tek bir Linux sunucuda Docke
 Ilk self-host kurulumu tek uygulama instance'i icin tasarlanmistir:
 
 ```text
-Internet -> HTTPS reverse proxy -> 127.0.0.1:3000 -> TNCSYSTEM Docker container -> Supabase
+Internet -> HTTPS reverse proxy -> 127.0.0.1:3000 -> OPERASYON PORTALI Docker container -> Supabase
 ```
 
 Supabase bu asamada yonetilen dis servis olarak kalir. Next.js container'i Auth, Database ve private Storage'a HTTPS ile baglanir.
@@ -30,7 +30,7 @@ Bu dosyalar `.gitignore` tarafindan dislanir. `SUPABASE_SERVICE_ROLE_KEY` yalniz
 
 ```bash
 corepack pnpm install --frozen-lockfile
-NEXT_STANDALONE=true corepack pnpm --filter @tunca/admin build
+NEXT_STANDALONE=true corepack pnpm --filter @operations/admin build
 cd apps/admin
 mkdir -p .next/standalone/apps/admin/.next
 cp -R public .next/standalone/apps/admin/public
@@ -47,7 +47,7 @@ curl --fail http://127.0.0.1:3000/api/health
 Beklenen yanit:
 
 ```json
-{"service":"tncsystem-admin","status":"ok"}
+{"service":"operations-portal","status":"ok"}
 ```
 
 Windows'ta pnpm standalone klasoru olustururken symlink yetkisi gerekir. Dogrudan Windows build'i kullanilacaksa Developer Mode'u etkinlestirin veya yetkili bir terminal kullanin. Docker/Linux build'inde bu kisit yoktur.
@@ -67,7 +67,7 @@ Health kontrolu:
 
 ```bash
 curl --fail http://127.0.0.1:3000/api/health
-docker inspect --format '{{json .State.Health}}' tunca-report-system-web-1
+docker inspect --format '{{json .State.Health}}' operations-portal-web-1
 ```
 
 Container:

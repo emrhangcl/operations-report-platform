@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import type { Company, CompanyLine } from "@tunca/types";
-import { companyLineSchema } from "@tunca/validation";
+import type { Company, CompanyLine } from "@operations/types";
+import { companyLineSchema } from "@operations/validation";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";

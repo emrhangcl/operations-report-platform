@@ -4,7 +4,15 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(30);
 
-select is((select count(*) from public.organizations), 0::bigint, 'test starts without organizations');
+select is(
+  (
+    select count(*)
+      from public.organizations
+     where id between '11000000-0000-4000-8000-000000000001' and '11000000-0000-4000-8000-000000000006'
+  ),
+  0::bigint,
+  'test subscription organizations do not exist yet'
+);
 select is((select count(*) from public.plans), 0::bigint, 'test starts without plans');
 
 insert into auth.users (

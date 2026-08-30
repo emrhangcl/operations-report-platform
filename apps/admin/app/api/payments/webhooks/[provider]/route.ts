@@ -5,7 +5,7 @@ import {
   isPaymentProviderName,
   PaymentProviderNotConfiguredError,
   type NormalizedPaymentEvent
-} from "@tunca/payments";
+} from "@operations/payments";
 import { NextResponse } from "next/server";
 import { apiError, withRequestId } from "../../../../../lib/api-response";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";

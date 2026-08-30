@@ -1,5 +1,5 @@
 {
-  "name": "tunca-report-system",
+  "name": "operations-portal",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
@@ -7,12 +7,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:admin": "pnpm --filter @tunca/admin dev",
-    "dev:mobile": "pnpm --filter @tunca/mobile start",
+    "dev:admin": "pnpm --filter @operations/admin dev",
+    "dev:mobile": "pnpm --filter @operations/mobile start",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
-    "build": "pnpm --filter @tunca/admin build && pnpm --filter @tunca/mobile typecheck",
+    "build": "pnpm --filter @operations/admin build && pnpm --filter @operations/mobile typecheck",
     "create-admin": "tsx scripts/create-admin.ts"
   },
   "devDependencies": {

@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export function GET() {
   return NextResponse.json(
     {
-      service: "tncsystem-admin",
+      service: "operations-portal",
       status: "ok"
     },
     {

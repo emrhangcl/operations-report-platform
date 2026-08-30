@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import type { Vehicle } from "@tunca/types";
-import { vehicleSchema } from "@tunca/validation";
+import type { Vehicle } from "@operations/types";
+import { vehicleSchema } from "@operations/validation";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";

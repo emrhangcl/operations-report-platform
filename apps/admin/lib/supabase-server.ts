@@ -3,8 +3,8 @@ import "server-only";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { getSubscriptionAccessMode } from "@tunca/shared";
-import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@tunca/types";
+import { getSubscriptionAccessMode } from "@operations/shared";
+import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
 
 function readProjectEnv(name: string) {
   const paths = [resolve(process.cwd(), ".env"), resolve(process.cwd(), "../..", ".env")];

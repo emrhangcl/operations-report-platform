@@ -11,8 +11,8 @@ import type {
   Profile,
   ReportWorkItem,
   Vehicle
-} from "@tunca/types";
-import { processActions, productTypes } from "@tunca/validation";
+} from "@operations/types";
+import { processActions, productTypes } from "@operations/validation";
 import { AdminShell } from "../../components/admin-shell";
 import { PageHeader } from "../../components/page-header";
 import { getBrowserSupabase } from "../../lib/supabase-browser";

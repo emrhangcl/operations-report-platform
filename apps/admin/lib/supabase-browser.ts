@@ -5,8 +5,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 type BrowserSupabaseScope = "admin" | "personnel";
 
 const storageKeys: Record<BrowserSupabaseScope, string> = {
-  admin: "tunca-admin-auth",
-  personnel: "tunca-personnel-auth"
+  admin: "operations-admin-auth",
+  personnel: "operations-personnel-auth"
 };
 
 const clients: Partial<Record<BrowserSupabaseScope, SupabaseClient>> = {};

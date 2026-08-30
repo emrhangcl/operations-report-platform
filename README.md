@@ -1,6 +1,6 @@
-# TUNCA Montaj ve Tamir Rapor Sistemi
+# Operasyon Portalı
 
-TUNCA Teknik Makina Sanayi ve Ticaret A.Ş. için hazırlanmış temiz başlangıçlı monorepo demo sistemidir. Uygulama demo kayıt, seed veri veya fake dashboard verisi oluşturmaz.
+Montaj atamalarını, saha operasyonlarını ve kurumsal raporları yöneten çok kiracılı web platformudur. Geçici ürün adı yalnızca açıklayıcıdır; müşteri markasına bağlı değildir. Uygulama demo kayıt, seed veri veya sahte dashboard verisi oluşturmaz.
 
 ## Yapı
 
@@ -13,7 +13,7 @@ packages/shared Ortak tarih, izin, Excel ve rapor numarası yardımcıları
 supabase/migrations PostgreSQL schema, trigger ve RLS
 ```
 
-Logo dosyası `assets/tunca-logo.png`, admin içinde `apps/admin/public/tunca-logo.png`, mobil içinde `apps/mobile/assets/tunca-logo.png` olarak yerleştirildi.
+Web ve mobil uygulamalar nötr ürün kimliği kullanır. Müşteri logoları ürün arayüzüne veya dağıtım paketlerine gömülmez.
 
 ## Web Kullanımı
 
@@ -116,7 +116,7 @@ Raporu oluşturan kullanıcı frontend'den gelen bir değere göre değil, Supab
 Rapor numarası yalnızca `SUBMITTED` durumda transaction-safe PostgreSQL trigger ile üretilir:
 
 ```text
-TNC-2026-000001
+RPR-2026-000001
 ```
 
 `project`, imza, kaşe veya onay workflow alanları eklenmedi.

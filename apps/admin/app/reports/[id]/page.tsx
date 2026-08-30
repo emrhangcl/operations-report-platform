@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Building2, CalendarDays, ChevronLeft, ClipboardList, Clock3, Download, Gauge, ImageIcon, Maximize2, Share2, Trash2, UserRound, X } from "lucide-react";
-import type { ReportWorkItem } from "@tunca/types";
+import type { ReportWorkItem } from "@operations/types";
 import { AdminShell } from "../../../components/admin-shell";
 import { PageHeader } from "../../../components/page-header";
 import { downloadOrShareReportPdf } from "../../../lib/report-pdf-client";

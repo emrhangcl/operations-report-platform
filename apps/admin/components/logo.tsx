@@ -1,28 +1,15 @@
-"use client";
+import { ClipboardCheck } from "lucide-react";
 
-import Image from "next/image";
-import { useState } from "react";
-
-export function TuncaLogo() {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <div className="brand-fallback">
-        <strong>TUNCA</strong>
-        <span>Montaj ve Tamir Rapor Sistemi</span>
-      </div>
-    );
-  }
-
+export function ProductBrand() {
   return (
-    <Image
-      src="/tunca-logo.png"
-      alt="TUNCA"
-      width={180}
-      height={48}
-      priority
-      onError={() => setFailed(true)}
-    />
+    <span className="brand-lockup">
+      <span aria-hidden className="brand-symbol">
+        <ClipboardCheck size={22} strokeWidth={2.2} />
+      </span>
+      <span className="brand-copy">
+        <strong>Operasyon Portalı</strong>
+        <span>Saha ve rapor yönetimi</span>
+      </span>
+    </span>
   );
 }
