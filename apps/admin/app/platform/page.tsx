@@ -2,7 +2,9 @@
 
 import {
   AlertTriangle,
+  Activity,
   ArrowLeft,
+  BarChart3,
   Building2,
   CheckCircle2,
   ChevronRight,
@@ -14,6 +16,7 @@ import {
   PlayCircle,
   RefreshCw,
   ShieldCheck,
+  TrendingUp,
   UserRound,
   XCircle
 } from "lucide-react";
@@ -456,9 +459,12 @@ export default function PlatformPage() {
       <header className="platform-topbar">
         <Link className="platform-brand" href="/platform">
           <ProductBrand />
-          <span className="platform-context-label">Platform Yönetimi</span>
+          <span className="platform-context-label">Owner Console</span>
         </Link>
         <nav className="platform-topbar-actions" aria-label="Platform menüsü">
+          <a className="platform-topbar-link" href="#genel-bakis">Genel bakış</a>
+          <a className="platform-topbar-link" href="#firmalar">Firmalar</a>
+          <a className="platform-topbar-link" href="#sistem">Sistem</a>
           <Link className="button secondary" href="/app">
             <Building2 aria-hidden size={17} /> Firma paneli
           </Link>
@@ -469,11 +475,11 @@ export default function PlatformPage() {
       </header>
 
       <div className="platform-container">
-        <section className="platform-page-heading">
+        <section className="platform-page-heading" id="genel-bakis">
           <div>
-            <span className="platform-eyebrow">Merkezi platform yönetimi</span>
-            <h1>Platform paneli</h1>
-            <p>Firma, abonelik, ödeme ve güvenlik durumunu yalnızca doğrulanmış kayıtlar üzerinden yönetin.</p>
+            <span className="platform-eyebrow">Owner workspace</span>
+            <h1>İşletme genel bakışı</h1>
+            <p>Gelir, abonelik ve müşteri sağlığını izleyin; gerekli platform işlemlerini tek çalışma alanından yönetin.</p>
           </div>
           <button className="button secondary" disabled={refreshing} onClick={refresh} type="button">
             <RefreshCw aria-hidden className={refreshing ? "platform-spin" : ""} size={17} /> Yenile
@@ -484,22 +490,19 @@ export default function PlatformPage() {
         {error ? <div className="message error">{error}</div> : null}
 
         <section className="platform-metric-grid" aria-label="Platform metrikleri">
-          <MetricCard icon={<Building2 aria-hidden size={18} />} label="Kayıtlı firma" value={metrics.total_organizations} />
-          <MetricCard icon={<CheckCircle2 aria-hidden size={18} />} label="Aktif abonelik" value={metrics.active_subscriptions} />
-          <MetricCard label="Aylık abonelik" value={metrics.monthly_subscriptions} />
-          <MetricCard label="Yıllık abonelik" value={metrics.yearly_subscriptions} />
-          <MetricCard label="Lifetime abonelik" value={metrics.lifetime_subscriptions} tone="ok" />
-          <MetricCard icon={<CircleDollarSign aria-hidden size={18} />} label="Bekleyen ödeme" value={metrics.pending_payments} tone="warn" />
-          <MetricCard icon={<AlertTriangle aria-hidden size={18} />} label="Başarısız yenileme" value={metrics.failed_renewals} tone="danger" />
-          <MetricCard label="İptal edilen" value={metrics.canceled_subscriptions} />
-          <MetricCard label="Grace period" value={metrics.grace_period_accounts} tone="warn" />
-          <MetricCard label="Salt okunur" value={metrics.read_only_accounts} tone="warn" />
-          <MetricCard label="Son 30 gün kayıt" value={metrics.new_organizations_30d} />
-          <MetricCard icon={<UserRound aria-hidden size={18} />} label="Aktif kullanıcı" value={metrics.active_users} />
-          <MetricCard label="MRR" value={formatMoney(metrics.mrr_minor)} />
-          <MetricCard label="ARR" value={formatMoney(metrics.arr_minor)} />
-          <MetricCard label="Başarılı tahsilat" value={formatMoney(metrics.successful_collected_minor)} tone="ok" />
-          <MetricCard label="İade toplamı" value={formatMoney(metrics.refunded_total_minor)} tone="warn" />
+          <MetricCard detail={`${metrics.active_subscriptions} aktif abonelik`} icon={<TrendingUp aria-hidden size={18} />} label="Aylık tekrarlayan gelir" value={formatMoney(metrics.mrr_minor)} tone="ok" />
+          <MetricCard detail={`Yıllık görünüm: ${formatMoney(metrics.arr_minor)}`} icon={<BarChart3 aria-hidden size={18} />} label="Toplam tahsilat" value={formatMoney(metrics.successful_collected_minor)} />
+          <MetricCard detail={`Son 30 gün +${metrics.new_organizations_30d}`} icon={<Building2 aria-hidden size={18} />} label="Kayıtlı firma" value={metrics.total_organizations} />
+          <MetricCard detail={`${metrics.pending_payments} ödeme bekliyor`} icon={<Activity aria-hidden size={18} />} label="Aktif kullanıcı" value={metrics.active_users} tone={metrics.failed_renewals > 0 ? "warn" : ""} />
+        </section>
+
+        <section className="platform-health-strip" aria-label="Abonelik sağlığı">
+          <div><span>Aylık</span><strong>{metrics.monthly_subscriptions}</strong></div>
+          <div><span>Yıllık</span><strong>{metrics.yearly_subscriptions}</strong></div>
+          <div><span>Lifetime</span><strong>{metrics.lifetime_subscriptions}</strong></div>
+          <div className={metrics.failed_renewals > 0 ? "warn" : ""}><span>Başarısız yenileme</span><strong>{metrics.failed_renewals}</strong></div>
+          <div className={metrics.grace_period_accounts > 0 ? "warn" : ""}><span>Ek sürede</span><strong>{metrics.grace_period_accounts}</strong></div>
+          <div><span>İade toplamı</span><strong>{formatMoney(metrics.refunded_total_minor)}</strong></div>
         </section>
 
         <section className="platform-summary-grid">
@@ -549,7 +552,7 @@ export default function PlatformPage() {
           </div>
         </section>
 
-        <section className="platform-workspace-grid">
+        <section className="platform-workspace-grid" id="firmalar">
           <div className="platform-panel platform-organizations-panel">
             <PanelHeading icon={<Building2 aria-hidden size={18} />} title="Firmalar" detail={`${dashboard.organizations.length} kayıt`} />
             {dashboard.organizations.length === 0 ? (
@@ -739,7 +742,7 @@ export default function PlatformPage() {
           </aside>
         </section>
 
-        <section className="platform-lower-grid">
+        <section className="platform-lower-grid" id="sistem">
           <div className="platform-panel">
             <PanelHeading icon={<CircleDollarSign aria-hidden size={18} />} title="Son webhook olayları" />
             {dashboard.paymentEvents.length === 0 ? <EmptyState text="Henüz webhook olayı bulunmuyor." /> : (
@@ -776,8 +779,8 @@ export default function PlatformPage() {
   );
 }
 
-function MetricCard({ icon, label, value, tone = "" }: { icon?: React.ReactNode; label: string; value: React.ReactNode; tone?: string }) {
-  return <div className={`platform-metric-card ${tone ? `tone-${tone}` : ""}`}><div className="platform-metric-label">{icon}{label}</div><strong>{value}</strong></div>;
+function MetricCard({ detail, icon, label, value, tone = "" }: { detail?: string; icon?: React.ReactNode; label: string; value: React.ReactNode; tone?: string }) {
+  return <div className={`platform-metric-card ${tone ? `tone-${tone}` : ""}`}><div className="platform-metric-label">{icon}{label}</div><strong>{value}</strong>{detail ? <span className="platform-metric-detail">{detail}</span> : null}</div>;
 }
 
 function PanelHeading({ icon, title, detail }: { icon: React.ReactNode; title: string; detail?: string }) {
