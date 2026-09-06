@@ -8,7 +8,9 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
       <AlertTriangle aria-hidden size={32} />
       <h1>İşlem Tamamlanamadı</h1>
       <p>Beklenmeyen bir hata oluştu. Hassas teknik ayrıntılar bu ekranda gösterilmez.</p>
-      <button className="button" onClick={reset} type="button"><RotateCcw aria-hidden size={18} /> Yeniden Dene</button>
+      <button className="button" onClick={reset} type="button">
+        <RotateCcw aria-hidden size={18} /> Yeniden Dene
+      </button>
     </main>
   );
 }

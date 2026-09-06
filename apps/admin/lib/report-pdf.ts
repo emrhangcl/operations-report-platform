@@ -1,6 +1,6 @@
 import "server-only";
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import type { Column, Content, StyleDictionary, TDocumentDefinitions } from "pdfmake/interfaces";
@@ -18,6 +18,7 @@ const pdfMakeRoot = [
 ].find((candidate) => existsSync(candidate)) ?? join(runtimeRoot, "node_modules", "pdfmake");
 const fontRoot = join(pdfMakeRoot, "fonts", "Roboto");
 let pdfMakeReady = false;
+let defaultLogoDataUrl: string | null | undefined;
 
 export type PdfReportRow = Record<string, unknown> & {
   id: string;
@@ -29,15 +30,34 @@ export type PdfReportRow = Record<string, unknown> & {
   report_personnel?: Array<{ name_snapshot: string | null }>;
 };
 
-export async function createReportPdfBuffer(report: PdfReportRow) {
+export interface ReportPdfOptions {
+  logoDataUrl?: string | null;
+}
+
+export async function createReportPdfBuffer(report: PdfReportRow, options: ReportPdfOptions = {}) {
   initPdfMake();
-  const document = createReportDocument(report);
+  const document = createReportDocument(report, options);
   return pdfMake.createPdf(document).getBuffer();
 }
 
 export function reportPdfFilename(report: Pick<PdfReportRow, "report_number" | "id">) {
   const base = report.report_number || `Rapor-${report.id.slice(0, 8)}`;
   return `${base.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`;
+}
+
+export function getDefaultReportPdfLogoDataUrl() {
+  if (defaultLogoDataUrl !== undefined) return defaultLogoDataUrl;
+
+  const logoPath = [
+    join(appRoot, "public", "operations-app-icon.png"),
+    join(runtimeRoot, "public", "operations-app-icon.png")
+  ].find((candidate) => existsSync(candidate));
+
+  defaultLogoDataUrl = logoPath
+    ? `data:image/png;base64,${readFileSync(logoPath).toString("base64")}`
+    : null;
+
+  return defaultLogoDataUrl;
 }
 
 function initPdfMake() {
@@ -57,10 +77,11 @@ function initPdfMake() {
   pdfMakeReady = true;
 }
 
-function createReportDocument(report: PdfReportRow): TDocumentDefinitions {
+function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): TDocumentDefinitions {
   const workItems = reportWorkItems(report);
+  const reportPersonnel = personnelText(report);
   const content: Content[] = [
-    header(report),
+    header(report, options.logoDataUrl),
     divider(),
     {
       columns: [
@@ -136,7 +157,7 @@ function createReportDocument(report: PdfReportRow): TDocumentDefinitions {
     { text: "İmza Alanları", style: "sectionTitle", margin: [0, 9, 0, 4] },
     {
       columns: [
-        signatureBox("Saha Personeli"),
+        signatureBox("İşlemi Yapan Personel", reportPersonnel),
         signatureBox("Müşteri Yetkilisi")
       ],
       columnGap: 14
@@ -198,16 +219,28 @@ const styles: StyleDictionary = {
   muted: {
     color: "#66707a",
     fontSize: 6.7
+  },
+  brandCaption: {
+    color: "#66707a",
+    fontSize: 6.9
   }
 };
 
-function header(report: PdfReportRow): Content {
+function header(report: PdfReportRow, logoDataUrl?: string | null): Content {
   return {
     columns: [
       {
         stack: [
-          { text: "OPERASYON PORTALI", style: "title" },
-          { text: "Saha ve rapor yönetimi", style: "subtitle" }
+          ...(logoDataUrl
+            ? [
+                {
+                  image: logoDataUrl,
+                  fit: [120, 34],
+                  margin: [0, 0, 0, 2]
+                } as Content
+              ]
+            : [{ text: "OPERASYON PORTALI", style: "title" } as Content]),
+          { text: "Saha ve rapor yönetimi", style: "brandCaption" }
         ]
       },
       {
@@ -292,15 +325,15 @@ function workItemsTable(items: ReportWorkItem[]): Content {
   };
 }
 
-function signatureBox(title: string): Column {
+function signatureBox(title: string, name?: string): Column {
   return {
     width: "*",
     table: {
       widths: ["*"],
       body: [[{
         stack: [
-          { text: title, bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 16] },
-          { text: "Ad Soyad", style: "muted", margin: [0, 0, 0, 11] },
+          { text: title, bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 5] },
+          { text: name && name !== "-" ? clip(name, 105) : "Ad Soyad", style: name && name !== "-" ? "tableValue" : "muted", margin: [0, 0, 0, 22] },
           { canvas: [{ type: "line", x1: 0, y1: 0, x2: 330, y2: 0, lineColor: "#66707a", lineWidth: 0.7 }] },
           { text: "İmza", style: "muted", margin: [0, 4, 0, 0] }
         ],
@@ -384,7 +417,8 @@ function workItemsFromValue(
 }
 
 function personnelText(report: PdfReportRow) {
-  return report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-";
+  return report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ")
+    || text(report.created_by_name_snapshot);
 }
 
 function reportWorkItemsText(report: Record<string, unknown>) {

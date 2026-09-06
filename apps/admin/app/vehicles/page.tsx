@@ -4,8 +4,24 @@ import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
 import type { Vehicle } from "@operations/types";
 import { vehicleSchema } from "@operations/validation";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 type VehicleForm = {
@@ -24,6 +40,7 @@ export default function VehiclesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Vehicle | null>(null);
 
   async function load() {
     const supabase = getBrowserSupabase();
@@ -82,8 +99,6 @@ export default function VehiclesPage() {
   }
 
   async function remove(vehicle: Vehicle) {
-    if (!confirm(`"${vehicle.plate}" plakalı araç silinsin mi?`)) return;
-
     setMessage("");
     setLoading(true);
     try {
@@ -98,6 +113,7 @@ export default function VehiclesPage() {
       setMessage("Araç silindi.");
     } finally {
       setLoading(false);
+      setPendingDelete(null);
     }
   }
 
@@ -110,94 +126,105 @@ export default function VehiclesPage() {
   }
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Araçlar"
         description="Mobil raporda personelin seçeceği araç plakalarını yönetin."
+        action={<StatusBadge label={`${vehicles.length} araç`} tone="neutral" />}
       />
       <form className="form-panel" onSubmit={submit}>
-        <div className="form-grid">
-          <Field label="Plaka">
-            <input
-              onChange={(event) => setForm({ ...form, plate: event.target.value.toLocaleUpperCase("tr-TR") })}
-              required
-              value={form.plate}
-            />
-          </Field>
-          <Field label="Açıklama">
-            <input
-              onChange={(event) => setForm({ ...form, description: event.target.value })}
-              value={form.description}
-            />
-          </Field>
-        </div>
-        <div className="actions">
-          <button className="button" disabled={loading} type="submit">
-            <Save aria-hidden size={18} />
+        <FormSection>
+          <div className="form-grid">
+            <FormField label="Plaka">
+              <input
+                onChange={(event) => setForm({ ...form, plate: event.target.value.toLocaleUpperCase("tr-TR") })}
+                required
+                value={form.plate}
+              />
+            </FormField>
+            <FormField label="Açıklama">
+              <input
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
+                value={form.description}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+        <FormActions>
+          <Button disabled={loading} icon={<Save aria-hidden size={18} />} type="submit">
             {editingId ? "Güncelle" : "Araç Ekle"}
-          </button>
+          </Button>
           {editingId ? (
-            <button
-              className="button subtle"
+            <Button
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
-              type="button"
+              icon={<X aria-hidden size={18} />}
+              variant="subtle"
             >
-              <X aria-hidden size={18} />
               Vazgeç
-            </button>
+            </Button>
           ) : null}
-        </div>
+        </FormActions>
       </form>
-      {message ? <div className={message.includes("eklendi") || message.includes("güncellendi") || message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
-      <div className="table-panel">
+      {message ? (
+        <Alert tone={message.includes("eklendi") || message.includes("güncellendi") || message.includes("silindi") ? "success" : "error"}>
+          {message}
+        </Alert>
+      ) : null}
+      <DataTablePanel>
         {vehicles.length === 0 ? (
-          <div className="empty">Henüz araç eklenmemiş.</div>
+          <EmptyState>Henüz araç eklenmemiş.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Plaka</th>
-                <th>Açıklama</th>
-                <th>Oluşturulma</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>Plaka</DataTableHead>
+                <DataTableHead>Açıklama</DataTableHead>
+                <DataTableHead>Oluşturulma</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {vehicles.map((vehicle) => (
-                <tr key={vehicle.id}>
-                  <td>{vehicle.plate}</td>
-                  <td>{vehicle.description ?? "-"}</td>
-                  <td>{new Date(vehicle.created_at).toLocaleDateString("tr-TR")}</td>
-                  <td>
-                    <div className="actions" style={{ marginTop: 0 }}>
-                      <button className="button secondary" onClick={() => edit(vehicle)} type="button">
-                        <Pencil aria-hidden size={16} />
+                <DataTableRow key={vehicle.id}>
+                  <DataTableCell>{vehicle.plate}</DataTableCell>
+                  <DataTableCell>{vehicle.description ?? "-"}</DataTableCell>
+                  <DataTableCell>{new Date(vehicle.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  <DataTableCell>
+                    <FormActions style={{ marginTop: 0 }}>
+                      <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(vehicle)} variant="secondary">
                         Düzenle
-                      </button>
-                      <button className="button danger" disabled={loading} onClick={() => remove(vehicle)} type="button">
-                        <Trash2 aria-hidden size={16} />
+                      </Button>
+                      <Button
+                        disabled={loading}
+                        icon={<Trash2 aria-hidden size={16} />}
+                        onClick={() => setPendingDelete(vehicle)}
+                        variant="danger"
+                      >
                         Sil
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      </Button>
+                    </FormActions>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
+      </DataTablePanel>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description={pendingDelete ? `"${pendingDelete.plate}" plakalı araç silinsin mi?` : undefined}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            void remove(pendingDelete);
+          }
+        }}
+        open={Boolean(pendingDelete)}
+        title="Araç silme onayı"
+      />
+    </>
   );
 }

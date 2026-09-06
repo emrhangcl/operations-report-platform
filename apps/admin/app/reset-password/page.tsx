@@ -33,13 +33,33 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell title="Yeni Parola">
-      {updated ? <div className="auth-status-block"><p>Parolanız güncellendi.</p><Link className="button" href="/login">Giriş yap</Link></div> : null}
-      {!updated && !ready ? <div className="message error">Geçerli parola yenileme oturumu bulunamadı.</div> : null}
+    <AuthShell
+      description="Yeni parolanız en az 10 karakter olmalıdır."
+      title="Yeni Parola"
+    >
+      {updated ? (
+        <div className="auth-status-block" role="status">
+          <p>Parolanız güncellendi.</p>
+          <Link className="button" href="/login">Giriş yap</Link>
+        </div>
+      ) : null}
+      {!updated && !ready ? <div className="message error" role="alert">Geçerli parola yenileme oturumu bulunamadı.</div> : null}
       {!updated && ready ? (
-        <form className="public-form" onSubmit={submit}>
-          <label className="field"><span>Yeni parola</span><input autoComplete="new-password" minLength={10} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /></label>
-          {message ? <div className="message error">{message}</div> : null}
+        <form aria-describedby={message ? "reset-password-error" : undefined} className="public-form" onSubmit={submit}>
+          <label className="field">
+            <span>Yeni parola</span>
+            <input
+              autoComplete="new-password"
+              id="reset-password"
+              minLength={10}
+              name="new-password"
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              type="password"
+              value={password}
+            />
+          </label>
+          {message ? <div className="message error" id="reset-password-error" role="alert">{message}</div> : null}
           <button className="button public-form-submit" disabled={loading} type="submit">{loading ? "Güncelleniyor" : "Parolayı Güncelle"}</button>
         </form>
       ) : null}

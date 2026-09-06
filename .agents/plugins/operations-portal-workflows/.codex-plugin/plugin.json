@@ -1,0 +1,21 @@
+{
+  "name": "operations-portal-workflows",
+  "version": "0.1.0+codex.local-20260902-2200",
+  "description": "Repository-local Codex workflows for the Operations Portal project",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Operations Portal Workflows",
+    "shortDescription": "Repository workflows for this project.",
+    "longDescription": "Concise Codex workflows for feature development, bug fixes, security review, database migrations, code review, and release checks in this repository.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [
+      "Code",
+      "Review"
+    ],
+    "defaultPrompt": "Use an Operations Portal workflow for this repository task."
+  }
+}

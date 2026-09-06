@@ -139,21 +139,38 @@ export default function LoginPage() {
 
   return (
     <AuthShell
+      description="Yetkili yönetici veya personel hesabınızla devam edin."
       footer={<span>Firma hesabınız yok mu? <Link href="/register">Kayıt olun</Link></span>}
       title="Giriş"
     >
-      <form className="public-form" onSubmit={submit}>
+      <form aria-describedby={error ? "login-error" : notice ? "login-notice" : undefined} className="public-form" onSubmit={submit}>
         <label className="field">
           <span>E-posta</span>
-          <input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+          <input
+            autoComplete="email"
+            id="login-email"
+            name="email"
+            onChange={(event) => setEmail(event.target.value)}
+            required
+            type="email"
+            value={email}
+          />
         </label>
         <label className="field">
           <span>Parola</span>
-          <input autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+          <input
+            autoComplete="current-password"
+            id="login-password"
+            name="password"
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            type="password"
+            value={password}
+          />
         </label>
         <div className="form-inline-link"><Link href="/forgot-password">Parolamı unuttum</Link></div>
-        {notice ? <div className="message info">{notice}</div> : null}
-        {error ? <div className="message error">{error}</div> : null}
+        {notice ? <div className="message info" id="login-notice">{notice}</div> : null}
+        {error ? <div className="message error" id="login-error" role="alert">{error}</div> : null}
         <button className="button public-form-submit" disabled={loading} type="submit">
           <LogIn aria-hidden size={18} /> {loading ? "Giriş yapılıyor" : "Giriş Yap"}
         </button>

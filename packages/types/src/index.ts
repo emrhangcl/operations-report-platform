@@ -16,6 +16,7 @@ export type BillingInterval = "monthly" | "yearly" | "lifetime";
 export type ReportStatus = "DRAFT" | "SUBMITTED";
 
 export type InstallationAssignmentStatus =
+  | "DRAFT"
   | "ASSIGNED"
   | "IN_PROGRESS"
   | "COMPLETED"
@@ -115,6 +116,15 @@ export interface Vehicle {
   updated_at: string;
 }
 
+export interface Equipment {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ReportListItem {
   id: string;
   report_number: string | null;
@@ -174,6 +184,7 @@ export interface ReportFormValues {
   vehicle_plate: string;
   vehicle_start_km: string;
   vehicle_end_km: string;
+  used_equipment_ids: string[];
   used_equipment: string;
   workshop_departure_at: string;
   customer_arrival_at: string;

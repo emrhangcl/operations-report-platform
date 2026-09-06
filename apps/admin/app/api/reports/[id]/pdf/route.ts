@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
   createReportPdfBuffer,
+  getDefaultReportPdfLogoDataUrl,
   reportPdfFilename,
   type PdfReportRow
 } from "../../../../../lib/report-pdf";
+import { createOrganizationLogoPdfDataUrl } from "../../../../../lib/organization-branding";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { requireActiveProfile } from "../../../../../lib/supabase-server";
 
@@ -35,7 +37,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ message: "Bu rapora erişim yetkiniz yok." }, { status: 403 });
   }
 
-  const buffer = await createReportPdfBuffer(report);
+  const organizationLogoDataUrl = await createOrganizationLogoPdfDataUrl(
+    auth.service,
+    auth.organizationId,
+    auth.organizationLogoPath
+  );
+  const buffer = await createReportPdfBuffer(report, {
+    logoDataUrl: organizationLogoDataUrl ?? getDefaultReportPdfLogoDataUrl()
+  });
   const filename = reportPdfFilename(report);
 
   return new Response(new Uint8Array(buffer), {

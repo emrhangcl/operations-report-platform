@@ -45,9 +45,9 @@ export function FeaturesSection({ heading = "Saha operasyonu için gereken temel
     <section className="public-band" id="ozellikler">
       <div className="public-container">
         <div className="public-section-heading">
-          <span>Ürün</span>
+          <span>Tek merkez, net süreç</span>
           <h2>{heading}</h2>
-          <p>Tekrarlanan veri girişini azaltan, raporu bulunabilir ve paylaşılabilir tutan sade bir çalışma düzeni.</p>
+          <p>Ekiplerin günlük işini hızlandıran, yöneticilere görünürlük sağlayan ve müşteri teslimini standartlaştıran bir operasyon altyapısı.</p>
         </div>
         <div className="feature-grid">
           {features.map((feature, index) => {
@@ -68,17 +68,18 @@ export function FeaturesSection({ heading = "Saha operasyonu için gereken temel
 
 export function WorkflowSection() {
   const steps = [
-    ["01", "İşi planlayın", "Firma, hat, bant ve sorumlu personeli seçerek montaj atamasını hazırlayın."],
-    ["02", "Sahada tamamlayın", "Personel yalnız işlem sonrasında gereken alanları, zamanları ve fotoğrafları eklesin."],
-    ["03", "Raporlayın", "Gönderilen kayıt değişmeden saklansın; yönetici görüntülesin, PDF veya Excel olarak paylaşsın."]
+    ["01", "Planla", "Firma, hat, bant ve sorumlu personeli seçerek işi net bir kapsamla atayın."],
+    ["02", "Sahada tamamla", "Ekip zamanları, yapılan işlemleri, kilometreleri ve fotoğrafları telefondan girsin."],
+    ["03", "Kontrol et ve teslim et", "Raporu değişmez kayıt olarak saklayın; PDF veya Excel çıktısını müşteriyle paylaşın."]
   ];
 
   return (
-    <section className="public-band public-band-dark">
+    <section className="public-band public-band-soft">
       <div className="public-container workflow-layout">
-        <div className="public-section-heading light">
+        <div className="public-section-heading">
           <span>İş akışı</span>
-          <h2>Planlama ile teslim arasında daha az dağınıklık</h2>
+          <h2>Her iş aynı net adımlarla ilerler.</h2>
+          <p>Bilgi nerede, son durum ne, rapor hazır mı soruları için ayrı mesaj trafiğine gerek kalmaz.</p>
         </div>
         <ol className="workflow-list">
           {steps.map(([number, title, text]) => (

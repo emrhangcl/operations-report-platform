@@ -1,6 +1,14 @@
 import { BillingOverview } from "../../../components/billing-overview";
-import { MarketingShell } from "../../../components/marketing-shell";
+import { PageHeaderShell } from "../../../components/ui";
 
 export default function BillingPage() {
-  return <MarketingShell><section className="public-account-page wide"><div className="public-section-heading"><span>Firma Hesabı</span><h1>Faturalandırma</h1><p>Yalnızca gerçek ödeme ve fatura kayıtları gösterilir.</p></div><BillingOverview /></section></MarketingShell>;
+  return (
+    <>
+      <PageHeaderShell
+        description="Yalnızca gerçek ödeme ve fatura kayıtları gösterilir."
+        title="Faturalandırma"
+      />
+      <BillingOverview />
+    </>
+  );
 }

@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { NavigationFeedback } from "../components/navigation-feedback";
+import { RouteShell } from "../components/route-shell";
 import "./globals.css";
+import "./enterprise-system.css";
 
 export const metadata: Metadata = {
   applicationName: "Operasyon Portalı",
@@ -25,7 +28,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f766e"
+  themeColor: "#f6f6f7"
 };
 
 const vercelObservabilityEnabled =
@@ -33,9 +36,10 @@ const vercelObservabilityEnabled =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="tr" suppressHydrationWarning>
+    <html data-scroll-behavior="smooth" lang="tr" suppressHydrationWarning>
       <body>
-        {children}
+        <NavigationFeedback />
+        <RouteShell>{children}</RouteShell>
         {vercelObservabilityEnabled ? (
           <>
             <Analytics />

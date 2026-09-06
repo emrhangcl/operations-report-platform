@@ -156,7 +156,8 @@ const nextConfig = {
   },
   outputFileTracingIncludes: {
     "/api/reports/[id]/pdf": [
-      "./node_modules/pdfmake/fonts/Roboto/*.ttf"
+      "./node_modules/pdfmake/fonts/Roboto/*.ttf",
+      "./public/operations-app-icon.png"
     ]
   },
   ...(supabaseEndpoint

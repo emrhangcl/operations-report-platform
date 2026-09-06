@@ -25,7 +25,7 @@ export default function VerifyEmailPage() {
       description={verified ? "E-posta adresiniz doğrulandı." : "Kayıt adresinize gönderilen doğrulama bağlantısını açın."}
       title={verified ? "Doğrulama Tamamlandı" : "E-postanızı Doğrulayın"}
     >
-      <div className="auth-status-block">
+      <div className="auth-status-block" role="status">
         {email ? <strong>{email}</strong> : null}
         <p>{verified ? "Abonelik adımına geçmek için giriş yapabilirsiniz." : "E-posta birkaç dakika içinde gelmezse gereksiz klasörünü kontrol edin."}</p>
         <Link className="button" href="/login">Giriş sayfasına git</Link>

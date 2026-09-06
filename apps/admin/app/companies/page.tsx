@@ -4,9 +4,25 @@ import { FormEvent, useEffect, useState } from "react";
 import { Building2, Pencil, Save, Trash2, X } from "lucide-react";
 import type { Company } from "@operations/types";
 import { companySchema } from "@operations/validation";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
+import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
 
 type CompanyForm = {
   name: string;
@@ -28,6 +44,7 @@ export default function CompaniesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Company | null>(null);
 
   async function load() {
     const supabase = getBrowserSupabase();
@@ -91,8 +108,6 @@ export default function CompaniesPage() {
   }
 
   async function remove(company: Company) {
-    if (!confirm(`"${company.name}" firması silinsin mi?`)) return;
-
     setMessage("");
     setLoading(true);
     try {
@@ -107,10 +122,12 @@ export default function CompaniesPage() {
         setMessage(body?.message ?? "Firma silinemedi.");
         return;
       }
+      clearSupabaseReadCache();
       await load();
       setMessage("Firma silindi.");
     } finally {
       setLoading(false);
+      setPendingDelete(null);
     }
   }
 
@@ -125,114 +142,123 @@ export default function CompaniesPage() {
   }
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Firmalar"
         description="Rapor formlarında seçilecek müşteri firmalarını yönetin."
+        action={<StatusBadge label={`${companies.length} firma`} tone="neutral" />}
       />
       <form className="form-panel" onSubmit={submit}>
-        <div className="form-grid">
-          <Field label="Firma Adı">
-            <input
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-              required
-              value={form.name}
-            />
-          </Field>
-          <Field label="Adres">
-            <input
-              onChange={(event) => setForm({ ...form, address: event.target.value })}
-              value={form.address}
-            />
-          </Field>
-          <Field label="Yetkili Kişi">
-            <input
-              onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
-              value={form.contact_name}
-            />
-          </Field>
-          <Field label="Yetkili Telefon">
-            <input
-              onChange={(event) => setForm({ ...form, contact_phone: event.target.value })}
-              value={form.contact_phone}
-            />
-          </Field>
-        </div>
-        <div className="actions">
-          <button className="button" disabled={loading} type="submit">
-            <Save aria-hidden size={18} />
+        <FormSection>
+          <div className="form-grid">
+            <FormField label="Firma Adı">
+              <input
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                required
+                value={form.name}
+              />
+            </FormField>
+            <FormField label="Adres">
+              <input
+                onChange={(event) => setForm({ ...form, address: event.target.value })}
+                value={form.address}
+              />
+            </FormField>
+            <FormField label="Yetkili Kişi">
+              <input
+                onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
+                value={form.contact_name}
+              />
+            </FormField>
+            <FormField label="Yetkili Telefon">
+              <input
+                onChange={(event) => setForm({ ...form, contact_phone: event.target.value })}
+                value={form.contact_phone}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+        <FormActions>
+          <Button disabled={loading} icon={<Save aria-hidden size={18} />} type="submit">
             {editingId ? "Güncelle" : "Firma Ekle"}
-          </button>
+          </Button>
           {editingId ? (
-            <button
-              className="button subtle"
+            <Button
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
-              type="button"
+              icon={<X aria-hidden size={18} />}
+              variant="subtle"
             >
-              <X aria-hidden size={18} />
               Vazgeç
-            </button>
+            </Button>
           ) : null}
-        </div>
+        </FormActions>
       </form>
-      {message ? <div className={message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
-      <div className="table-panel">
+      {message ? (
+        <Alert tone={message.includes("silindi") ? "success" : "error"}>{message}</Alert>
+      ) : null}
+      <DataTablePanel>
         {companies.length === 0 ? (
-          <div className="empty">
+          <EmptyState>
             Henüz firma eklenmemiş. Yeni firma eklemek için &quot;Firma Ekle&quot; butonunu kullanın.
-          </div>
+          </EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Firma</th>
-                <th>Yetkili</th>
-                <th>Telefon</th>
-                <th>Oluşturulma</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>Firma</DataTableHead>
+                <DataTableHead>Yetkili</DataTableHead>
+                <DataTableHead>Telefon</DataTableHead>
+                <DataTableHead>Oluşturulma</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {companies.map((company) => (
-                <tr key={company.id}>
-                  <td>
+                <DataTableRow key={company.id}>
+                  <DataTableCell>
                     <Building2 aria-hidden size={16} /> {company.name}
                     <br />
                     <small>{company.address ?? "-"}</small>
-                  </td>
-                  <td>{company.contact_name ?? "-"}</td>
-                  <td>{company.contact_phone ?? "-"}</td>
-                  <td>{new Date(company.created_at).toLocaleDateString("tr-TR")}</td>
-                  <td>
-                    <div className="actions" style={{ marginTop: 0 }}>
-                      <button className="button secondary" onClick={() => edit(company)} type="button">
-                        <Pencil aria-hidden size={16} />
+                  </DataTableCell>
+                  <DataTableCell>{company.contact_name ?? "-"}</DataTableCell>
+                  <DataTableCell>{company.contact_phone ?? "-"}</DataTableCell>
+                  <DataTableCell>{new Date(company.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  <DataTableCell>
+                    <FormActions style={{ marginTop: 0 }}>
+                      <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(company)} variant="secondary">
                         Düzenle
-                      </button>
-                      <button className="button danger" disabled={loading} onClick={() => remove(company)} type="button">
-                        <Trash2 aria-hidden size={16} />
+                      </Button>
+                      <Button
+                        disabled={loading}
+                        icon={<Trash2 aria-hidden size={16} />}
+                        onClick={() => setPendingDelete(company)}
+                        variant="danger"
+                      >
                         Sil
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      </Button>
+                    </FormActions>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
+      </DataTablePanel>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description={pendingDelete ? `"${pendingDelete.name}" firması silinsin mi?` : undefined}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            void remove(pendingDelete);
+          }
+        }}
+        open={Boolean(pendingDelete)}
+        title="Firma silme onayı"
+      />
+    </>
   );
 }

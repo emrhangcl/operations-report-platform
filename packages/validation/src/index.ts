@@ -40,6 +40,7 @@ export const photoCategories = [
 export const userRoles = ["ADMIN", "PERSONNEL"] as const;
 
 export const installationAssignmentStatuses = [
+  "DRAFT",
   "ASSIGNED",
   "IN_PROGRESS",
   "COMPLETED",
@@ -69,6 +70,7 @@ export const emptyReportFormValues = {
   vehicle_plate: "",
   vehicle_start_km: "",
   vehicle_end_km: "",
+  used_equipment_ids: [] as string[],
   used_equipment: "",
   workshop_departure_at: "",
   customer_arrival_at: "",
@@ -139,6 +141,7 @@ export const reportFormSchema = z
     vehicle_plate: z.string().trim(),
     vehicle_start_km: z.string().trim(),
     vehicle_end_km: z.string().trim(),
+    used_equipment_ids: z.array(z.string().uuid()),
     used_equipment: z.string().trim(),
     workshop_departure_at: optionalDatetime,
     customer_arrival_at: optionalDatetime,
@@ -249,6 +252,12 @@ export const vehicleSchema = z.object({
   description: z.string().trim().optional().or(z.literal(""))
 });
 
+export const equipmentSchema = z.object({
+  name: z.string().trim().min(1, "Ekipman adı zorunludur."),
+  description: z.string().trim().optional().or(z.literal("")),
+  is_active: z.boolean().default(true)
+});
+
 export const personnelSchema = z.object({
   first_name: z.string().trim().min(1, "Ad zorunludur."),
   last_name: z.string().trim().min(1, "Soyad zorunludur."),
@@ -275,10 +284,10 @@ export const organizationRegistrationSchema = z.object({
 
 export const installationAssignmentSchema = z.object({
   title: z.string().trim().optional().or(z.literal("")),
-  assigned_to_profile_id: z.string().uuid("Personel seçimi zorunludur."),
+  assigned_to_profile_id: z.string().uuid("Personel seçimi zorunludur.").nullable().optional().or(z.literal("")),
   scheduled_date: z.string().trim().optional().or(z.literal("")),
   notes: z.string().trim().optional().or(z.literal("")),
-  company_id: z.string().uuid("Firma seçimi zorunludur."),
+  company_id: z.string().uuid("Firma seçimi zorunludur.").nullable().optional().or(z.literal("")),
   line_name: z.string().trim().optional().or(z.literal("")),
   report_values: z.record(z.unknown()).default({})
 });

@@ -39,7 +39,13 @@ export async function GET(request: Request) {
     if (reportNo) query = query.ilike("report_number", `%${reportNo}%`);
     if (companyId) query = query.eq("company_id", companyId);
     if (personnelId) query = query.eq("created_by_user_id", personnelId);
-    if (beltId) query = query.eq("belt_id", beltId);
+    if (beltId) {
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(beltId)) {
+        return NextResponse.json({ message: "Bant filtresi geçersiz." }, { status: 400 });
+      }
+      query = query.or(`belt_id.eq.${beltId},work_items.cs.${JSON.stringify([{ belt_id: beltId }])}`);
+    }
     if (status) query = query.eq("status", status);
   }
 

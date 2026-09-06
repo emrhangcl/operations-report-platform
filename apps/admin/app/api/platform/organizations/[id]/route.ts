@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
+import { createOrganizationLogoUrl } from "../../../../../lib/organization-branding";
 import { requirePlatformAdmin } from "../../../../../lib/supabase-server";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../../lib/request-body";
@@ -35,7 +36,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const organizationResult = await auth.service
     .from("organizations")
-    .select("id,name,slug,status,legal_name,tax_identifier,billing_email,timezone,created_at,updated_at,closed_at")
+    .select("id,name,slug,status,legal_name,tax_identifier,billing_email,timezone,created_at,updated_at,closed_at,logo_path")
     .eq("id", id)
     .maybeSingle();
 
@@ -94,9 +95,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const profilesById = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile]));
+  const { logo_path: logoPath, ...organization } = organizationResult.data;
+  const logoUrl = await createOrganizationLogoUrl(auth.service, id, logoPath);
 
   return NextResponse.json({
-    organization: organizationResult.data,
+    organization: { ...organization, logo_url: logoUrl },
     members: (membersResult.data ?? []).map((member) => ({
       ...member,
       profile: profilesById.get(member.profile_id) ?? null

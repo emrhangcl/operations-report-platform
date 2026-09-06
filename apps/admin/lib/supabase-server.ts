@@ -3,8 +3,6 @@ import "server-only";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { getSubscriptionAccessMode } from "@operations/shared";
-import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
 
 function readProjectEnv(name: string) {
   const paths = [resolve(process.cwd(), ".env"), resolve(process.cwd(), "../..", ".env")];
@@ -73,6 +71,19 @@ export function getServiceSupabase() {
 
 type OrganizationMemberRole = "OWNER" | "ADMIN" | "PERSONNEL";
 type AccessRequirement = "read" | "write";
+type AccessMode = "blocked" | "read" | "write";
+
+interface UserAccessContext {
+  organization_id: string;
+  organization_name: string;
+  organization_logo_path: string | null;
+  profile_is_active: boolean;
+  member_role: OrganizationMemberRole | null;
+  membership_is_active: boolean | null;
+  organization_status: string;
+  subscription_status: string | null;
+  access_mode: AccessMode;
+}
 
 export async function requirePlatformAdmin(request: Request) {
   const { url, anonKey } = getSupabaseConfig();
@@ -153,70 +164,20 @@ async function requireOrganizationProfile(request: Request, requiredAccess: Acce
   }
 
   const service = getServiceSupabase();
-  const { data: profile, error: profileError } = await service
-    .from("profiles")
-    .select("organization_id,is_active")
-    .eq("id", data.user.id)
-    .maybeSingle();
+  const contextResult = await service.rpc("get_user_access_context", {
+    candidate_user_id: data.user.id
+  });
+  const context = (Array.isArray(contextResult.data) ? contextResult.data[0] : null) as UserAccessContext | null;
 
-  if (profileError || !profile?.is_active || !profile.organization_id) {
+  if (contextResult.error || !context?.profile_is_active || !context.organization_id) {
     return { ok: false as const, message: "Aktif kullanıcı profili bulunamadı." };
   }
 
-  const { error: reconciliationError } = await service.rpc("reconcile_organization_subscription", {
-    target_organization_id: profile.organization_id
-  });
-
-  if (reconciliationError) {
-    return { ok: false as const, message: "Abonelik durumu doğrulanamadı." };
-  }
-
-  const [membershipResult, organizationResult, subscriptionResult] = await Promise.all([
-    service
-      .from("organization_members")
-      .select("role,is_active")
-      .eq("organization_id", profile.organization_id)
-      .eq("profile_id", data.user.id)
-      .maybeSingle(),
-    service
-      .from("organizations")
-      .select("status")
-      .eq("id", profile.organization_id)
-      .maybeSingle(),
-    service
-      .from("subscriptions")
-      .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,updated_at")
-      .eq("organization_id", profile.organization_id)
-      .eq("is_current", true)
-      .maybeSingle()
-  ]);
-
-  const membership = membershipResult.data as {
-    role: OrganizationMemberRole;
-    is_active: boolean;
-  } | null;
-
-  if (
-    membershipResult.error ||
-    organizationResult.error ||
-    subscriptionResult.error ||
-    !membership?.is_active ||
-    organizationResult.data?.status !== "active"
-  ) {
+  if (!context.membership_is_active || !context.member_role || context.organization_status !== "active") {
     return { ok: false as const, message: "Aktif organizasyon üyeliği bulunamadı." };
   }
 
-  const accessMode = getSubscriptionAccessMode(
-    {
-      organizationStatus: organizationResult.data.status as OrganizationStatus,
-      status: (subscriptionResult.data?.status as SubscriptionStatus | undefined) ?? null,
-      billingInterval: (subscriptionResult.data?.billing_interval as BillingInterval | undefined) ?? null,
-      currentPeriodEndsAt: subscriptionResult.data?.current_period_ends_at ?? null,
-      gracePeriodEndsAt: subscriptionResult.data?.grace_period_ends_at ?? null,
-      updatedAt: subscriptionResult.data?.updated_at ?? null
-    },
-    new Date()
-  );
+  const accessMode = context.access_mode;
 
   if (accessMode === "blocked") {
     return { ok: false as const, message: "Geçerli bir abonelik bulunamadı." };
@@ -229,10 +190,12 @@ async function requireOrganizationProfile(request: Request, requiredAccess: Acce
   return {
     ok: true as const,
     userId: data.user.id,
-    organizationId: profile.organization_id as string,
-    memberRole: membership.role,
+    organizationId: context.organization_id,
+    organizationName: context.organization_name,
+    organizationLogoPath: context.organization_logo_path,
+    memberRole: context.member_role,
     accessMode,
-    subscriptionStatus: (subscriptionResult.data?.status as SubscriptionStatus | null) ?? null,
+    subscriptionStatus: context.subscription_status,
     service
   };
 }

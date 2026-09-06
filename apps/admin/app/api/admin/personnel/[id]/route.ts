@@ -33,11 +33,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "Personel bulunamadı." }, { status: 404 });
   }
 
-  const { error: userError } = await admin.service.auth.admin.deleteUser(id);
-  if (userError) {
-    return NextResponse.json({ message: "Kullanıcı hesabı silinemedi." }, { status: 500 });
-  }
-
   const { error: profileError } = await admin.service
     .from("profiles")
     .delete()
@@ -46,6 +41,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   if (profileError) {
     return NextResponse.json({ message: "Personel profili silinemedi." }, { status: 500 });
+  }
+
+  const { error: userError } = await admin.service.auth.admin.deleteUser(id);
+  if (userError && !isMissingAuthUserError(userError.message)) {
+    console.error("Personnel auth user delete failed", userError);
   }
 
   await admin.service.from("audit_logs").insert({
@@ -58,4 +58,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   });
 
   return NextResponse.json({ ok: true });
+}
+
+function isMissingAuthUserError(message?: string) {
+  return /not found|does not exist|no user/i.test(message ?? "");
 }

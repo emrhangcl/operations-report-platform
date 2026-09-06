@@ -47,6 +47,30 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await admin.service.storage.from("report-photos").remove(storagePaths);
   }
 
+  const { error: assignmentError } = await admin.service
+    .from("installation_assignments")
+    .update({ report_id: null })
+    .eq("report_id", id)
+    .eq("organization_id", admin.organizationId);
+
+  if (assignmentError) {
+    console.error("Report assignment unlink failed", assignmentError);
+    return NextResponse.json({ message: "Rapora bağlı montaj ataması temizlenemedi." }, { status: 500 });
+  }
+
+  const childTables = ["report_personnel", "report_process_types", "report_process_actions", "report_photos"] as const;
+  for (const table of childTables) {
+    const { error: childDeleteError } = await admin.service
+      .from(table)
+      .delete()
+      .eq("report_id", id);
+
+    if (childDeleteError) {
+      console.error(`Report child delete failed: ${table}`, childDeleteError);
+      return NextResponse.json({ message: "Rapora bağlı kayıtlar silinemedi." }, { status: 500 });
+    }
+  }
+
   const { error } = await admin.service
     .from("reports")
     .delete()
@@ -54,6 +78,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     .eq("organization_id", admin.organizationId);
 
   if (error) {
+    console.error("Report delete failed", error);
     return NextResponse.json({ message: "Rapor silinemedi." }, { status: 500 });
   }
 

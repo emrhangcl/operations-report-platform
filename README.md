@@ -17,12 +17,15 @@ Web ve mobil uygulamalar nötr ürün kimliği kullanır. Müşteri logoları ü
 
 ## Web Kullanımı
 
-Vercel'e dağıtılan Next.js uygulaması iki ekranı birlikte taşır:
+Vercel'e dağıtılan Next.js uygulaması tanıtım sitesi, firma paneli, personel ekranı ve platform sahibi alanını birlikte taşır:
 
-- Admin panel: `/`
+- Tanıtım sitesi: `/`
+- Giriş ekranı: `/login`
+- Firma yönetim paneli: `/app`
 - Personel rapor ekranı: `/personel`
+- Platform sahibi paneli: `/platform`
 
-Personel tarafı mobil web/PWA olarak kullanılabilir. iPhone ve Android kullanıcıları `/personel` adresini tarayıcıdan açıp ana ekrana ekleyerek uygulama gibi kullanabilir. Expo Go dağıtım için gerekli değildir.
+Personel tarafı mobil web/PWA olarak kullanılabilir. iPhone ve Android kullanıcıları `/personel` adresini tarayıcıdan açıp ana ekrana ekleyerek uygulama gibi kullanabilir. Expo Go aktif dağıtım akışı için gerekli değildir.
 
 ## Kurulum
 

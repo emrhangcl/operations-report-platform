@@ -4,8 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Building2, CalendarDays, Car, ClipboardCheck, FileClock, FileText, GitBranch, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
+import { Alert, LoadingState, PageHeaderShell } from "../../components/ui";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 interface DashboardCounts {
@@ -33,10 +32,14 @@ const emptyCounts: DashboardCounts = {
 export default function DashboardPage() {
   const [counts, setCounts] = useState(emptyCounts);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
     const client = supabase;
 
     async function load() {
@@ -55,6 +58,7 @@ export default function DashboardPage() {
 
       if ([totalReports, monthlyReports, drafts, assignments, personnel, companies, lines, vehicles].some((result) => result.error)) {
         setError("Dashboard bilgileri alınamadı. Bağlantınızı kontrol edin.");
+        setIsLoading(false);
         return;
       }
 
@@ -68,14 +72,19 @@ export default function DashboardPage() {
         lines: lines.count ?? 0,
         vehicles: vehicles.count ?? 0
       });
+      setIsLoading(false);
     }
 
-    load().catch(() => setError("Dashboard bilgileri alınamadı. Bağlantınızı kontrol edin."));
+    load().catch(() => {
+      setError("Dashboard bilgileri alınamadı. Bağlantınızı kontrol edin.");
+      setIsLoading(false);
+    });
   }, []);
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
+        eyebrow="Operasyon merkezi"
         title="Yönetim Paneli"
         description="Güncel operasyon, rapor ve kayıt özeti."
         action={(
@@ -84,18 +93,22 @@ export default function DashboardPage() {
           </Link>
         )}
       />
-      {error ? <div className="message error">{error}</div> : null}
-      <section className="grid stats">
-        <StatCard href="/reports" icon={FileText} label="Toplam Rapor" value={counts.totalReports} />
-        <StatCard href="/reports" icon={CalendarDays} label="Bu Ayki Raporlar" value={counts.monthlyReports} />
-        <StatCard href="/reports" icon={FileClock} label="Taslaklar" value={counts.drafts} />
-        <StatCard href="/assignments" icon={ClipboardCheck} label="Aktif Montajlar" value={counts.assignments} />
-        <StatCard href="/personnel" icon={Users} label="Personel" value={counts.personnel} />
-        <StatCard href="/companies" icon={Building2} label="Firma" value={counts.companies} />
-        <StatCard href="/lines" icon={GitBranch} label="Hat" value={counts.lines} />
-        <StatCard href="/vehicles" icon={Car} label="Araç" value={counts.vehicles} />
-      </section>
-    </AdminShell>
+      {error ? <Alert tone="error">{error}</Alert> : null}
+      {isLoading ? (
+        <LoadingState label="Operasyon özeti hazırlanıyor..." />
+      ) : (
+        <section aria-label="Operasyon metrikleri" className="grid stats">
+          <StatCard href="/reports" icon={FileText} label="Toplam Rapor" value={counts.totalReports} />
+          <StatCard href="/reports" icon={CalendarDays} label="Bu Ayki Raporlar" value={counts.monthlyReports} />
+          <StatCard href="/reports" icon={FileClock} label="Taslaklar" value={counts.drafts} />
+          <StatCard href="/assignments" icon={ClipboardCheck} label="Aktif Montajlar" value={counts.assignments} />
+          <StatCard href="/personnel" icon={Users} label="Personel" value={counts.personnel} />
+          <StatCard href="/companies" icon={Building2} label="Firma" value={counts.companies} />
+          <StatCard href="/lines" icon={GitBranch} label="Hat" value={counts.lines} />
+          <StatCard href="/vehicles" icon={Car} label="Araç" value={counts.vehicles} />
+        </section>
+      )}
+    </>
   );
 }
 

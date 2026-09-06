@@ -13,7 +13,10 @@ export default function CheckoutPage() {
           <p>Ödeme sağlayıcısı seçimi ve canlı API bilgileri henüz tanımlanmadı. Bu ekran sahte başarılı ödeme üretmez.</p>
         </div>
         <div className="message info">Kart bilgileri sistem veritabanında saklanmayacak. Ödeme, seçilecek sağlayıcının güvenli sayfasında tamamlanacak.</div>
-        <div className="actions"><Link className="button" href="/pricing">Paketleri Gör</Link><Link className="button secondary" href="/contact">Destek</Link></div>
+        <div className="actions">
+          <Link className="button" href="/pricing">Paketleri Gör</Link>
+          <Link className="button secondary" href="/contact">Destek</Link>
+        </div>
       </section>
     </MarketingShell>
   );

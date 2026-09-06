@@ -15,3 +15,5 @@ admin-login-qr.png
 expo-go-qr.png
 .playwright-cli/
 artifacts/
+
+.env*

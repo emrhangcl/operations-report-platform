@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(33);
 
 select is(
   (
@@ -181,6 +181,13 @@ select
   'Customer ' || organization_number
 from generate_series(1, 6) as organization_number;
 
+insert into public.equipment (id, organization_id, name)
+select
+  ('71000000-0000-4000-8000-00000000000' || organization_number)::uuid,
+  ('11000000-0000-4000-8000-00000000000' || organization_number)::uuid,
+  'Equipment ' || organization_number
+from generate_series(1, 6) as organization_number;
+
 insert into public.reports (
   id,
   client_request_id,
@@ -297,6 +304,10 @@ select lives_ok(
   $$insert into public.companies (name) values ('Active Subscription Customer')$$,
   'active tenant can create application data'
 );
+select lives_ok(
+  $$insert into public.equipment (name) values ('Active Subscription Equipment')$$,
+  'active tenant can create equipment'
+);
 select is(
   private.has_entitlement('11000000-0000-4000-8000-000000000001', 'reports.export'),
   false,
@@ -324,11 +335,18 @@ select is(
   'read-only subscription cannot write'
 );
 select is((select count(*) from public.companies), 1::bigint, 'read-only tenant keeps access to existing data');
+select is((select count(*) from public.equipment), 1::bigint, 'read-only tenant can read existing equipment');
 select throws_ok(
   $$insert into public.companies (name) values ('Forbidden Read-Only Customer')$$,
   '42501',
   'new row violates row-level security policy "subscription_insert_access" for table "companies"',
   'read-only tenant cannot create application data'
+);
+select throws_ok(
+  $$insert into public.equipment (name) values ('Forbidden Read-Only Equipment')$$,
+  '42501',
+  null,
+  'read-only tenant cannot create equipment directly'
 );
 select is((select count(*) from storage.objects), 1::bigint, 'read-only tenant can view existing report photos');
 select throws_ok(

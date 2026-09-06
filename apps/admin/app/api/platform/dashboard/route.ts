@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       .limit(200),
     auth.service
       .from("plans")
-      .select("id,code,name,currency,monthly_price_minor,yearly_price_minor,is_active")
+      .select("id,code,name,description,currency,monthly_price_minor,yearly_price_minor,is_active,is_public")
       .order("monthly_price_minor", { ascending: true, nullsFirst: false })
       .limit(100),
     auth.service

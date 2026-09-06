@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
+  Clock,
   ClipboardCheck,
   ClipboardList,
   Download,
@@ -24,6 +25,7 @@ import type {
   Belt,
   Company,
   CompanyLine,
+  Equipment,
   InstallationAssignment,
   Profile,
   ReportFormValues,
@@ -38,6 +40,9 @@ import {
   reportFormSchema
 } from "@operations/validation";
 import { ProductBrand } from "../../components/logo";
+import { OrganizationBrand } from "../../components/organization-brand";
+import { Button, EmptyState } from "../../components/ui";
+import { clearAccountContextCache, loadAccountContext } from "../../lib/account-context-client";
 import { downloadOrShareReportPdf } from "../../lib/report-pdf-client";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
@@ -102,6 +107,7 @@ export default function PersonnelWebPage() {
   const [belts, setBelts] = useState<Belt[]>([]);
   const [companyLines, setCompanyLines] = useState<CompanyLine[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [personnel, setPersonnel] = useState<Profile[]>([]);
   const [draftReports, setDraftReports] = useState<ReportRow[]>([]);
   const [submittedReports, setSubmittedReports] = useState<ReportRow[]>([]);
@@ -150,21 +156,18 @@ export default function PersonnelWebPage() {
     const supabase = getPersonnelSupabase();
     if (!supabase || !sessionUserId) return;
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessResponse = await fetch("/api/account/access", {
-      cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${sessionData.session?.access_token ?? ""}`
-      }
-    });
-    const accessBody = await accessResponse.json().catch(() => ({})) as {
-      accessMode?: string;
-      message?: string;
-    };
-
-    if (!accessResponse.ok || !["read", "write"].includes(accessBody.accessMode ?? "")) {
+    let accessBody;
+    try {
+      accessBody = await loadAccountContext("personnel");
+    } catch (accessError) {
       setReadOnlyMode(false);
-      setAccessMessage(accessBody.message ?? "Abonelik erişimi doğrulanamadı.");
+      setAccessMessage(accessError instanceof Error ? accessError.message : "Abonelik erişimi doğrulanamadı.");
+      return;
+    }
+
+    if (accessBody.role !== "PERSONNEL") {
+      setReadOnlyMode(false);
+      setAccessMessage("Bu alan aktif personel hesabı ile kullanılabilir.");
       return;
     }
 
@@ -176,6 +179,7 @@ export default function PersonnelWebPage() {
       beltResult,
       lineResult,
       vehicleResult,
+      equipmentResult,
       personnelResult,
       draftResult,
       submittedResult,
@@ -186,6 +190,7 @@ export default function PersonnelWebPage() {
       supabase.from("belts").select("*").eq("is_active", true).order("code"),
       supabase.from("company_lines").select("*").order("name"),
       supabase.from("vehicles").select("*").order("plate"),
+      supabase.from("equipment").select("*").eq("is_active", true).order("name"),
       supabase
         .from("profiles")
         .select("*")
@@ -232,6 +237,7 @@ export default function PersonnelWebPage() {
     setBelts((beltResult.data ?? []) as Belt[]);
     setCompanyLines((lineResult.data ?? []) as CompanyLine[]);
     setVehicles((vehicleResult.data ?? []) as Vehicle[]);
+    setEquipment((equipmentResult.data ?? []) as Equipment[]);
     setPersonnel((personnelResult.data ?? []) as Profile[]);
     setDraftReports((draftResult.data ?? []) as ReportRow[]);
     setSubmittedReports((submittedResult.data ?? []) as ReportRow[]);
@@ -259,6 +265,7 @@ export default function PersonnelWebPage() {
   }
 
   async function signOut() {
+    clearAccountContextCache("personnel");
     await getPersonnelSupabase()?.auth.signOut();
     setProfile(null);
     setSessionUserId(null);
@@ -283,6 +290,20 @@ export default function PersonnelWebPage() {
     update(key, next as ReportFormValues[K]);
   }
 
+  function toggleEquipment(equipmentId: string) {
+    setValues((current) => {
+      const nextIds = current.used_equipment_ids.includes(equipmentId)
+        ? current.used_equipment_ids.filter((item) => item !== equipmentId)
+        : [...current.used_equipment_ids, equipmentId];
+
+      return {
+        ...current,
+        used_equipment_ids: nextIds,
+        used_equipment: equipmentNamesFromIds(nextIds, equipment)
+      };
+    });
+  }
+
   function startNewReport() {
     if (readOnlyMode) {
       showMessage("Aboneliğiniz salt okunur durumda. Yeni rapor oluşturamazsınız.", "error");
@@ -300,8 +321,8 @@ export default function PersonnelWebPage() {
       showMessage("Aboneliğiniz salt okunur durumda. Taslaklar düzenlenemez.", "error");
       return;
     }
-    setActiveAssignment(null);
-    setValues(reportToValues(report));
+    setActiveAssignment(assignments.find((assignment) => assignment.report_id === report.id) ?? null);
+    setValues(reportToValues(report, equipment));
     clearPhotos();
     setMessage("");
     setScreen("form");
@@ -314,10 +335,19 @@ export default function PersonnelWebPage() {
 
   async function openAssignment(assignment: InstallationAssignment) {
     setActiveAssignment(assignment);
-    setValues(assignmentToValues(assignment));
+    setValues(assignmentToValues(assignment, equipment));
     clearPhotos();
     setMessage("");
     setScreen("form");
+
+    if (assignment.report_id) {
+      const draftValues = await loadAssignmentDraftValues(assignment.report_id);
+      if (draftValues) {
+        setValues(draftValues);
+      } else {
+        showMessage("Bu montaja bağlı taslak rapor alınamadı. Atama bilgileriyle devam edebilirsiniz.", "error");
+      }
+    }
 
     if (assignment.status !== "ASSIGNED" || readOnlyMode) return;
 
@@ -370,7 +400,7 @@ export default function PersonnelWebPage() {
     }
 
     setMessage("");
-    const preparedValues = prepareReportValues(values, belts);
+    const preparedValues = prepareReportValues(values, belts, equipment);
 
     if (status === "SUBMITTED") {
       const parsed = reportFormSchema.safeParse(preparedValues);
@@ -400,14 +430,19 @@ export default function PersonnelWebPage() {
       }
 
       let assignmentMessage = "";
-      if (activeAssignment && status === "SUBMITTED") {
+      if (activeAssignment) {
         const { error: assignmentError } = await supabase
           .from("installation_assignments")
-          .update({ status: "COMPLETED", report_id: reportId })
+          .update({
+            report_id: reportId,
+            status: status === "SUBMITTED" ? "COMPLETED" : "IN_PROGRESS"
+          })
           .eq("id", activeAssignment.id);
 
         if (assignmentError) {
-          assignmentMessage = " Rapor kaydedildi ancak montaj ataması tamamlandı olarak işaretlenemedi.";
+          assignmentMessage = status === "SUBMITTED"
+            ? " Rapor kaydedildi ancak montaj ataması tamamlandı olarak işaretlenemedi."
+            : " Taslak kaydedildi ancak montaj atamasıyla ilişkilendirilemedi.";
         }
       }
 
@@ -421,11 +456,29 @@ export default function PersonnelWebPage() {
         showMessage(`Rapor gönderildi: ${String(data.report_number ?? "")}${assignmentMessage}`, assignmentMessage ? "error" : "info");
       } else {
         setScreen("home");
-        showMessage("Taslak kaydedildi.");
+        showMessage(`Taslak kaydedildi.${assignmentMessage}`, assignmentMessage ? "error" : "info");
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadAssignmentDraftValues(reportId: string) {
+    const supabase = getPersonnelSupabase();
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+      .from("reports")
+      .select("*, report_personnel(profile_id,name_snapshot)")
+      .eq("id", reportId)
+      .eq("status", "DRAFT")
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return reportToValues(data as ReportRow, equipment);
   }
 
   async function replaceReportPersonnel(reportId: string) {
@@ -485,13 +538,12 @@ export default function PersonnelWebPage() {
       <main className="personnel-page personnel-center">
         <section className="personnel-login-panel">
           <div className="personnel-brand">
-            <ProductBrand />
+            <OrganizationBrand scope="personnel" />
           </div>
           <div className="message error">{accessMessage}</div>
-          <button className="button" onClick={signOut} type="button">
-            <LogOut aria-hidden size={18} />
+          <Button icon={<LogOut aria-hidden size={18} />} onClick={signOut}>
             Çıkış Yap
-          </button>
+          </Button>
         </section>
       </main>
     );
@@ -501,12 +553,11 @@ export default function PersonnelWebPage() {
     <main className="personnel-page">
       <header className="personnel-topbar">
         <div className="personnel-brand">
-          <ProductBrand />
+          <OrganizationBrand scope="personnel" />
         </div>
-        <button className="button subtle" onClick={signOut} type="button">
-          <LogOut aria-hidden size={18} />
+        <Button icon={<LogOut aria-hidden size={18} />} onClick={signOut} variant="subtle">
           Çıkış
-        </button>
+        </Button>
       </header>
 
       {message ? <div className={`message ${messageTone}`}>{message}</div> : null}
@@ -520,8 +571,12 @@ export default function PersonnelWebPage() {
         <PersonnelHome
           draftCount={draftReports.length}
           assignmentCount={assignments.length}
+          assignments={assignments}
+          drafts={draftReports}
           onDrafts={() => setScreen("drafts")}
           onAssignments={() => setScreen("assignments")}
+          onAssignmentOpen={openAssignment}
+          onDraftOpen={openDraft}
           onNewReport={startNewReport}
           onSubmitted={() => setScreen("submitted")}
           profile={profile}
@@ -569,6 +624,7 @@ export default function PersonnelWebPage() {
           belts={belts}
           companies={companies}
           companyLines={companyLines}
+          equipment={equipment}
           loading={loading}
           personnel={personnel}
           photos={photos}
@@ -582,6 +638,7 @@ export default function PersonnelWebPage() {
           removePhoto={removePhoto}
           submitReport={submitReport}
           toggleArray={toggleArray}
+          toggleEquipment={toggleEquipment}
           update={update}
           updatePhotoCaption={updatePhotoCaption}
         />
@@ -634,9 +691,9 @@ function PersonnelLogin({
           />
         </Field>
         {message ? <div className="message error">{message}</div> : null}
-        <button className="button personnel-primary-action" disabled={loading} type="submit">
+        <Button className="personnel-primary-action" disabled={loading} type="submit">
           {loading ? "Giriş yapılıyor" : "Giriş Yap"}
-        </button>
+        </Button>
       </form>
     </main>
   );
@@ -644,9 +701,13 @@ function PersonnelLogin({
 
 function PersonnelHome({
   assignmentCount,
+  assignments,
   draftCount,
+  drafts,
   onAssignments,
+  onAssignmentOpen,
   onDrafts,
+  onDraftOpen,
   onNewReport,
   onSubmitted,
   profile,
@@ -654,9 +715,13 @@ function PersonnelHome({
   submittedCount
 }: {
   assignmentCount: number;
+  assignments: InstallationAssignment[];
   draftCount: number;
+  drafts: ReportRow[];
   onAssignments: () => void;
+  onAssignmentOpen: (assignment: InstallationAssignment) => void;
   onDrafts: () => void;
+  onDraftOpen: (report: ReportRow) => void;
   onNewReport: () => void;
   onSubmitted: () => void;
   profile: Profile | null;
@@ -664,36 +729,87 @@ function PersonnelHome({
   submittedCount: number;
 }) {
   const firstName = profile?.first_name?.trim() || "Personel";
+  const nextAssignments = assignments.slice(0, 3);
+  const nextDrafts = drafts.slice(0, 3);
 
   return (
     <section className="personnel-stack">
       <div className="personnel-hero">
-        <span>Operasyon Portalı</span>
+        <span>Saha çalışma alanı</span>
         <h1>Merhaba {firstName}</h1>
         <p>{formatDateDisplay(formatDateValue(new Date()))}</p>
       </div>
-      <button className="personnel-tile primary" disabled={readOnlyMode} onClick={onNewReport} type="button">
-        <Plus aria-hidden size={24} />
-        Yeni Rapor
-      </button>
+
       <div className="personnel-grid">
-        <button className="personnel-tile" onClick={onAssignments} type="button">
-          <ClipboardCheck aria-hidden size={22} />
-          <span>Montajlarım</span>
-          <strong>{assignmentCount}</strong>
+        <button className="personnel-tile primary" disabled={readOnlyMode} onClick={onNewReport} type="button">
+          <Plus aria-hidden size={24} />
+          Yeni Rapor
         </button>
-        <button className="personnel-tile" onClick={onDrafts} type="button">
-          <FileText aria-hidden size={22} />
-          <span>Taslaklarım</span>
-          <strong>{draftCount}</strong>
-        </button>
-        <button className="personnel-tile" onClick={onSubmitted} type="button">
-          <ClipboardList aria-hidden size={22} />
-          <span>Gönderdiğim Raporlar</span>
-          <strong>{submittedCount}</strong>
-        </button>
+        <PersonnelMetricTile icon={<ClipboardCheck aria-hidden size={22} />} label="Montaj" value={assignmentCount} onClick={onAssignments} />
+        <PersonnelMetricTile icon={<FileText aria-hidden size={22} />} label="Taslak" value={draftCount} onClick={onDrafts} />
+        <PersonnelMetricTile icon={<ClipboardList aria-hidden size={22} />} label="Gönderilen" value={submittedCount} onClick={onSubmitted} />
       </div>
+
+      <section className="personnel-section">
+        <h2><Clock aria-hidden size={18} /> İş Sırası</h2>
+        {nextAssignments.length === 0 ? (
+          <EmptyState className="personnel-empty compact" title="Aktif montaj yok">
+            Size atanmış açık montaj bulunmuyor.
+          </EmptyState>
+        ) : (
+          <div className="personnel-card-list">
+            {nextAssignments.map((assignment) => (
+              <button className="personnel-report-card" key={assignment.id} onClick={() => onAssignmentOpen(assignment)} type="button">
+                <span>{assignment.report_id ? "Taslak hazır" : assignment.status === "IN_PROGRESS" ? "Devam ediyor" : "Atandı"}</span>
+                <strong>{assignment.title}</strong>
+                <small>{[assignment.company_name_snapshot, assignmentWorkItemsText(assignment)].filter(Boolean).join(" / ") || "Firma bilgisi yok"}</small>
+                <small>{assignment.scheduled_date ? formatDateDisplay(assignment.scheduled_date) : "Tarih seçilmedi"}</small>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="personnel-section">
+        <h2><FileText aria-hidden size={18} /> Devam Eden Taslaklar</h2>
+        {nextDrafts.length === 0 ? (
+          <EmptyState className="personnel-empty compact" title="Taslak yok">
+            Kaydedilmiş taslak rapor bulunmuyor.
+          </EmptyState>
+        ) : (
+          <div className="personnel-card-list">
+            {nextDrafts.map((report) => (
+              <button className="personnel-report-card" key={report.id} onClick={() => onDraftOpen(report)} type="button">
+                <span>Taslak</span>
+                <strong>{report.company_name_snapshot ?? "Firma seçilmedi"}</strong>
+                <small>{reportWorkItemsText(report)}</small>
+                <small>{formatDateDisplay(report.report_date) || "-"}</small>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
     </section>
+  );
+}
+
+function PersonnelMetricTile({
+  icon,
+  label,
+  value,
+  onClick
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  onClick: () => void;
+}) {
+  return (
+    <button className="personnel-tile" onClick={onClick} type="button">
+      {icon}
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </button>
   );
 }
 
@@ -713,11 +829,15 @@ function AssignmentCards({
   return (
     <section className="personnel-stack">
       <BackHeader title={title} onBack={onBack} />
-      {assignments.length === 0 ? <div className="personnel-empty">{emptyText}</div> : null}
+      {assignments.length === 0 ? (
+        <EmptyState className="personnel-empty" title="Sırada iş yok">
+          {emptyText}
+        </EmptyState>
+      ) : null}
       <div className="personnel-card-list">
         {assignments.map((assignment) => (
           <button className="personnel-report-card" key={assignment.id} onClick={() => onOpen(assignment)} type="button">
-            <span>{assignment.status === "IN_PROGRESS" ? "Devam ediyor" : "Atandı"}</span>
+            <span>{assignment.report_id ? "Taslak var" : assignment.status === "IN_PROGRESS" ? "Devam ediyor" : "Atandı"}</span>
             <strong>{assignment.title}</strong>
             <small>
               {[assignment.company_name_snapshot, assignmentWorkItemsText(assignment)].filter(Boolean).join(" / ") || "Firma bilgisi yok"}
@@ -746,7 +866,11 @@ function ReportCards({
   return (
     <section className="personnel-stack">
       <BackHeader title={title} onBack={onBack} />
-      {reports.length === 0 ? <div className="personnel-empty">{emptyText}</div> : null}
+      {reports.length === 0 ? (
+        <EmptyState className="personnel-empty" title="Kayıt yok">
+          {emptyText}
+        </EmptyState>
+      ) : null}
       <div className="personnel-card-list">
         {reports.map((report) => (
           <button className="personnel-report-card" key={report.id} onClick={() => onOpen(report)} type="button">
@@ -843,18 +967,20 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
       <BackHeader title={report?.report_number ?? "Rapor Detayı"} onBack={onBack} />
       {report ? (
         <div className="personnel-detail-actions">
-          <button className="button secondary" disabled={pdfLoading !== null} onClick={() => handlePdf("download")} type="button">
-            <Download aria-hidden size={18} />
+          <Button icon={<Download aria-hidden size={18} />} disabled={pdfLoading !== null} onClick={() => handlePdf("download")} variant="secondary">
             {pdfLoading === "download" ? "Hazırlanıyor" : "PDF İndir"}
-          </button>
-          <button className="button personnel-primary-action" disabled={pdfLoading !== null} onClick={() => handlePdf("share")} type="button">
-            <Share2 aria-hidden size={18} />
+          </Button>
+          <Button icon={<Share2 aria-hidden size={18} />} className="personnel-primary-action" disabled={pdfLoading !== null} onClick={() => handlePdf("share")}>
             {pdfLoading === "share" ? "Hazırlanıyor" : "Paylaş"}
-          </button>
+          </Button>
         </div>
       ) : null}
       {message ? <div className="message error">{message}</div> : null}
-      {!report ? <div className="personnel-empty">Rapor yükleniyor.</div> : null}
+      {!report ? (
+        <EmptyState className="personnel-empty" title="Rapor yükleniyor">
+          Detaylar ve fotoğraf bağlantıları hazırlanıyor.
+        </EmptyState>
+      ) : null}
       {report ? (
         <>
           <DetailSection
@@ -921,9 +1047,11 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
             ]}
           />
           <section className="personnel-section">
-            <h2>Fotoğraflar</h2>
+            <h2><ImageIcon aria-hidden size={18} /> Fotoğraflar</h2>
             {(report.report_photos ?? []).length === 0 ? (
-              <div className="personnel-empty">Fotoğraf eklenmemiş.</div>
+              <EmptyState className="personnel-empty" title="Fotoğraf yok">
+                Fotoğraf eklenmemiş.
+              </EmptyState>
             ) : (
               <div className="personnel-photo-grid">
                 {(report.report_photos ?? []).map((photo) => {
@@ -964,6 +1092,7 @@ function ReportForm({
   belts,
   companies,
   companyLines,
+  equipment,
   loading,
   personnel,
   photos,
@@ -972,6 +1101,7 @@ function ReportForm({
   removePhoto,
   submitReport,
   toggleArray,
+  toggleEquipment,
   update,
   updatePhotoCaption,
   values,
@@ -983,6 +1113,7 @@ function ReportForm({
   belts: Belt[];
   companies: Company[];
   companyLines: CompanyLine[];
+  equipment: Equipment[];
   loading: boolean;
   personnel: Profile[];
   photos: PhotoDraft[];
@@ -994,6 +1125,7 @@ function ReportForm({
     key: "visiting_personnel_ids" | "product_types" | "process_actions" | "replacement_reasons",
     value: string
   ) => void;
+  toggleEquipment: (value: string) => void;
   update: <K extends keyof ReportFormValues>(key: K, value: ReportFormValues[K]) => void;
   updatePhotoCaption: (localId: string, caption: string) => void;
   values: ReportFormValues;
@@ -1169,7 +1301,13 @@ function ReportForm({
               {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.plate}>{vehicle.plate}</option>)}
             </select>
           </Field>
-          <TextField multiline label="Kullanılan Makine ve Ekipmanları" value={values.used_equipment} onChange={(value) => update("used_equipment", value)} />
+          <CheckPicker
+            className="span-2 personnel-compact-picker"
+            label="Kullanılan Makine ve Ekipmanları"
+            options={equipment.map((item) => ({ label: item.name, value: item.id }))}
+            selected={values.used_equipment_ids}
+            onToggle={toggleEquipment}
+          />
         </div>
       </details>
 
@@ -1353,16 +1491,12 @@ function ReportForm({
       </details>
 
       <div className="personnel-footer-actions">
-        {!isAssignedReport ? (
-          <button className="button secondary" disabled={loading} onClick={() => submitReport("DRAFT")} type="button">
-            <Save aria-hidden size={18} />
-            Taslak Kaydet
-          </button>
-        ) : null}
-        <button className="button personnel-primary-action" disabled={loading || companies.length === 0} onClick={() => submitReport("SUBMITTED")} type="button">
-          <Send aria-hidden size={18} />
+        <Button icon={<Save aria-hidden size={18} />} disabled={loading} onClick={() => submitReport("DRAFT")} variant="secondary">
+          Taslak Kaydet
+        </Button>
+        <Button icon={<Send aria-hidden size={18} />} className="personnel-primary-action" disabled={loading || companies.length === 0} onClick={() => submitReport("SUBMITTED")}>
           {loading ? "Gönderiliyor" : "Raporu Gönder"}
-        </button>
+        </Button>
       </div>
       </fieldset>
     </section>
@@ -1372,10 +1506,9 @@ function ReportForm({
 function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <div className="personnel-back-header">
-      <button className="button subtle" onClick={onBack} type="button">
-        <ArrowLeft aria-hidden size={18} />
+      <Button icon={<ArrowLeft aria-hidden size={18} />} onClick={onBack} variant="subtle">
         Geri
-      </button>
+      </Button>
       <h1>{title}</h1>
     </div>
   );
@@ -1693,7 +1826,7 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
   };
 }
 
-function reportToValues(report: ReportRow): ReportFormValues {
+function reportToValues(report: ReportRow, equipment: Equipment[]): ReportFormValues {
   const workItems = workItemsFromValue(
     report.work_items,
     stringValue(report.line_name),
@@ -1705,6 +1838,7 @@ function reportToValues(report: ReportRow): ReportFormValues {
     stringValue(report.product_quantity)
   );
   const primaryWorkItem = compactReportWorkItems(workItems)[0] ?? workItems[0] ?? emptyReportWorkItem();
+  const equipmentIds = equipmentIdsFromValue(report.used_equipment_ids, stringValue(report.used_equipment), equipment);
 
   return {
     ...emptyReportFormValues,
@@ -1724,7 +1858,8 @@ function reportToValues(report: ReportRow): ReportFormValues {
     vehicle_plate: stringValue(report.vehicle_plate),
     vehicle_start_km: stringValue(report.vehicle_start_km),
     vehicle_end_km: stringValue(report.vehicle_end_km),
-    used_equipment: stringValue(report.used_equipment),
+    used_equipment_ids: equipmentIds,
+    used_equipment: equipmentNamesFromIds(equipmentIds, equipment) || stringValue(report.used_equipment),
     workshop_departure_at: stringValue(report.workshop_departure_at),
     customer_arrival_at: stringValue(report.customer_arrival_at),
     customer_departure_at: stringValue(report.customer_departure_at),
@@ -1769,7 +1904,7 @@ function reportToValues(report: ReportRow): ReportFormValues {
   };
 }
 
-function assignmentToValues(assignment: InstallationAssignment): ReportFormValues {
+function assignmentToValues(assignment: InstallationAssignment, equipment: Equipment[]): ReportFormValues {
   const values = toRecord(assignment.report_values);
   const workItems = workItemsFromValue(
     values.work_items,
@@ -1782,6 +1917,7 @@ function assignmentToValues(assignment: InstallationAssignment): ReportFormValue
     stringValue(values.product_quantity)
   );
   const primaryWorkItem = compactReportWorkItems(workItems)[0] ?? workItems[0] ?? emptyReportWorkItem();
+  const equipmentIds = equipmentIdsFromValue(values.used_equipment_ids, stringValue(values.used_equipment), equipment);
 
   return {
     ...emptyReportFormValues,
@@ -1799,7 +1935,8 @@ function assignmentToValues(assignment: InstallationAssignment): ReportFormValue
     vehicle_plate: stringValue(values.vehicle_plate),
     vehicle_start_km: stringValue(values.vehicle_start_km),
     vehicle_end_km: stringValue(values.vehicle_end_km),
-    used_equipment: stringValue(values.used_equipment),
+    used_equipment_ids: equipmentIds,
+    used_equipment: equipmentNamesFromIds(equipmentIds, equipment) || stringValue(values.used_equipment),
     workshop_departure_at: stringValue(values.workshop_departure_at),
     customer_arrival_at: stringValue(values.customer_arrival_at),
     customer_departure_at: stringValue(values.customer_departure_at),
@@ -1940,7 +2077,29 @@ function arrayValue(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFormValues {
+function equipmentIdsFromValue(value: unknown, fallbackText: string, equipment: Equipment[]) {
+  const directIds = arrayValue(value).filter((id) => equipment.some((item) => item.id === id));
+  if (directIds.length > 0 || !fallbackText.trim()) return directIds;
+
+  const selectedNames = fallbackText
+    .split(/[,;\n]/)
+    .map((item) => item.trim().toLocaleLowerCase("tr-TR"))
+    .filter(Boolean);
+
+  return equipment
+    .filter((item) => selectedNames.includes(item.name.trim().toLocaleLowerCase("tr-TR")))
+    .map((item) => item.id);
+}
+
+function equipmentNamesFromIds(ids: string[], equipment: Equipment[]) {
+  const equipmentById = new Map(equipment.map((item) => [item.id, item]));
+  return ids
+    .map((id) => equipmentById.get(id)?.name ?? "")
+    .filter(Boolean)
+    .join(", ");
+}
+
+function prepareReportValues(values: ReportFormValues, belts: Belt[], equipment: Equipment[]): ReportFormValues {
   const beltsById = new Map(belts.map((belt) => [belt.id, belt]));
   const workItems = compactReportWorkItems(
     enrichReportWorkItems(
@@ -1959,6 +2118,7 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFor
   );
   const primaryWorkItem = workItems[0] ?? emptyReportWorkItem();
   const productCodes = workItemProductCodes(workItems);
+  const usedEquipment = equipmentNamesFromIds(values.used_equipment_ids, equipment) || values.used_equipment;
 
   return {
     ...values,
@@ -1969,7 +2129,8 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFor
     product_measure: "",
     product_width: primaryWorkItem.product_width || values.product_width,
     product_length: primaryWorkItem.product_length || values.product_length,
-    product_quantity: primaryWorkItem.product_quantity || values.product_quantity
+    product_quantity: primaryWorkItem.product_quantity || values.product_quantity,
+    used_equipment: usedEquipment
   };
 }
 

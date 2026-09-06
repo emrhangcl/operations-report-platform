@@ -4,9 +4,25 @@ import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
 import type { Belt } from "@operations/types";
 import { beltSchema } from "@operations/validation";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
+import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
 
 type BeltForm = {
   code: string;
@@ -26,6 +42,7 @@ export default function BeltsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Belt | null>(null);
 
   async function load() {
     const supabase = getBrowserSupabase();
@@ -84,8 +101,6 @@ export default function BeltsPage() {
   }
 
   async function remove(belt: Belt) {
-    if (!confirm(`"${formatBeltLabel(belt)}" bandı silinsin mi?`)) return;
-
     setMessage("");
     setLoading(true);
     try {
@@ -100,10 +115,12 @@ export default function BeltsPage() {
         setMessage(body?.message ?? "Bant silinemedi.");
         return;
       }
+      clearSupabaseReadCache();
       await load();
       setMessage("Bant silindi.");
     } finally {
       setLoading(false);
+      setPendingDelete(null);
     }
   }
 
@@ -117,107 +134,114 @@ export default function BeltsPage() {
   }
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Bantlar"
         description="Mobil raporda seçilecek aktif bant listesini yönetin."
+        action={<StatusBadge label={`${belts.length} bant`} tone="neutral" />}
       />
       <form className="form-panel" onSubmit={submit}>
-        <div className="form-grid">
-          <Field label="Bant Kodu">
-            <input
-              onChange={(event) => setForm({ ...form, code: event.target.value })}
-              required
-              value={form.code}
-            />
-          </Field>
-          <Field label="Bant Adı">
-            <input
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-              placeholder="Opsiyonel"
-              value={form.name}
-            />
-          </Field>
-          <Field label="Açıklama">
-            <input
-              onChange={(event) => setForm({ ...form, description: event.target.value })}
-              value={form.description}
-            />
-          </Field>
-        </div>
-        <div className="actions">
-          <button className="button" disabled={loading} type="submit">
-            <Save aria-hidden size={18} />
+        <FormSection>
+          <div className="form-grid">
+            <FormField label="Bant Kodu">
+              <input
+                onChange={(event) => setForm({ ...form, code: event.target.value })}
+                required
+                value={form.code}
+              />
+            </FormField>
+            <FormField label="Bant Adı">
+              <input
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                placeholder="Opsiyonel"
+                value={form.name}
+              />
+            </FormField>
+            <FormField label="Açıklama">
+              <input
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
+                value={form.description}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+        <FormActions>
+          <Button disabled={loading} icon={<Save aria-hidden size={18} />} type="submit">
             {editingId ? "Güncelle" : "Bant Ekle"}
-          </button>
+          </Button>
           {editingId ? (
-            <button
-              className="button subtle"
+            <Button
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
-              type="button"
+              icon={<X aria-hidden size={18} />}
+              variant="subtle"
             >
-              <X aria-hidden size={18} />
               Vazgeç
-            </button>
+            </Button>
           ) : null}
-        </div>
+        </FormActions>
       </form>
-      {message ? <div className={message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
-      <div className="table-panel">
+      {message ? <Alert tone={message.includes("silindi") ? "success" : "error"}>{message}</Alert> : null}
+      <DataTablePanel>
         {belts.length === 0 ? (
-          <div className="empty">Henüz bant eklenmemiş.</div>
+          <EmptyState>Henüz bant eklenmemiş.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Kod</th>
-                <th>Bant Adı</th>
-                <th>Açıklama</th>
-                <th>Oluşturulma</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>Kod</DataTableHead>
+                <DataTableHead>Bant Adı</DataTableHead>
+                <DataTableHead>Açıklama</DataTableHead>
+                <DataTableHead>Oluşturulma</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {belts.map((belt) => (
-                <tr key={belt.id}>
-                  <td>{belt.code}</td>
-                  <td>{belt.name ?? "-"}</td>
-                  <td>{belt.description ?? "-"}</td>
-                  <td>{new Date(belt.created_at).toLocaleDateString("tr-TR")}</td>
-                  <td>
-                    <div className="actions" style={{ marginTop: 0 }}>
-                      <button className="button secondary" onClick={() => edit(belt)} type="button">
-                        <Pencil aria-hidden size={16} />
+                <DataTableRow key={belt.id}>
+                  <DataTableCell>{belt.code}</DataTableCell>
+                  <DataTableCell>{belt.name ?? "-"}</DataTableCell>
+                  <DataTableCell>{belt.description ?? "-"}</DataTableCell>
+                  <DataTableCell>{new Date(belt.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  <DataTableCell>
+                    <FormActions style={{ marginTop: 0 }}>
+                      <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(belt)} variant="secondary">
                         Düzenle
-                      </button>
-                      <button className="button danger" disabled={loading} onClick={() => remove(belt)} type="button">
-                        <Trash2 aria-hidden size={16} />
+                      </Button>
+                      <Button
+                        disabled={loading}
+                        icon={<Trash2 aria-hidden size={16} />}
+                        onClick={() => setPendingDelete(belt)}
+                        variant="danger"
+                      >
                         Sil
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      </Button>
+                    </FormActions>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
+      </DataTablePanel>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description={pendingDelete ? `"${formatBeltLabel(pendingDelete)}" bandı silinsin mi?` : undefined}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            void remove(pendingDelete);
+          }
+        }}
+        open={Boolean(pendingDelete)}
+        title="Bant silme onayı"
+      />
+    </>
   );
 }
 
 function formatBeltLabel(belt: Belt) {
   return belt.name ? `${belt.code} - ${belt.name}` : belt.code;
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
-  );
 }

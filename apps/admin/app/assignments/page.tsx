@@ -6,6 +6,7 @@ import type {
   Belt,
   Company,
   CompanyLine,
+  Equipment,
   InstallationAssignment,
   InstallationAssignmentStatus,
   Profile,
@@ -13,8 +14,24 @@ import type {
   Vehicle
 } from "@operations/types";
 import { processActions, productTypes } from "@operations/validation";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 type AssignmentForm = {
@@ -31,6 +48,7 @@ type AssignmentForm = {
   machine_brand_model: string;
   belt_id: string;
   vehicle_plate: string;
+  used_equipment_ids: string[];
   used_equipment: string;
   product_code: string;
   product_measure: string;
@@ -54,6 +72,12 @@ type CompanyContactDraft = {
   phone: string;
 };
 
+type SaveMode = "draft" | "assign";
+
+type PendingConfirmation =
+  | { assignment: InstallationAssignment; action: "cancel" }
+  | { assignment: InstallationAssignment; action: "delete" };
+
 const emptyForm: AssignmentForm = {
   title: "",
   assigned_to_profile_id: "",
@@ -68,6 +92,7 @@ const emptyForm: AssignmentForm = {
   machine_brand_model: "",
   belt_id: "",
   vehicle_plate: "",
+  used_equipment_ids: [],
   used_equipment: "",
   product_code: "",
   product_measure: "",
@@ -94,6 +119,7 @@ const replacementReasonOptions = [
 ];
 
 const statusLabels: Record<InstallationAssignmentStatus, string> = {
+  DRAFT: "Taslak",
   ASSIGNED: "Atandı",
   IN_PROGRESS: "Devam Ediyor",
   COMPLETED: "Tamamlandı",
@@ -106,11 +132,14 @@ export default function AssignmentsPage() {
   const [belts, setBelts] = useState<Belt[]>([]);
   const [companyLines, setCompanyLines] = useState<CompanyLine[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [personnel, setPersonnel] = useState<Profile[]>([]);
   const [form, setForm] = useState<AssignmentForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingStatus, setEditingStatus] = useState<InstallationAssignmentStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
 
   const personnelById = useMemo(
     () => new Map(personnel.map((profile) => [profile.id, profile])),
@@ -130,11 +159,12 @@ export default function AssignmentsPage() {
     const supabase = getBrowserSupabase();
     if (!supabase) return;
 
-    const [companyRows, beltRows, lineRows, vehicleRows, personnelRows] = await Promise.all([
+    const [companyRows, beltRows, lineRows, vehicleRows, equipmentRows, personnelRows] = await Promise.all([
       supabase.from("companies").select("*").eq("is_active", true).order("name"),
       supabase.from("belts").select("*").eq("is_active", true).order("code"),
       supabase.from("company_lines").select("*").order("name"),
       supabase.from("vehicles").select("*").order("plate"),
+      supabase.from("equipment").select("*").eq("is_active", true).order("name"),
       supabase
         .from("profiles")
         .select("*")
@@ -147,6 +177,7 @@ export default function AssignmentsPage() {
     setBelts((beltRows.data ?? []) as Belt[]);
     setCompanyLines((lineRows.data ?? []) as CompanyLine[]);
     setVehicles((vehicleRows.data ?? []) as Vehicle[]);
+    setEquipment((equipmentRows.data ?? []) as Equipment[]);
     setPersonnel((personnelRows.data ?? []) as Profile[]);
   }
 
@@ -266,21 +297,42 @@ export default function AssignmentsPage() {
     update(key, current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   }
 
+  function updateEquipment(equipmentId: string) {
+    const selectedEquipment = equipment.find((item) => item.id === equipmentId);
+    setForm((current) => ({
+      ...current,
+      used_equipment_ids: equipmentId ? [equipmentId] : [],
+      used_equipment: selectedEquipment?.name ?? ""
+    }));
+  }
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setEditingStatus(null);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage("");
+    await saveAssignment("assign");
+  }
 
-    if (!form.assigned_to_profile_id) {
+  async function saveAssignment(mode: SaveMode) {
+    setMessage("");
+    const targetStatus: InstallationAssignmentStatus =
+      mode === "draft"
+        ? "DRAFT"
+        : editingStatus && editingStatus !== "DRAFT"
+          ? editingStatus
+          : "ASSIGNED";
+    const savingDraft = targetStatus === "DRAFT";
+
+    if (!savingDraft && !form.assigned_to_profile_id) {
       setMessage("Atanacak personeli seçin.");
       return;
     }
 
-    if (!form.company_id) {
+    if (!savingDraft && !form.company_id) {
       setMessage("Firma seçimi zorunludur.");
       return;
     }
@@ -293,12 +345,13 @@ export default function AssignmentsPage() {
       const primaryWorkItem = compactWorkItems(form.work_items)[0] ?? emptyWorkItem();
       const payload = {
         title: form.title.trim(),
-        assigned_to_profile_id: form.assigned_to_profile_id,
+        status: targetStatus,
+        assigned_to_profile_id: form.assigned_to_profile_id || null,
         scheduled_date: form.scheduled_date || null,
         notes: form.notes.trim() || null,
-        company_id: form.company_id,
+        company_id: form.company_id || null,
         line_name: primaryWorkItem.line_name.trim() || null,
-        report_values: buildReportValues(form, belts)
+        report_values: buildReportValues(form, belts, equipment)
       };
 
       const request = editingId
@@ -314,7 +367,13 @@ export default function AssignmentsPage() {
 
       resetForm();
       await loadAssignments();
-      setMessage(editingId ? "Montaj ataması güncellendi." : "Montaj ataması oluşturuldu.");
+      if (targetStatus === "DRAFT") {
+        setMessage("Montaj taslağı kaydedildi.");
+      } else if (editingStatus === "DRAFT") {
+        setMessage("Montaj onaylandı ve personele atandı.");
+      } else {
+        setMessage(editingId ? "Montaj ataması güncellendi." : "Montaj ataması oluşturuldu.");
+      }
     } finally {
       setLoading(false);
     }
@@ -322,14 +381,12 @@ export default function AssignmentsPage() {
 
   function edit(assignment: InstallationAssignment) {
     setEditingId(assignment.id);
-    setForm(formFromAssignment(assignment));
+    setEditingStatus(assignment.status);
+    setForm(formFromAssignment(assignment, equipment));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function setStatus(assignment: InstallationAssignment, status: InstallationAssignmentStatus) {
-    const label = status === "CANCELLED" ? "iptal edilsin" : "güncellensin";
-    if (!confirm(`"${assignment.title}" ${label} mi?`)) return;
-
     setLoading(true);
     setMessage("");
     try {
@@ -350,12 +407,11 @@ export default function AssignmentsPage() {
       setMessage("Montaj durumu güncellendi.");
     } finally {
       setLoading(false);
+      setPendingConfirmation(null);
     }
   }
 
   async function remove(assignment: InstallationAssignment) {
-    if (!confirm(`"${assignment.title}" kalıcı olarak silinsin mi?`)) return;
-
     setLoading(true);
     setMessage("");
     try {
@@ -376,31 +432,41 @@ export default function AssignmentsPage() {
       setMessage("Montaj ataması silindi.");
     } finally {
       setLoading(false);
+      setPendingConfirmation(null);
     }
   }
 
+  const canSaveDraft = !editingId || editingStatus === "DRAFT";
+  const primaryActionLabel = editingId
+    ? editingStatus === "DRAFT"
+      ? "Onayla ve Personele Ata"
+      : "Atamayı Güncelle"
+    : "Onayla ve Personele Ata";
+  const pendingAssignment = pendingConfirmation?.assignment;
+  const pendingIsDelete = pendingConfirmation?.action === "delete";
+
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Montaj Atamaları"
         description="Bilinen montaj bilgilerini doldurun, işi seçilen personele atayın."
+        action={<StatusBadge label={`${assignments.length} atama`} tone="neutral" />}
       />
 
       <form className="form-panel assignment-form" onSubmit={submit}>
         <div className="assignment-form-sections">
           <FormSection title="Atama ve Firma">
             <div className="form-grid assignment-grid">
-              <Field label="Atama Başlığı">
+              <FormField label="Atama Başlığı">
                 <input
                   onChange={(event) => update("title", event.target.value)}
                   placeholder="Boş bırakılırsa firma ve hat adı kullanılır"
                   value={form.title}
                 />
-              </Field>
-              <Field label="Atanacak Personel">
+              </FormField>
+              <FormField label="Atanacak Personel">
                 <select
                   onChange={(event) => update("assigned_to_profile_id", event.target.value)}
-                  required
                   value={form.assigned_to_profile_id}
                 >
                   <option value="">Personel seçin</option>
@@ -410,22 +476,22 @@ export default function AssignmentsPage() {
                     </option>
                   ))}
                 </select>
-              </Field>
-              <Field label="Planlanan Tarih">
+              </FormField>
+              <FormField label="Planlanan Tarih">
                 <input
                   onChange={(event) => update("scheduled_date", event.target.value)}
                   type="date"
                   value={form.scheduled_date}
                 />
-              </Field>
-              <Field label="Firma">
-                <select onChange={(event) => updateCompany(event.target.value)} required value={form.company_id}>
+              </FormField>
+              <FormField label="Firma">
+                <select onChange={(event) => updateCompany(event.target.value)} value={form.company_id}>
                   <option value="">Firma seçin</option>
                   {companies.map((company) => (
                     <option key={company.id} value={company.id}>{company.name}</option>
                   ))}
                 </select>
-              </Field>
+              </FormField>
               <ContactFields
                 contacts={form.company_contacts}
                 onAdd={addContact}
@@ -441,35 +507,43 @@ export default function AssignmentsPage() {
                 onRemove={removeWorkItem}
                 onUpdate={updateWorkItem}
               />
-              <Field label="Makina Marka Modeli">
+              <FormField label="Makina Marka Modeli">
                 <input
                   onChange={(event) => update("machine_brand_model", event.target.value)}
                   value={form.machine_brand_model}
                 />
-              </Field>
+              </FormField>
             </div>
           </FormSection>
 
           <FormSection title="Araç ve Ürün">
             <div className="form-grid assignment-grid">
-              <Field label="Araç Plakası">
+              <FormField label="Araç Plakası">
                 <select onChange={(event) => update("vehicle_plate", event.target.value)} value={form.vehicle_plate}>
                   <option value="">Plaka seçin</option>
                   {vehicles.map((vehicle) => (
                     <option key={vehicle.id} value={vehicle.plate}>{vehicle.plate}</option>
                   ))}
                 </select>
-              </Field>
-              <Field className="span-2" label="Kullanılacak Makine/Ekipman">
-                <textarea onChange={(event) => update("used_equipment", event.target.value)} value={form.used_equipment} />
-              </Field>
+              </FormField>
+              <FormField className="span-2" label="Kullanılacak Makine/Ekipman">
+                <select
+                  onChange={(event) => updateEquipment(event.target.value)}
+                  value={form.used_equipment_ids[0] ?? ""}
+                >
+                  <option value="">Ekipman seçin</option>
+                  {equipment.map((item) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
+                </select>
+              </FormField>
               <ProductItemsField items={form.work_items} onUpdate={updateWorkItem} />
-              <Field label="Item / Coil Kodu">
+              <FormField label="Item / Coil Kodu">
                 <input
                   onChange={(event) => update("product_item_coil_code", event.target.value)}
                   value={form.product_item_coil_code}
                 />
-              </Field>
+              </FormField>
             </div>
           </FormSection>
 
@@ -483,9 +557,9 @@ export default function AssignmentsPage() {
                 onToggle={(value) => toggleArray("product_types", value)}
               />
               {form.product_types.includes("Diğer") ? (
-                <Field label="Diğer Ürün Türü">
+                <FormField label="Diğer Ürün Türü">
                   <input onChange={(event) => update("product_type_other", event.target.value)} value={form.product_type_other} />
-                </Field>
+                </FormField>
               ) : null}
               <CheckPicker
                 className="span-2 assignment-compact-picker"
@@ -495,22 +569,22 @@ export default function AssignmentsPage() {
                 onToggle={(value) => toggleArray("process_actions", value)}
               />
               {form.process_actions.includes("Kenar Kesim") ? (
-                <Field label="Kenar Kesim">
+                <FormField label="Kenar Kesim">
                   <select onChange={(event) => update("edge_cut_method", event.target.value)} value={form.edge_cut_method}>
                     <option value="">Seçilmedi</option>
                     <option value="Makine ile">Makine ile</option>
                     <option value="El ile">El ile</option>
                   </select>
-                </Field>
+                </FormField>
               ) : null}
               {form.process_actions.includes("Diğer") ? (
-                <Field label="Diğer İşlem">
+                <FormField label="Diğer İşlem">
                   <input onChange={(event) => update("process_action_other", event.target.value)} value={form.process_action_other} />
-                </Field>
+                </FormField>
               ) : null}
-              <Field label="Eski Bant Çalışma Süresi">
+              <FormField label="Eski Bant Çalışma Süresi">
                 <input onChange={(event) => update("removed_belt_years", event.target.value)} value={form.removed_belt_years} />
-              </Field>
+              </FormField>
               <CheckPicker
                 className="span-2 assignment-compact-picker"
                 label="Değiştirme Sebebi"
@@ -519,19 +593,19 @@ export default function AssignmentsPage() {
                 onToggle={(value) => toggleArray("replacement_reasons", value)}
               />
               {form.replacement_reasons.includes("Diğer") ? (
-                <Field label="Diğer Sebep">
+                <FormField label="Diğer Sebep">
                   <input
                     onChange={(event) => update("replacement_reason_other", event.target.value)}
                     value={form.replacement_reason_other}
                   />
-                </Field>
+                </FormField>
               ) : null}
             </div>
           </FormSection>
 
           <FormSection title="Not ve Faturalandırma">
             <div className="form-grid assignment-grid">
-              <Field label="Faturalandırma">
+              <FormField label="Faturalandırma">
                 <select onChange={(event) => update("billing_status", event.target.value)} value={form.billing_status}>
                   <option value="">Seçilmedi</option>
                   <option value="Yapılan İşlem Tarafınıza Fatura Edilecektir">
@@ -539,114 +613,153 @@ export default function AssignmentsPage() {
                   </option>
                   <option value="Bedelsiz İşlem Yapılmıştır">Bedelsiz İşlem Yapılmıştır</option>
                 </select>
-              </Field>
-              <Field className="span-2" label="Personel Notu">
+              </FormField>
+              <FormField className="span-2" label="Personel Notu">
                 <textarea onChange={(event) => update("notes", event.target.value)} value={form.notes} />
-              </Field>
+              </FormField>
             </div>
           </FormSection>
         </div>
-        <div className="actions">
-          <button className="button" disabled={loading} type="submit">
-            {editingId ? <Save aria-hidden size={18} /> : <ClipboardCheck aria-hidden size={18} />}
-            {editingId ? "Atamayı Güncelle" : "Montaj Ata"}
-          </button>
-          {editingId ? (
-            <button className="button subtle" onClick={resetForm} type="button">
-              <X aria-hidden size={18} />
-              Vazgeç
-            </button>
+        <FormActions>
+          {canSaveDraft ? (
+            <Button
+              disabled={loading}
+              icon={<Save aria-hidden size={18} />}
+              onClick={() => void saveAssignment("draft")}
+              variant="secondary"
+            >
+              {editingId ? "Taslağı Güncelle" : "Taslak Kaydet"}
+            </Button>
           ) : null}
-        </div>
+          <Button disabled={loading} icon={<ClipboardCheck aria-hidden size={18} />} type="submit">
+            {primaryActionLabel}
+          </Button>
+          {editingId ? (
+            <Button icon={<X aria-hidden size={18} />} onClick={resetForm} variant="subtle">
+              Vazgeç
+            </Button>
+          ) : null}
+        </FormActions>
       </form>
 
-      {message ? <div className={message.includes("silindi") || message.includes("oluşturuldu") || message.includes("güncellendi") ? "message info" : "message error"}>{message}</div> : null}
+      {message ? (
+        <Alert tone={successMessage(message) ? "success" : "error"}>
+          {message}
+        </Alert>
+      ) : null}
 
-      <div className="table-panel">
+      <DataTablePanel>
         {assignments.length === 0 ? (
-          <div className="empty">Henüz montaj ataması yok.</div>
+          <EmptyState>Henüz montaj ataması yok.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Atama</th>
-                <th>Personel</th>
-                <th>Firma / Hat</th>
-                <th>Tarih</th>
-                <th>Durum</th>
-                <th>Rapor</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>Atama</DataTableHead>
+                <DataTableHead>Personel</DataTableHead>
+                <DataTableHead>Firma / Hat</DataTableHead>
+                <DataTableHead>Tarih</DataTableHead>
+                <DataTableHead>Durum</DataTableHead>
+                <DataTableHead>Rapor</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {assignments.map((assignment) => {
                 const assignedProfile = assignment.assigned_to_profile_id
                   ? personnelById.get(assignment.assigned_to_profile_id)
                   : undefined;
 
                 return (
-                  <tr key={assignment.id}>
-                    <td>
+                  <DataTableRow key={assignment.id}>
+                    <DataTableCell>
                       <strong>{assignment.title}</strong>
                       <br />
                       <small>{assignment.notes ?? "-"}</small>
-                    </td>
-                    <td>
+                    </DataTableCell>
+                    <DataTableCell>
                       {assignedProfile
                         ? `${assignedProfile.first_name} ${assignedProfile.last_name}`
-                        : assignment.assigned_to_profile_id ? "Personel bulunamadı" : "Personel silinmiş"}
-                    </td>
-                    <td>
+                        : assignment.assigned_to_profile_id
+                          ? "Personel bulunamadı"
+                          : assignment.status === "DRAFT"
+                            ? "Henüz atanmadı"
+                            : "Personel silinmiş"}
+                    </DataTableCell>
+                    <DataTableCell>
                       {assignment.company_name_snapshot ?? "-"}
                       <br />
                       <small>{assignmentWorkItemsText(assignment)}</small>
-                    </td>
-                    <td>{assignment.scheduled_date ? formatDate(assignment.scheduled_date) : "-"}</td>
-                    <td>
-                      <span className={`status ${statusClass(assignment.status)}`}>
-                        {statusLabels[assignment.status]}
-                      </span>
-                    </td>
-                    <td>{assignment.report_id ? "Rapor oluşturuldu" : "-"}</td>
-                    <td>
-                      <div className="actions" style={{ marginTop: 0 }}>
-                        <button className="button secondary" onClick={() => edit(assignment)} type="button">
-                          <Pencil aria-hidden size={16} />
+                    </DataTableCell>
+                    <DataTableCell>{assignment.scheduled_date ? formatDate(assignment.scheduled_date) : "-"}</DataTableCell>
+                    <DataTableCell>
+                      <StatusBadge label={statusLabels[assignment.status]} tone={statusTone(assignment.status)} />
+                    </DataTableCell>
+                    <DataTableCell>{assignment.report_id ? "Rapor oluşturuldu" : "-"}</DataTableCell>
+                    <DataTableCell>
+                      <FormActions style={{ marginTop: 0 }}>
+                        <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(assignment)} variant="secondary">
                           Düzenle
-                        </button>
-                        {assignment.status !== "COMPLETED" && assignment.status !== "CANCELLED" ? (
-                          <button
-                            className="button subtle"
+                        </Button>
+                        {assignment.status !== "DRAFT" && assignment.status !== "COMPLETED" && assignment.status !== "CANCELLED" ? (
+                          <Button
                             disabled={loading}
-                            onClick={() => setStatus(assignment, "CANCELLED")}
-                            type="button"
+                            icon={<Ban aria-hidden size={16} />}
+                            onClick={() => setPendingConfirmation({ assignment, action: "cancel" })}
+                            variant="subtle"
                           >
-                            <Ban aria-hidden size={16} />
                             İptal
-                          </button>
+                          </Button>
                         ) : null}
-                        <button className="button danger" disabled={loading} onClick={() => remove(assignment)} type="button">
-                          <Trash2 aria-hidden size={16} />
+                        <Button
+                          disabled={loading}
+                          icon={<Trash2 aria-hidden size={16} />}
+                          onClick={() => setPendingConfirmation({ assignment, action: "delete" })}
+                          variant="danger"
+                        >
                           Sil
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                        </Button>
+                      </FormActions>
+                    </DataTableCell>
+                  </DataTableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
+      </DataTablePanel>
+
+      <ConfirmDialog
+        confirmLabel={pendingIsDelete ? "Sil" : "İptal et"}
+        description={
+          pendingAssignment
+            ? pendingIsDelete
+              ? `"${pendingAssignment.title}" kalıcı olarak silinsin mi?`
+              : `"${pendingAssignment.title}" iptal edilsin mi?`
+            : undefined
+        }
+        onCancel={() => setPendingConfirmation(null)}
+        onConfirm={() => {
+          if (!pendingAssignment) return;
+          if (pendingIsDelete) {
+            void remove(pendingAssignment);
+            return;
+          }
+          void setStatus(pendingAssignment, "CANCELLED");
+        }}
+        open={Boolean(pendingConfirmation)}
+        title={pendingIsDelete ? "Montaj atamasını sil" : "Montaj atamasını iptal et"}
+      />
+    </>
   );
 }
 
-function buildReportValues(form: AssignmentForm, belts: Belt[]): Record<string, unknown> {
+function buildReportValues(form: AssignmentForm, belts: Belt[], equipment: Equipment[]): Record<string, unknown> {
   const contacts = compactContacts(form.company_contacts);
   const workItems = enrichWorkItems(compactWorkItems(form.work_items), belts);
   const primaryWorkItem = workItems[0] ?? emptyWorkItem();
   const productCodes = workItemProductCodes(workItems);
+  const usedEquipment = equipmentNamesFromIds(form.used_equipment_ids, equipment) || form.used_equipment;
 
   return {
     report_date: form.scheduled_date,
@@ -659,7 +772,8 @@ function buildReportValues(form: AssignmentForm, belts: Belt[]): Record<string, 
     machine_brand_model: form.machine_brand_model,
     belt_id: primaryWorkItem.belt_id,
     vehicle_plate: form.vehicle_plate,
-    used_equipment: form.used_equipment,
+    used_equipment_ids: form.used_equipment_ids,
+    used_equipment: usedEquipment,
     product_code: productCodes.join("\n") || form.product_code,
     product_measure: "",
     product_width: primaryWorkItem.product_width || form.product_width,
@@ -678,7 +792,7 @@ function buildReportValues(form: AssignmentForm, belts: Belt[]): Record<string, 
   };
 }
 
-function formFromAssignment(assignment: InstallationAssignment): AssignmentForm {
+function formFromAssignment(assignment: InstallationAssignment, equipment: Equipment[]): AssignmentForm {
   const values = toRecord(assignment.report_values);
   const companyContacts = contactsFromValue(
     values.company_contacts,
@@ -695,6 +809,7 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
     stringValue(values.product_quantity)
   );
   const primaryWorkItem = compactWorkItems(workItems)[0] ?? workItems[0] ?? emptyWorkItem();
+  const equipmentIds = equipmentIdsFromValue(values.used_equipment_ids, stringValue(values.used_equipment), equipment);
 
   return {
     ...emptyForm,
@@ -711,7 +826,8 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
     machine_brand_model: stringValue(values.machine_brand_model),
     belt_id: primaryWorkItem.belt_id,
     vehicle_plate: stringValue(values.vehicle_plate),
-    used_equipment: stringValue(values.used_equipment),
+    used_equipment_ids: equipmentIds,
+    used_equipment: equipmentNamesFromIds(equipmentIds, equipment) || stringValue(values.used_equipment),
     product_code: stringValue(values.product_code),
     product_measure: "",
     product_width: primaryWorkItem.product_width || stringValue(values.product_width),
@@ -730,10 +846,17 @@ function formFromAssignment(assignment: InstallationAssignment): AssignmentForm 
   };
 }
 
-function statusClass(status: InstallationAssignmentStatus) {
-  if (status === "COMPLETED") return "ok";
-  if (status === "CANCELLED") return "off";
-  return "warn";
+function statusTone(status: InstallationAssignmentStatus) {
+  if (status === "DRAFT") return "pending";
+  if (status === "COMPLETED") return "success";
+  if (status === "CANCELLED") return "danger";
+  return "warning";
+}
+
+function successMessage(message: string) {
+  return ["silindi", "oluşturuldu", "güncellendi", "kaydedildi", "onaylandı"].some((token) =>
+    message.includes(token)
+  );
 }
 
 function formatDate(value: string) {
@@ -746,6 +869,28 @@ function stringValue(value: unknown) {
 
 function arrayValue(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function equipmentIdsFromValue(value: unknown, fallbackText: string, equipment: Equipment[]) {
+  const directIds = arrayValue(value).filter((id) => equipment.some((item) => item.id === id));
+  if (directIds.length > 0 || !fallbackText.trim()) return directIds;
+
+  const selectedNames = fallbackText
+    .split(/[,;\n]/)
+    .map((item) => item.trim().toLocaleLowerCase("tr-TR"))
+    .filter(Boolean);
+
+  return equipment
+    .filter((item) => selectedNames.includes(item.name.trim().toLocaleLowerCase("tr-TR")))
+    .map((item) => item.id);
+}
+
+function equipmentNamesFromIds(ids: string[], equipment: Equipment[]) {
+  const equipmentById = new Map(equipment.map((item) => [item.id, item]));
+  return ids
+    .map((id) => equipmentById.get(id)?.name ?? "")
+    .filter(Boolean)
+    .join(", ");
 }
 
 function toRecord(value: unknown) {
@@ -904,15 +1049,6 @@ function assignmentWorkItemsText(assignment: InstallationAssignment) {
   return items.map(formatWorkItemLabel).filter(Boolean).join(" • ") || assignment.line_name || "-";
 }
 
-function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="form-subsection">
-      <h2>{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 function ContactFields({
   contacts,
   onAdd,
@@ -925,8 +1061,7 @@ function ContactFields({
   onUpdate: (index: number, key: keyof CompanyContactDraft, value: string) => void;
 }) {
   return (
-    <div className="field span-2 contact-list-field">
-      <label>Yetkili Kişiler</label>
+    <FormField className="span-2 contact-list-field" label="Yetkili Kişiler">
       <div className="contact-list">
         {contacts.map((contact, index) => (
           <div className="contact-row" key={index}>
@@ -943,17 +1078,21 @@ function ContactFields({
               value={contact.phone}
             />
             {contacts.length > 1 ? (
-              <button className="button subtle icon-button" onClick={() => onRemove(index)} type="button">
-                <X aria-hidden size={16} />
-              </button>
+              <Button
+                aria-label={`Yetkili ${index + 1} satırını kaldır`}
+                className="icon-button"
+                icon={<X aria-hidden size={16} />}
+                onClick={() => onRemove(index)}
+                variant="subtle"
+              />
             ) : null}
           </div>
         ))}
       </div>
-      <button className="button secondary contact-add-button" onClick={onAdd} type="button">
+      <Button className="contact-add-button" onClick={onAdd} variant="secondary">
         Yetkili Ekle
-      </button>
-    </div>
+      </Button>
+    </FormField>
   );
 }
 
@@ -967,8 +1106,7 @@ function ProductItemsField({
   const rows = normalizeWorkItems(items);
 
   return (
-    <div className="field span-4 product-items-field">
-      <label>Ürün Kodları ve Ölçüler</label>
+    <FormField className="span-4 product-items-field" label="Ürün Kodları ve Ölçüler">
       <div className="product-item-list">
         <div className="product-item-row product-item-head">
           <span>Ürün Kodu</span>
@@ -1001,7 +1139,7 @@ function ProductItemsField({
           </div>
         ))}
       </div>
-    </div>
+    </FormField>
   );
 }
 
@@ -1025,8 +1163,7 @@ function WorkItemsField({
   const rows = normalizeWorkItems(items);
 
   return (
-    <div className="field span-2 work-items-field">
-      <label>Hat ve Bant Kalemleri</label>
+    <FormField className="span-2 work-items-field" label="Hat ve Bant Kalemleri">
       <div className="work-item-list">
         {rows.map((item, index) => (
           <div className="work-item-row" key={index}>
@@ -1047,35 +1184,21 @@ function WorkItemsField({
               ))}
             </select>
             {rows.length > 1 ? (
-              <button className="button subtle icon-button" onClick={() => onRemove(index)} type="button">
-                <X aria-hidden size={16} />
-              </button>
+              <Button
+                aria-label={`Kalem ${index + 1} satırını kaldır`}
+                className="icon-button"
+                icon={<X aria-hidden size={16} />}
+                onClick={() => onRemove(index)}
+                variant="subtle"
+              />
             ) : null}
           </div>
         ))}
       </div>
-      <button className="button secondary contact-add-button" onClick={onAdd} type="button">
-        <Plus aria-hidden size={16} />
+      <Button className="contact-add-button" icon={<Plus aria-hidden size={16} />} onClick={onAdd} variant="secondary">
         Kalem Ekle
-      </button>
-    </div>
-  );
-}
-
-function Field({
-  children,
-  className,
-  label
-}: {
-  children: React.ReactNode;
-  className?: string;
-  label: string;
-}) {
-  return (
-    <div className={["field", className].filter(Boolean).join(" ")}>
-      <label>{label}</label>
-      {children}
-    </div>
+      </Button>
+    </FormField>
   );
 }
 
@@ -1093,8 +1216,7 @@ function CheckPicker({
   onToggle: (value: string) => void;
 }) {
   return (
-    <div className={["field", className].filter(Boolean).join(" ")}>
-      <label>{label}</label>
+    <FormField className={className} label={label}>
       <div className="choice-list">
         {options.map((option) => (
           <label className="check-row" key={option.value}>
@@ -1107,6 +1229,6 @@ function CheckPicker({
           </label>
         ))}
       </div>
-    </div>
+    </FormField>
   );
 }

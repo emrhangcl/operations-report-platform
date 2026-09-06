@@ -2,6 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ProductBrand } from "./logo";
 
@@ -13,6 +14,8 @@ const links = [
 
 export function PublicHeader() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const navId = "public-navigation";
 
   return (
     <header className="public-header">
@@ -21,6 +24,7 @@ export function PublicHeader() {
           <ProductBrand />
         </Link>
         <button
+          aria-controls={navId}
           aria-expanded={open}
           aria-label={open ? "Menüyü kapat" : "Menüyü aç"}
           className="public-menu-button"
@@ -30,9 +34,9 @@ export function PublicHeader() {
         >
           {open ? <X aria-hidden size={22} /> : <Menu aria-hidden size={22} />}
         </button>
-        <nav aria-label="Tanıtım menüsü" className={open ? "public-nav open" : "public-nav"}>
+        <nav aria-label="Tanıtım menüsü" className={open ? "public-nav open" : "public-nav"} id={navId}>
           {links.map((link) => (
-            <Link href={link.href} key={link.href} onClick={() => setOpen(false)}>
+            <Link aria-current={pathname === link.href ? "page" : undefined} className={pathname === link.href ? "active" : ""} href={link.href} key={link.href} onClick={() => setOpen(false)}>
               {link.label}
             </Link>
           ))}

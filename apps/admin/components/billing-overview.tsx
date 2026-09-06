@@ -3,12 +3,33 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "../lib/supabase-browser";
+import {
+  Alert,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  LoadingState,
+  StatusBadge
+} from "./ui";
 
 type PaymentRow = { id: string; status: string; amount_minor: number; currency: string; paid_at: string | null; created_at: string };
 type InvoiceRow = { id: string; invoice_number: string | null; status: string; total_minor: number; currency: string; issued_at: string | null; created_at: string };
 
 function money(value: number, currency: string) {
   return new Intl.NumberFormat("tr-TR", { style: "currency", currency }).format(value / 100);
+}
+
+function statusTone(status: string) {
+  const normalized = status.toLowerCase();
+  if (["paid", "succeeded", "success", "active"].includes(normalized)) return "success";
+  if (["pending", "processing", "draft"].includes(normalized)) return "pending";
+  if (["failed", "cancelled", "canceled", "void", "refunded"].includes(normalized)) return "danger";
+  return "neutral";
 }
 
 export function BillingOverview() {
@@ -54,21 +75,65 @@ export function BillingOverview() {
     });
   }, [router]);
 
-  if (loading) return <div className="public-empty">Faturalandırma kayıtları yükleniyor...</div>;
-  if (message) return <div className="message error">{message}</div>;
+  if (loading) return <LoadingState label="Faturalandırma kayıtları yükleniyor..." />;
+  if (message) return <Alert tone="error">{message}</Alert>;
 
   return (
     <div className="billing-sections">
       <section>
         <h2>Ödemeler</h2>
-        {payments.length === 0 ? <div className="public-empty">Henüz ödeme kaydı bulunmuyor.</div> : (
-          <div className="table-panel"><table><thead><tr><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead><tbody>{payments.map((payment) => <tr key={payment.id}><td>{payment.status}</td><td>{money(payment.amount_minor, payment.currency)}</td><td>{new Date(payment.paid_at ?? payment.created_at).toLocaleDateString("tr-TR")}</td></tr>)}</tbody></table></div>
+        {payments.length === 0 ? <EmptyState>Henüz ödeme kaydı bulunmuyor.</EmptyState> : (
+          <DataTablePanel>
+            <DataTable>
+              <DataTableHeader>
+                <DataTableRow>
+                  <DataTableHead>Durum</DataTableHead>
+                  <DataTableHead>Tutar</DataTableHead>
+                  <DataTableHead>Tarih</DataTableHead>
+                </DataTableRow>
+              </DataTableHeader>
+              <DataTableBody>
+                {payments.map((payment) => (
+                  <DataTableRow key={payment.id}>
+                    <DataTableCell>
+                      <StatusBadge label={payment.status} tone={statusTone(payment.status)} />
+                    </DataTableCell>
+                    <DataTableCell>{money(payment.amount_minor, payment.currency)}</DataTableCell>
+                    <DataTableCell>{new Date(payment.paid_at ?? payment.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  </DataTableRow>
+                ))}
+              </DataTableBody>
+            </DataTable>
+          </DataTablePanel>
         )}
       </section>
       <section>
         <h2>Faturalar</h2>
-        {invoices.length === 0 ? <div className="public-empty">Henüz fatura kaydı bulunmuyor.</div> : (
-          <div className="table-panel"><table><thead><tr><th>Fatura</th><th>Durum</th><th>Toplam</th><th>Tarih</th></tr></thead><tbody>{invoices.map((invoice) => <tr key={invoice.id}><td>{invoice.invoice_number ?? "-"}</td><td>{invoice.status}</td><td>{money(invoice.total_minor, invoice.currency)}</td><td>{new Date(invoice.issued_at ?? invoice.created_at).toLocaleDateString("tr-TR")}</td></tr>)}</tbody></table></div>
+        {invoices.length === 0 ? <EmptyState>Henüz fatura kaydı bulunmuyor.</EmptyState> : (
+          <DataTablePanel>
+            <DataTable>
+              <DataTableHeader>
+                <DataTableRow>
+                  <DataTableHead>Fatura</DataTableHead>
+                  <DataTableHead>Durum</DataTableHead>
+                  <DataTableHead>Toplam</DataTableHead>
+                  <DataTableHead>Tarih</DataTableHead>
+                </DataTableRow>
+              </DataTableHeader>
+              <DataTableBody>
+                {invoices.map((invoice) => (
+                  <DataTableRow key={invoice.id}>
+                    <DataTableCell>{invoice.invoice_number ?? "-"}</DataTableCell>
+                    <DataTableCell>
+                      <StatusBadge label={invoice.status} tone={statusTone(invoice.status)} />
+                    </DataTableCell>
+                    <DataTableCell>{money(invoice.total_minor, invoice.currency)}</DataTableCell>
+                    <DataTableCell>{new Date(invoice.issued_at ?? invoice.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  </DataTableRow>
+                ))}
+              </DataTableBody>
+            </DataTable>
+          </DataTablePanel>
         )}
       </section>
     </div>

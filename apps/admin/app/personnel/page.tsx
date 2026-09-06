@@ -4,9 +4,25 @@ import { FormEvent, useEffect, useState } from "react";
 import { KeyRound, Pencil, Save, Trash2, UserPlus, X } from "lucide-react";
 import type { Profile, UserRole } from "@operations/types";
 import { userAccountSchema } from "@operations/validation";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
+import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
 
 type PersonnelForm = {
   first_name: string;
@@ -32,6 +48,7 @@ export default function PersonnelPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Profile | null>(null);
 
   async function load() {
     const supabase = getBrowserSupabase();
@@ -106,6 +123,8 @@ export default function PersonnelPage() {
         });
         if (!response.ok) {
           setMessage("Personel hesabı oluşturulamadı.");
+        } else {
+          clearSupabaseReadCache();
         }
       }
 
@@ -118,8 +137,6 @@ export default function PersonnelPage() {
   }
 
   async function remove(profile: Profile) {
-    if (!confirm(`${profile.first_name} ${profile.last_name} silinsin mi?`)) return;
-
     setMessage("");
     setLoading(true);
     try {
@@ -134,10 +151,12 @@ export default function PersonnelPage() {
         setMessage(body?.message ?? "Personel silinemedi.");
         return;
       }
+      clearSupabaseReadCache();
       await load();
       setMessage("Personel silindi.");
     } finally {
       setLoading(false);
+      setPendingDelete(null);
     }
   }
 
@@ -172,141 +191,148 @@ export default function PersonnelPage() {
   }
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Kullanıcılar"
         description="Personel ve admin hesaplarını oluşturun, düzenleyin ve silin."
+        action={<StatusBadge label={`${rows.length} kullanıcı`} tone="neutral" />}
       />
       <form className="form-panel" onSubmit={submit}>
-        <div className="form-grid">
-          <Field label="Ad">
-            <input
-              onChange={(event) => setForm({ ...form, first_name: event.target.value })}
-              required
-              value={form.first_name}
-            />
-          </Field>
-          <Field label="Soyad">
-            <input
-              onChange={(event) => setForm({ ...form, last_name: event.target.value })}
-              required
-              value={form.last_name}
-            />
-          </Field>
-          <Field label="E-posta / Kullanıcı Adı">
-            <input
-              onChange={(event) => setForm({ ...form, email: event.target.value })}
-              required
-              type="email"
-              value={form.email}
-            />
-          </Field>
-          <Field label="Telefon">
-            <input
-              onChange={(event) => setForm({ ...form, phone: event.target.value })}
-              value={form.phone}
-            />
-          </Field>
-          <Field label="Yetki">
-            <select
-              onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}
-              value={form.role}
-            >
-              <option value="PERSONNEL">Personel</option>
-              <option value="ADMIN">Admin / Talep Açan</option>
-            </select>
-          </Field>
-          {!editingId ? (
-            <Field label="İlk Şifre">
+        <FormSection>
+          <div className="form-grid">
+            <FormField label="Ad">
               <input
-                minLength={8}
-                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                onChange={(event) => setForm({ ...form, first_name: event.target.value })}
                 required
-                type="password"
-                value={form.password}
+                value={form.first_name}
               />
-            </Field>
-          ) : null}
-        </div>
-        <div className="actions">
-          <button className="button" disabled={loading} type="submit">
-            {editingId ? <Save aria-hidden size={18} /> : <UserPlus aria-hidden size={18} />}
+            </FormField>
+            <FormField label="Soyad">
+              <input
+                onChange={(event) => setForm({ ...form, last_name: event.target.value })}
+                required
+                value={form.last_name}
+              />
+            </FormField>
+            <FormField label="E-posta / Kullanıcı Adı">
+              <input
+                onChange={(event) => setForm({ ...form, email: event.target.value })}
+                required
+                type="email"
+                value={form.email}
+              />
+            </FormField>
+            <FormField label="Telefon">
+              <input
+                onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                value={form.phone}
+              />
+            </FormField>
+            <FormField label="Yetki">
+              <select
+                onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}
+                value={form.role}
+              >
+                <option value="PERSONNEL">Personel</option>
+                <option value="ADMIN">Admin / Talep Açan</option>
+              </select>
+            </FormField>
+            {!editingId ? (
+              <FormField label="İlk Şifre">
+                <input
+                  autoComplete="new-password"
+                  minLength={8}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  required
+                  type="password"
+                  value={form.password}
+                />
+              </FormField>
+            ) : null}
+          </div>
+        </FormSection>
+        <FormActions>
+          <Button disabled={loading} icon={editingId ? <Save aria-hidden size={18} /> : <UserPlus aria-hidden size={18} />} type="submit">
             {editingId ? "Güncelle" : "Kullanıcı Hesabı Oluştur"}
-          </button>
+          </Button>
           {editingId ? (
-            <button
-              className="button subtle"
+            <Button
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
-              type="button"
+              icon={<X aria-hidden size={18} />}
+              variant="subtle"
             >
-              <X aria-hidden size={18} />
               Vazgeç
-            </button>
+            </Button>
           ) : null}
-        </div>
+        </FormActions>
       </form>
-      {message ? <div className={message.includes("üretildi") || message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
-      <div className="table-panel">
+      {message ? (
+        <Alert tone={message.includes("üretildi") || message.includes("silindi") ? "success" : "error"}>
+          {message}
+        </Alert>
+      ) : null}
+      <DataTablePanel>
         {rows.length === 0 ? (
-          <div className="empty">Henüz kullanıcı eklenmemiş.</div>
+          <EmptyState>Henüz kullanıcı eklenmemiş.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Ad Soyad</th>
-                <th>Telefon</th>
-                <th>E-posta</th>
-                <th>Yetki</th>
-                <th>Oluşturulma</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>Ad Soyad</DataTableHead>
+                <DataTableHead>Telefon</DataTableHead>
+                <DataTableHead>E-posta</DataTableHead>
+                <DataTableHead>Yetki</DataTableHead>
+                <DataTableHead>Oluşturulma</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {rows.map((profile) => (
-                <tr key={profile.id}>
-                  <td>{profile.first_name} {profile.last_name}</td>
-                  <td>{profile.phone ?? "-"}</td>
-                  <td>{profile.email ?? "-"}</td>
-                  <td>
-                    <span className={`status ${profile.role === "ADMIN" ? "ok" : "warn"}`}>
-                      {profile.role === "ADMIN" ? "Admin" : "Personel"}
-                    </span>
-                  </td>
-                  <td>{new Date(profile.created_at).toLocaleDateString("tr-TR")}</td>
-                  <td>
-                    <div className="actions" style={{ marginTop: 0 }}>
-                      <button className="button secondary" onClick={() => edit(profile)} type="button">
-                        <Pencil aria-hidden size={16} />
+                <DataTableRow key={profile.id}>
+                  <DataTableCell>{profile.first_name} {profile.last_name}</DataTableCell>
+                  <DataTableCell>{profile.phone ?? "-"}</DataTableCell>
+                  <DataTableCell>{profile.email ?? "-"}</DataTableCell>
+                  <DataTableCell>
+                    <StatusBadge
+                      label={profile.role === "ADMIN" ? "Admin" : "Personel"}
+                      tone={profile.role === "ADMIN" ? "success" : "warning"}
+                    />
+                  </DataTableCell>
+                  <DataTableCell>{new Date(profile.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  <DataTableCell>
+                    <FormActions style={{ marginTop: 0 }}>
+                      <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(profile)} variant="secondary">
                         Düzenle
-                      </button>
-                      <button className="button subtle" disabled={loading} onClick={() => resetPassword(profile)} type="button">
-                        <KeyRound aria-hidden size={16} />
+                      </Button>
+                      <Button disabled={loading} icon={<KeyRound aria-hidden size={16} />} onClick={() => resetPassword(profile)} variant="subtle">
                         Şifre Sıfırla
-                      </button>
-                      <button className="button danger" disabled={loading} onClick={() => remove(profile)} type="button">
-                        <Trash2 aria-hidden size={16} />
+                      </Button>
+                      <Button disabled={loading} icon={<Trash2 aria-hidden size={16} />} onClick={() => setPendingDelete(profile)} variant="danger">
                         Sil
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      </Button>
+                    </FormActions>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
+      </DataTablePanel>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description={pendingDelete ? `${pendingDelete.first_name} ${pendingDelete.last_name} silinsin mi?` : undefined}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            void remove(pendingDelete);
+          }
+        }}
+        open={Boolean(pendingDelete)}
+        title="Personel silme onayı"
+      />
+    </>
   );
 }

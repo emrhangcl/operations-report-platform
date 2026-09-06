@@ -29,13 +29,30 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell footer={<Link href="/login">Giriş sayfasına dön</Link>} title="Parolamı Unuttum">
+    <AuthShell
+      description="Hesabınız için kayıtlı e-posta adresine güvenli yenileme bağlantısı gönderilir."
+      footer={<Link href="/login">Giriş sayfasına dön</Link>}
+      title="Parolamı Unuttum"
+    >
       {sent ? (
-        <div className="auth-status-block"><p>Hesap mevcutsa parola yenileme bağlantısı e-posta adresine gönderildi.</p></div>
+        <div className="auth-status-block" role="status">
+          <p>Hesap mevcutsa parola yenileme bağlantısı e-posta adresine gönderildi.</p>
+        </div>
       ) : (
-        <form className="public-form" onSubmit={submit}>
-          <label className="field"><span>E-posta</span><input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label>
-          {message ? <div className="message error">{message}</div> : null}
+        <form aria-describedby={message ? "forgot-password-error" : undefined} className="public-form" onSubmit={submit}>
+          <label className="field">
+            <span>E-posta</span>
+            <input
+              autoComplete="email"
+              id="forgot-password-email"
+              name="email"
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              type="email"
+              value={email}
+            />
+          </label>
+          {message ? <div className="message error" id="forgot-password-error" role="alert">{message}</div> : null}
           <button className="button public-form-submit" disabled={loading} type="submit">{loading ? "Gönderiliyor" : "Yenileme Bağlantısı Gönder"}</button>
         </form>
       )}

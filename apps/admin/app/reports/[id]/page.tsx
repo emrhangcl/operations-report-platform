@@ -3,13 +3,25 @@
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Building2, CalendarDays, ChevronLeft, ClipboardList, Clock3, Download, Gauge, ImageIcon, Maximize2, Share2, Trash2, UserRound, X } from "lucide-react";
-import type { ReportWorkItem } from "@operations/types";
-import { AdminShell } from "../../../components/admin-shell";
-import { PageHeader } from "../../../components/page-header";
+import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from "react";
+import { Building2, CalendarDays, CheckCircle2, ChevronLeft, ClipboardList, Clock3, Download, Gauge, ImageIcon, Maximize2, Pencil, Plus, Save, Share2, Trash2, UserRound, X } from "lucide-react";
+import type { Equipment, ReportFormValues, ReportWorkItem } from "@operations/types";
+import { emptyReportFormValues, processActions, productTypes } from "@operations/validation";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  IconButton,
+  LoadingState,
+  PageHeaderShell,
+  StatusBadge
+} from "../../../components/ui";
 import { downloadOrShareReportPdf } from "../../../lib/report-pdf-client";
-import { getBrowserSupabase } from "../../../lib/supabase-browser";
+import { clearSupabaseReadCache, getBrowserSupabase } from "../../../lib/supabase-browser";
 
 type ReportDetail = Record<string, unknown> & {
   report_number: string | null;
@@ -20,7 +32,7 @@ type ReportDetail = Record<string, unknown> & {
   created_at: string;
   updated_at: string;
   submitted_at: string | null;
-  report_personnel?: Array<{ name_snapshot: string | null }>;
+  report_personnel?: Array<{ profile_id?: string | null; name_snapshot: string | null }>;
   report_photos?: Array<{
     id?: string;
     category: string | null;
@@ -36,14 +48,27 @@ type ActivePhoto = ReportPhoto & {
   signedUrl: string;
 };
 
+const replacementReasonOptions = [
+  "Mekanik sıkıntılardan dolayı",
+  "Ek yeri açtı",
+  "Sorun yoktu, bant ortalama ömrü doldu",
+  "Diğer"
+];
+
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [activePhoto, setActivePhoto] = useState<ActivePhoto | null>(null);
   const [pdfLoading, setPdfLoading] = useState<"download" | "share" | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editValues, setEditValues] = useState<ReportFormValues | null>(null);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"info" | "error">("error");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,21 +77,28 @@ export default function ReportDetailPage() {
       const supabase = getBrowserSupabase();
       if (!supabase) return;
 
-      const { data, error } = await supabase
-        .from("reports")
-        .select("*, report_personnel(name_snapshot), report_photos(id,category,caption,storage_path,created_at)")
-        .eq("id", params.id)
-        .maybeSingle();
+      const [reportResult, equipmentResult] = await Promise.all([
+        supabase
+          .from("reports")
+          .select("*, report_personnel(profile_id,name_snapshot), report_photos(id,category,caption,storage_path,created_at)")
+          .eq("id", params.id)
+          .maybeSingle(),
+        supabase.from("equipment").select("*").eq("is_active", true).order("name")
+      ]);
 
       if (cancelled) return;
 
-      if (error || !data) {
+      if (reportResult.error || !reportResult.data) {
+        setMessageTone("error");
         setMessage("Rapor detayı alınamadı.");
         return;
       }
 
-      const nextReport = data as ReportDetail;
+      const nextEquipment = (equipmentResult.data ?? []) as Equipment[];
+      const nextReport = reportResult.data as ReportDetail;
+      setEquipment(nextEquipment);
       setReport(nextReport);
+      setEditValues(reportToEditValues(nextReport, nextEquipment));
 
       const signedEntries = await Promise.all(
         (nextReport.report_photos ?? [])
@@ -84,7 +116,10 @@ export default function ReportDetailPage() {
     }
 
     load().catch(() => {
-      if (!cancelled) setMessage("Rapor detayı alınamadı.");
+      if (!cancelled) {
+        setMessageTone("error");
+        setMessage("Rapor detayı alınamadı.");
+      }
     });
 
     return () => {
@@ -112,11 +147,11 @@ export default function ReportDetailPage() {
   }
 
   async function deleteReport() {
-    if (!confirm("Bu rapor kalıcı olarak silinsin mi?")) return;
-
     const headers = await authHeaders();
     if (!headers?.Authorization) {
+      setMessageTone("error");
       setMessage("Silme işlemi için oturum doğrulanamadı.");
+      setDeleteDialogOpen(false);
       return;
     }
 
@@ -126,10 +161,13 @@ export default function ReportDetailPage() {
     });
     if (!response.ok) {
       const body = await response.json().catch(() => null) as { message?: string } | null;
+      setMessageTone("error");
       setMessage(body?.message ?? "Rapor silinemedi.");
+      setDeleteDialogOpen(false);
       return;
     }
 
+    clearSupabaseReadCache();
     router.replace("/reports");
   }
 
@@ -147,6 +185,7 @@ export default function ReportDetailPage() {
       });
 
       if (!result.ok) {
+        setMessageTone("error");
         setMessage(result.message);
       }
     } finally {
@@ -154,35 +193,180 @@ export default function ReportDetailPage() {
     }
   }
 
+  function beginEdit() {
+    if (!report) return;
+    setEditValues(reportToEditValues(report, equipment));
+    setMessage("");
+    setEditing(true);
+  }
+
+  function updateEditValue<K extends keyof ReportFormValues>(key: K, value: ReportFormValues[K]) {
+    setEditValues((current) => current ? { ...current, [key]: value } : current);
+  }
+
+  function toggleEditArray(key: "product_types" | "process_actions" | "replacement_reasons", value: string) {
+    setEditValues((current) => {
+      if (!current) return current;
+      const values = current[key] as string[];
+      const next = values.includes(value)
+        ? values.filter((item) => item !== value)
+        : [...values, value];
+      return { ...current, [key]: next };
+    });
+  }
+
+  function toggleEditEquipment(equipmentId: string) {
+    setEditValues((current) => {
+      if (!current) return current;
+      const nextIds = current.used_equipment_ids.includes(equipmentId)
+        ? current.used_equipment_ids.filter((item) => item !== equipmentId)
+        : [...current.used_equipment_ids, equipmentId];
+      return {
+        ...current,
+        used_equipment_ids: nextIds,
+        used_equipment: equipmentNamesFromIds(nextIds, equipment)
+      };
+    });
+  }
+
+  function updateEditWorkItem(index: number, key: keyof ReportWorkItem, value: string) {
+    setEditValues((current) => {
+      if (!current) return current;
+      const items = normalizeWorkItems(current.work_items).map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item
+      );
+      return syncPrimaryWorkItem({ ...current, work_items: items });
+    });
+  }
+
+  function addEditWorkItem() {
+    setEditValues((current) => current
+      ? syncPrimaryWorkItem({ ...current, work_items: [...normalizeWorkItems(current.work_items), emptyWorkItem()] })
+      : current
+    );
+  }
+
+  function removeEditWorkItem(index: number) {
+    setEditValues((current) => {
+      if (!current) return current;
+      const nextItems = normalizeWorkItems(current.work_items).filter((_, itemIndex) => itemIndex !== index);
+      return syncPrimaryWorkItem({ ...current, work_items: nextItems.length > 0 ? nextItems : [emptyWorkItem()] });
+    });
+  }
+
+  async function saveEdit() {
+    if (!editValues || !report) return;
+
+    if (!editValues.report_date) {
+      setMessageTone("error");
+      setMessage("Rapor tarihi zorunludur.");
+      return;
+    }
+
+    const supabase = getBrowserSupabase();
+    if (!supabase) {
+      setMessageTone("error");
+      setMessage("Supabase bilgileri girilmedi.");
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+    try {
+      const { data, error } = await supabase
+        .from("reports")
+        .update(reportUpdatePayload(editValues))
+        .eq("id", params.id)
+        .select("*, report_personnel(profile_id,name_snapshot), report_photos(id,category,caption,storage_path,created_at)")
+        .single();
+
+      if (error || !data) {
+        setMessageTone("error");
+        setMessage("Rapor güncellenemedi. Yetki ve alanları kontrol edin.");
+        return;
+      }
+
+      const nextReport = data as ReportDetail;
+      clearSupabaseReadCache();
+      setReport(nextReport);
+      setEditValues(reportToEditValues(nextReport, equipment));
+      setEditing(false);
+      setMessageTone("info");
+      setMessage("Rapor güncellendi.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title={report?.report_number ?? "Rapor Detayı"}
         description={report ? `${text(report.company_name_snapshot)} · ${dateOnly(report.report_date)}` : "Rapor bilgileri yükleniyor."}
         action={report ? (
-          <div className="header-actions">
-            <button className="button secondary" onClick={() => router.push("/reports")} type="button">
-              <ChevronLeft aria-hidden size={18} />
+          <FormActions className="header-actions">
+            <Button icon={<ChevronLeft aria-hidden size={18} />} onClick={() => router.push("/reports")} variant="secondary">
               Raporlara Dön
-            </button>
-            <button className="button secondary" disabled={pdfLoading !== null} onClick={() => handlePdf("download")} type="button">
-              <Download aria-hidden size={18} />
+            </Button>
+            {editing ? (
+              <>
+                <Button
+                  disabled={saving}
+                  icon={<X aria-hidden size={18} />}
+                  onClick={() => { setEditValues(reportToEditValues(report, equipment)); setEditing(false); }}
+                  variant="secondary"
+                >
+                  Vazgeç
+                </Button>
+                <Button disabled={saving} icon={<Save aria-hidden size={18} />} onClick={saveEdit}>
+                  {saving ? "Kaydediliyor" : "Kaydet"}
+                </Button>
+              </>
+            ) : (
+              <Button icon={<Pencil aria-hidden size={18} />} onClick={beginEdit} variant="secondary">
+                Raporu Düzenle
+              </Button>
+            )}
+            <Button
+              disabled={pdfLoading !== null}
+              icon={<Download aria-hidden size={18} />}
+              onClick={() => handlePdf("download")}
+              variant="secondary"
+            >
               {pdfLoading === "download" ? "Hazırlanıyor" : "PDF İndir"}
-            </button>
-            <button className="button secondary" disabled={pdfLoading !== null} onClick={() => handlePdf("share")} type="button">
-              <Share2 aria-hidden size={18} />
+            </Button>
+            <Button
+              disabled={pdfLoading !== null}
+              icon={<Share2 aria-hidden size={18} />}
+              onClick={() => handlePdf("share")}
+              variant="secondary"
+            >
               {pdfLoading === "share" ? "Hazırlanıyor" : "Paylaş"}
-            </button>
-            <button className="button danger" onClick={deleteReport} type="button">
-              <Trash2 aria-hidden size={18} />
+            </Button>
+            <Button icon={<Trash2 aria-hidden size={18} />} onClick={() => setDeleteDialogOpen(true)} variant="danger">
               Raporu Sil
-            </button>
-          </div>
+            </Button>
+          </FormActions>
         ) : null}
       />
-      {message ? <div className="message error">{message}</div> : null}
+      {message ? <Alert tone={messageTone === "info" ? "success" : "error"}>{message}</Alert> : null}
       {!report ? (
-        <div className="empty">Rapor yükleniyor.</div>
+        <LoadingState label="Rapor yükleniyor." />
+      ) : editing && editValues ? (
+        <ReportEditForm
+          report={report}
+          equipment={equipment}
+          saving={saving}
+          values={editValues}
+          addWorkItem={addEditWorkItem}
+          removeWorkItem={removeEditWorkItem}
+          onCancel={() => { setEditValues(reportToEditValues(report, equipment)); setEditing(false); }}
+          onSave={saveEdit}
+          onToggleEquipment={toggleEditEquipment}
+          onToggleArray={toggleEditArray}
+          onUpdate={updateEditValue}
+          onUpdateWorkItem={updateEditWorkItem}
+        />
       ) : (
         <>
           <ReportSummary report={report} photoCount={report.report_photos?.length ?? 0} />
@@ -289,7 +473,469 @@ export default function ReportDetailPage() {
           {activePhoto ? <PhotoLightbox photo={activePhoto} onClose={() => setActivePhoto(null)} /> : null}
         </>
       )}
-    </AdminShell>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description="Bu rapor ve ilişkili kayıtları kalıcı olarak silinsin mi?"
+        onCancel={() => setDeleteDialogOpen(false)}
+        onConfirm={() => {
+          void deleteReport();
+        }}
+        open={deleteDialogOpen}
+        title="Rapor silme onayı"
+      />
+    </>
+  );
+}
+
+function ReportEditForm({
+  addWorkItem,
+  equipment,
+  onCancel,
+  onSave,
+  onToggleEquipment,
+  onToggleArray,
+  onUpdate,
+  onUpdateWorkItem,
+  removeWorkItem,
+  report,
+  saving,
+  values
+}: {
+  addWorkItem: () => void;
+  equipment: Equipment[];
+  onCancel: () => void;
+  onSave: () => void;
+  onToggleEquipment: (value: string) => void;
+  onToggleArray: (key: "product_types" | "process_actions" | "replacement_reasons", value: string) => void;
+  onUpdate: <K extends keyof ReportFormValues>(key: K, value: ReportFormValues[K]) => void;
+  onUpdateWorkItem: (index: number, key: keyof ReportWorkItem, value: string) => void;
+  removeWorkItem: (index: number) => void;
+  report: ReportDetail;
+  saving: boolean;
+  values: ReportFormValues;
+}) {
+  return (
+    <form
+      className="form-panel assignment-form report-edit-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave();
+      }}
+    >
+      <div className="assignment-form-sections">
+        <FormSection className="form-subsection" title="Genel Bilgiler">
+          <div className="form-grid assignment-grid">
+            <EditField label="Rapor Tarihi">
+              <input
+                onChange={(event) => onUpdate("report_date", event.target.value)}
+                required
+                type="date"
+                value={values.report_date}
+              />
+            </EditField>
+            <EditField label="Firma">
+              <div className="personnel-readonly">{text(report.company_name_snapshot)}</div>
+            </EditField>
+            <EditField label="Yetkili Kişi">
+              <input onChange={(event) => onUpdate("company_contact_name", event.target.value)} value={values.company_contact_name} />
+            </EditField>
+            <EditField label="Yetkili Telefon">
+              <input onChange={(event) => onUpdate("company_contact_phone", event.target.value)} value={values.company_contact_phone} />
+            </EditField>
+            <EditWorkItemsField
+              items={values.work_items}
+              addWorkItem={addWorkItem}
+              removeWorkItem={removeWorkItem}
+              onUpdate={onUpdateWorkItem}
+            />
+            <EditField label="Makina Marka Modeli">
+              <input onChange={(event) => onUpdate("machine_brand_model", event.target.value)} value={values.machine_brand_model} />
+            </EditField>
+            <EditField label="Raporu Oluşturan">
+              <div className="personnel-readonly">{text(report.created_by_name_snapshot)}</div>
+            </EditField>
+          </div>
+        </FormSection>
+
+        <FormSection className="form-subsection" title="Araç ve Zaman">
+          <div className="form-grid assignment-grid">
+            <EditField label="Araç Plakası">
+              <input onChange={(event) => onUpdate("vehicle_plate", event.target.value)} value={values.vehicle_plate} />
+            </EditField>
+            <EditField label="Araç Alış KM">
+              <input inputMode="numeric" onChange={(event) => onUpdate("vehicle_start_km", event.target.value)} value={values.vehicle_start_km} />
+            </EditField>
+            <EditField label="Araç Teslim KM">
+              <input inputMode="numeric" onChange={(event) => onUpdate("vehicle_end_km", event.target.value)} value={values.vehicle_end_km} />
+            </EditField>
+            <EditSelectionPicker
+              className="span-2"
+              emptyText="Ekipman tanımlı değil"
+              label="Kullanılan Makine/Ekipman"
+              options={equipment.map((item) => ({ label: item.name, value: item.id }))}
+              placeholder="Ekipman seçin"
+              selected={values.used_equipment_ids}
+              onToggle={onToggleEquipment}
+            />
+            <EditDateTimeField label="Atölyeden Çıkış" value={values.workshop_departure_at} onChange={(value) => onUpdate("workshop_departure_at", value)} />
+            <EditDateTimeField label="Müşteriye Varış" value={values.customer_arrival_at} onChange={(value) => onUpdate("customer_arrival_at", value)} />
+            <EditDateTimeField label="Müşteriden Çıkış" value={values.customer_departure_at} onChange={(value) => onUpdate("customer_departure_at", value)} />
+            <EditDateTimeField label="Fabrikaya Dönüş" value={values.factory_return_at} onChange={(value) => onUpdate("factory_return_at", value)} />
+          </div>
+        </FormSection>
+
+        <FormSection className="form-subsection" title="Ürün ve İşlem">
+          <div className="form-grid assignment-grid">
+            <EditField label="Item / Coil Kodu">
+              <input onChange={(event) => onUpdate("product_item_coil_code", event.target.value)} value={values.product_item_coil_code} />
+            </EditField>
+            <EditCheckPicker
+              className="span-2 assignment-compact-picker"
+              label="Ürün Türü"
+              options={productTypes.map((value) => ({ label: value, value }))}
+              selected={values.product_types}
+              onToggle={(value) => onToggleArray("product_types", value)}
+            />
+            {values.product_types.includes("Diğer") ? (
+              <EditField label="Diğer Ürün Türü">
+                <input onChange={(event) => onUpdate("product_type_other", event.target.value)} value={values.product_type_other} />
+              </EditField>
+            ) : null}
+            <EditCheckPicker
+              className="span-2 assignment-compact-picker"
+              label="Yapılan İşlem"
+              options={processActions.map((value) => ({ label: value, value }))}
+              selected={values.process_actions}
+              onToggle={(value) => onToggleArray("process_actions", value)}
+            />
+            {values.process_actions.includes("Kenar Kesim") ? (
+              <EditField label="Kenar Kesim">
+                <select onChange={(event) => onUpdate("edge_cut_method", event.target.value as ReportFormValues["edge_cut_method"])} value={values.edge_cut_method}>
+                  <option value="">Seçilmedi</option>
+                  <option value="Makine ile">Makine ile</option>
+                  <option value="El ile">El ile</option>
+                </select>
+              </EditField>
+            ) : null}
+            {values.process_actions.includes("Diğer") ? (
+              <EditField label="Diğer İşlem">
+                <input onChange={(event) => onUpdate("process_action_other", event.target.value)} value={values.process_action_other} />
+              </EditField>
+            ) : null}
+            <EditField label="Eski Bant Çalışma Süresi">
+              <input onChange={(event) => onUpdate("removed_belt_years", event.target.value)} value={values.removed_belt_years} />
+            </EditField>
+            <EditCheckPicker
+              className="span-2 assignment-compact-picker"
+              label="Değiştirme Sebebi"
+              options={replacementReasonOptions.map((value) => ({ label: value, value }))}
+              selected={values.replacement_reasons}
+              onToggle={(value) => onToggleArray("replacement_reasons", value)}
+            />
+            {values.replacement_reasons.includes("Diğer") ? (
+              <EditField label="Diğer Sebep">
+                <input onChange={(event) => onUpdate("replacement_reason_other", event.target.value)} value={values.replacement_reason_other} />
+              </EditField>
+            ) : null}
+            <EditField className="span-2" label="Yapılan İşlem Açıklama">
+              <textarea onChange={(event) => onUpdate("process_description", event.target.value)} value={values.process_description} />
+            </EditField>
+          </div>
+        </FormSection>
+
+        <FormSection className="form-subsection" title="Pres, Test ve Teslim">
+          <div className="form-grid assignment-grid">
+            <EditField label="Test Parçası">
+              <select onChange={(event) => onUpdate("has_test_piece", event.target.value as ReportFormValues["has_test_piece"])} value={values.has_test_piece}>
+                <option value="">Seçilmedi</option>
+                <option value="Var">Var</option>
+                <option value="Yok">Yok</option>
+              </select>
+            </EditField>
+            <EditField label="Test Durumu">
+              <select onChange={(event) => onUpdate("test_status", event.target.value as ReportFormValues["test_status"])} value={values.test_status}>
+                <option value="">Seçilmedi</option>
+                <option value="Test Yapıldı">Test Yapıldı</option>
+                <option value="Test Yapılmadı">Test Yapılmadı</option>
+              </select>
+            </EditField>
+            <EditField label="Gözlemci Açıklama">
+              <input onChange={(event) => onUpdate("observer_external_name", event.target.value)} value={values.observer_external_name} />
+            </EditField>
+            <EditField label="Pres Başlama">
+              <input onChange={(event) => onUpdate("press_start_time", event.target.value)} type="time" value={values.press_start_time} />
+            </EditField>
+            <EditField label="Pres Bitiş">
+              <input onChange={(event) => onUpdate("press_end_time", event.target.value)} type="time" value={values.press_end_time} />
+            </EditField>
+            <EditField label="Enerji Kesintisi">
+              <select onChange={(event) => onUpdate("power_outage", event.target.value as ReportFormValues["power_outage"])} value={values.power_outage}>
+                <option value="">Seçilmedi</option>
+                <option value="Hayır">Hayır</option>
+                <option value="Evet">Evet</option>
+              </select>
+            </EditField>
+            <EditField label="Basınç Düşmesi">
+              <select onChange={(event) => onUpdate("pressure_drop", event.target.value as ReportFormValues["pressure_drop"])} value={values.pressure_drop}>
+                <option value="">Seçilmedi</option>
+                <option value="Hayır">Hayır</option>
+                <option value="Evet">Evet</option>
+              </select>
+            </EditField>
+            <EditField label="Isı Dengesi">
+              <select onChange={(event) => onUpdate("heat_balance_ok", event.target.value as ReportFormValues["heat_balance_ok"])} value={values.heat_balance_ok}>
+                <option value="">Seçilmedi</option>
+                <option value="Hayır">Hayır</option>
+                <option value="Evet">Evet</option>
+              </select>
+            </EditField>
+            <EditField label="Gerdirme">
+              <select onChange={(event) => onUpdate("tensioning_done", event.target.value as ReportFormValues["tensioning_done"])} value={values.tensioning_done}>
+                <option value="">Seçilmedi</option>
+                <option value="Evet">Evet</option>
+                <option value="Hayır">Hayır</option>
+              </select>
+            </EditField>
+            <EditToggle label="Müşteri daha sonra gerecek" value={values.customer_will_tension} onChange={(value) => onUpdate("customer_will_tension", value)} />
+            <EditToggle label="Müşteri otomatik sistemde gerdi" value={values.customer_tensioned_auto} onChange={(value) => onUpdate("customer_tensioned_auto", value)} />
+            <EditField label="Basınç">
+              <input onChange={(event) => onUpdate("pressure_value", event.target.value)} value={values.pressure_value} />
+            </EditField>
+            <EditField label="Birim">
+              <input onChange={(event) => onUpdate("pressure_unit", event.target.value)} value={values.pressure_unit} />
+            </EditField>
+            <EditField label="Ön Gerdirme %">
+              <input inputMode="numeric" onChange={(event) => onUpdate("pre_tension_percent", event.target.value)} value={values.pre_tension_percent} />
+            </EditField>
+            <EditToggle label="Hat çalışır teslim edildi" value={values.line_delivered_running} onChange={(value) => onUpdate("line_delivered_running", value)} />
+            <EditField label="Blanket Pürüzlendirme">
+              <select onChange={(event) => onUpdate("blanket_roughening_info_given", event.target.value as ReportFormValues["blanket_roughening_info_given"])} value={values.blanket_roughening_info_given}>
+                <option value="">Seçilmedi</option>
+                <option value="Evet">Evet</option>
+                <option value="Hayır">Hayır</option>
+              </select>
+            </EditField>
+            <EditField label="Bilgi Verilen Kişi">
+              <input onChange={(event) => onUpdate("blanket_info_person_name", event.target.value)} value={values.blanket_info_person_name} />
+            </EditField>
+          </div>
+        </FormSection>
+
+        <FormSection className="form-subsection" title="Not ve Faturalandırma">
+          <div className="form-grid assignment-grid">
+            <EditField label="Faturalandırma">
+              <select onChange={(event) => onUpdate("billing_status", event.target.value as ReportFormValues["billing_status"])} value={values.billing_status}>
+                <option value="">Seçilmedi</option>
+                <option value="Yapılan İşlem Tarafınıza Fatura Edilecektir">Yapılan İşlem Tarafınıza Fatura Edilecektir</option>
+                <option value="Bedelsiz İşlem Yapılmıştır">Bedelsiz İşlem Yapılmıştır</option>
+              </select>
+            </EditField>
+            <EditField className="span-2" label="Teknik Detaylar">
+              <textarea onChange={(event) => onUpdate("technical_details", event.target.value)} value={values.technical_details} />
+            </EditField>
+          </div>
+        </FormSection>
+      </div>
+
+      <FormActions>
+        <Button disabled={saving} icon={<Save aria-hidden size={18} />} type="submit">
+          {saving ? "Kaydediliyor" : "Değişiklikleri Kaydet"}
+        </Button>
+        <Button disabled={saving} icon={<X aria-hidden size={18} />} onClick={onCancel} variant="secondary">
+          Vazgeç
+        </Button>
+      </FormActions>
+    </form>
+  );
+}
+
+function EditField({
+  children,
+  className,
+  label
+}: {
+  children: React.ReactNode;
+  className?: string;
+  label: string;
+}) {
+  return (
+    <FormField className={className} label={label}>
+      {children}
+    </FormField>
+  );
+}
+
+function EditDateTimeField({ label, onChange, value }: { label: string; onChange: (value: string) => void; value: string }) {
+  return (
+    <EditField label={label}>
+      <input
+        onChange={(event) => onChange(fromDatetimeLocal(event.target.value))}
+        type="datetime-local"
+        value={toDatetimeLocal(value)}
+      />
+    </EditField>
+  );
+}
+
+function EditToggle({ label, onChange, value }: { label: string; onChange: (value: boolean) => void; value: boolean }) {
+  return (
+    <label className="personnel-toggle-row">
+      <input checked={value} onChange={(event) => onChange(event.target.checked)} type="checkbox" />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function EditCheckPicker({
+  className,
+  label,
+  options,
+  selected,
+  onToggle
+}: {
+  className?: string;
+  label: string;
+  options: Array<{ label: string; value: string }>;
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  return (
+    <FormField className={className} label={label}>
+      <div className="choice-list">
+        {options.map((option) => (
+          <label className="check-row" key={option.value}>
+            <input
+              checked={selected.includes(option.value)}
+              onChange={() => onToggle(option.value)}
+              type="checkbox"
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </div>
+    </FormField>
+  );
+}
+
+function EditSelectionPicker({
+  className,
+  emptyText,
+  label,
+  options,
+  placeholder,
+  selected,
+  onToggle
+}: {
+  className?: string;
+  emptyText: string;
+  label: string;
+  options: Array<{ label: string; value: string }>;
+  placeholder: string;
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  const selectedLabels = options
+    .filter((option) => selected.includes(option.value))
+    .map((option) => option.label);
+
+  return (
+    <FormField className={className} label={label}>
+      <details className="personnel-choice-panel">
+        <summary>{selectedLabels.length > 0 ? selectedLabels.join(", ") : options.length > 0 ? placeholder : emptyText}</summary>
+        <div>
+          {options.map((option) => (
+            <label className="personnel-check-row" key={option.value}>
+              <input
+                checked={selected.includes(option.value)}
+                onChange={() => onToggle(option.value)}
+                type="checkbox"
+              />
+              <span>{option.label}</span>
+              {selected.includes(option.value) ? <CheckCircle2 aria-hidden size={16} /> : null}
+            </label>
+          ))}
+        </div>
+      </details>
+    </FormField>
+  );
+}
+
+function EditWorkItemsField({
+  addWorkItem,
+  items,
+  onUpdate,
+  removeWorkItem
+}: {
+  addWorkItem: () => void;
+  items: ReportWorkItem[];
+  onUpdate: (index: number, key: keyof ReportWorkItem, value: string) => void;
+  removeWorkItem: (index: number) => void;
+}) {
+  const rows = normalizeWorkItems(items);
+
+  return (
+    <div className="field span-4 product-items-field">
+      <label>Hat, Bant Kodu ve Ölçüler</label>
+      <div className="product-item-list">
+        <div className="product-item-row product-item-head report-edit-work-row">
+          <span>Hat</span>
+          <span>Bant Kodu</span>
+          <span>En</span>
+          <span>Boy</span>
+          <span>Miktar</span>
+          <span />
+        </div>
+        {rows.map((item, index) => (
+          <div className="product-item-row report-edit-work-row" key={index}>
+            <input
+              aria-label={`${index + 1}. satır hat adı`}
+              onChange={(event) => onUpdate(index, "line_name", event.target.value)}
+              placeholder="Hat"
+              value={item.line_name}
+            />
+            <input
+              aria-label={`${index + 1}. satır bant kodu`}
+              onChange={(event) => onUpdate(index, "belt_code", event.target.value)}
+              placeholder="Bant kodu"
+              value={item.belt_code}
+            />
+            <input
+              aria-label={`${index + 1}. satır en`}
+              onChange={(event) => onUpdate(index, "product_width", event.target.value)}
+              placeholder="En"
+              value={item.product_width}
+            />
+            <input
+              aria-label={`${index + 1}. satır boy`}
+              onChange={(event) => onUpdate(index, "product_length", event.target.value)}
+              placeholder="Boy"
+              value={item.product_length}
+            />
+            <input
+              aria-label={`${index + 1}. satır miktar`}
+              inputMode="numeric"
+              onChange={(event) => onUpdate(index, "product_quantity", event.target.value)}
+              placeholder="Miktar"
+              value={item.product_quantity}
+            />
+            {rows.length > 1 ? (
+              <IconButton
+                aria-label={`${index + 1}. iş kalemini kaldır`}
+                className="icon-button"
+                icon={<Trash2 aria-hidden size={16} />}
+                onClick={() => removeWorkItem(index)}
+                variant="subtle"
+              />
+            ) : (
+              <span />
+            )}
+          </div>
+        ))}
+      </div>
+      <Button className="contact-add-button" icon={<Plus aria-hidden size={16} />} onClick={addWorkItem} variant="secondary">
+        Kalem Ekle
+      </Button>
+    </div>
   );
 }
 
@@ -333,9 +979,10 @@ function SummaryCard({
 
 function Section({ title, rows }: { title: string; rows: Array<[string, string]> }) {
   return (
-    <section className="card detail-section">
+    <FormSection className="card detail-section">
       <div className="detail-section-title">
         <h2>{title}</h2>
+        {title === "Sistem Bilgileri" ? <StatusBadge label={rows.find(([label]) => label === "Durum")?.[1] ?? "-"} tone="neutral" /> : null}
       </div>
       <dl className="kv">
         {rows.map(([label, value]) => (
@@ -345,7 +992,7 @@ function Section({ title, rows }: { title: string; rows: Array<[string, string]>
           </div>
         ))}
       </dl>
-    </section>
+    </FormSection>
   );
 }
 
@@ -362,10 +1009,10 @@ function PhotoSection({
     <section className="card detail-section detail-section-wide">
       <div className="detail-section-title">
         <h2>Fotoğraflar</h2>
-        <span>{photos.length} adet</span>
+        <StatusBadge label={`${photos.length} adet`} tone="neutral" />
       </div>
       {photos.length === 0 ? (
-        <div className="empty compact">Fotoğraf eklenmemiş.</div>
+        <EmptyState className="compact">Fotoğraf eklenmemiş.</EmptyState>
       ) : (
         <div className="report-photo-grid">
           {photos.map((photo, index) => {
@@ -414,6 +1061,40 @@ function PhotoSection({
 }
 
 function PhotoLightbox({ photo, onClose }: { photo: ActivePhoto; onClose: () => void }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    panelRef.current?.querySelector<HTMLElement>("[aria-label='Fotoğrafı kapat']")?.focus();
+
+    return () => {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
+  }, []);
+
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Tab") return;
+
+    const focusable = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(
+      "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+    ) ?? []);
+    const first = focusable.at(0);
+    const last = focusable.at(-1);
+    if (!first || !last) return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   return (
     <div className="photo-lightbox" onClick={onClose} role="presentation">
       <div
@@ -421,6 +1102,8 @@ function PhotoLightbox({ photo, onClose }: { photo: ActivePhoto; onClose: () => 
         aria-modal="true"
         className="photo-lightbox-panel"
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={handleKeyDown}
+        ref={panelRef}
         role="dialog"
       >
         <div className="photo-lightbox-top">
@@ -432,9 +1115,12 @@ function PhotoLightbox({ photo, onClose }: { photo: ActivePhoto; onClose: () => 
             <a className="button secondary" href={photo.signedUrl} rel="noreferrer" target="_blank">
               Yeni Sekmede Aç
             </a>
-            <button aria-label="Fotoğrafı kapat" className="button subtle icon-only" onClick={onClose} type="button">
-              <X aria-hidden size={20} />
-            </button>
+            <IconButton
+              aria-label="Fotoğrafı kapat"
+              icon={<X aria-hidden size={20} />}
+              onClick={onClose}
+              variant="subtle"
+            />
           </div>
         </div>
         <div className="photo-lightbox-image">
@@ -449,6 +1135,174 @@ function PhotoLightbox({ photo, onClose }: { photo: ActivePhoto; onClose: () => 
       </div>
     </div>
   );
+}
+
+function reportToEditValues(report: ReportDetail, equipment: Equipment[]): ReportFormValues {
+  const workItems = normalizeWorkItems(
+    workItemsFromValue(
+      report.work_items,
+      textValue(report.line_name),
+      textValue(report.belt_id),
+      textValue(report.belt_code_snapshot),
+      textValue(report.belt_name_snapshot),
+      textValue(report.product_width),
+      textValue(report.product_length),
+      textValue(report.product_quantity)
+    )
+  );
+  const primaryWorkItem = compactWorkItems(workItems)[0] ?? workItems[0] ?? emptyWorkItem();
+  const equipmentIds = equipmentIdsFromValue(report.used_equipment_ids, textValue(report.used_equipment), equipment);
+
+  return {
+    ...emptyReportFormValues,
+    client_request_id: textValue(report.client_request_id),
+    report_date: dateInputValue(report.report_date),
+    company_id: textValue(report.company_id),
+    company_contact_name: textValue(report.company_contact_name),
+    company_contact_phone: textValue(report.company_contact_phone),
+    line_name: primaryWorkItem.line_name,
+    work_items: workItems,
+    machine_brand_model: textValue(report.machine_brand_model),
+    customer_machine_name: textValue(report.customer_machine_name),
+    belt_id: primaryWorkItem.belt_id || textValue(report.belt_id),
+    visiting_personnel_ids: [],
+    vehicle_plate: textValue(report.vehicle_plate),
+    vehicle_start_km: textValue(report.vehicle_start_km),
+    vehicle_end_km: textValue(report.vehicle_end_km),
+    used_equipment_ids: equipmentIds,
+    used_equipment: equipmentNamesFromIds(equipmentIds, equipment) || textValue(report.used_equipment),
+    workshop_departure_at: textValue(report.workshop_departure_at),
+    customer_arrival_at: textValue(report.customer_arrival_at),
+    customer_departure_at: textValue(report.customer_departure_at),
+    factory_return_at: textValue(report.factory_return_at),
+    product_code: textValue(report.product_code),
+    product_measure: textValue(report.product_measure),
+    product_width: primaryWorkItem.product_width || textValue(report.product_width),
+    product_length: primaryWorkItem.product_length || textValue(report.product_length),
+    product_quantity: primaryWorkItem.product_quantity || textValue(report.product_quantity),
+    product_item_coil_code: textValue(report.product_item_coil_code),
+    product_types: arrayValue(report.product_types) as ReportFormValues["product_types"],
+    product_type_other: textValue(report.product_type_other),
+    process_actions: arrayValue(report.process_actions) as ReportFormValues["process_actions"],
+    edge_cut_method: textValue(report.edge_cut_method) as ReportFormValues["edge_cut_method"],
+    process_action_other: textValue(report.process_action_other),
+    mechanical_connection: textValue(report.mechanical_connection),
+    profile_material: textValue(report.profile_material),
+    removed_belt_years: textValue(report.removed_belt_years),
+    replacement_reasons: arrayValue(report.replacement_reasons),
+    replacement_reason_other: textValue(report.replacement_reason_other),
+    has_test_piece: textValue(report.has_test_piece) as ReportFormValues["has_test_piece"],
+    test_status: textValue(report.test_status) as ReportFormValues["test_status"],
+    observer_personnel_id: textValue(report.observer_personnel_id),
+    observer_external_name: textValue(report.observer_external_name),
+    press_start_time: textValue(report.press_start_time).slice(0, 5),
+    press_end_time: textValue(report.press_end_time).slice(0, 5),
+    power_outage: textValue(report.power_outage) as ReportFormValues["power_outage"],
+    pressure_drop: textValue(report.pressure_drop) as ReportFormValues["pressure_drop"],
+    heat_balance_ok: textValue(report.heat_balance_ok) as ReportFormValues["heat_balance_ok"],
+    process_description: textValue(report.process_description),
+    billing_status: textValue(report.billing_status) as ReportFormValues["billing_status"],
+    technical_details: textValue(report.technical_details),
+    tensioning_done: textValue(report.tensioning_done) as ReportFormValues["tensioning_done"],
+    customer_will_tension: booleanValue(report.customer_will_tension),
+    customer_tensioned_auto: booleanValue(report.customer_tensioned_auto),
+    pressure_value: textValue(report.pressure_value),
+    pressure_unit: textValue(report.pressure_unit),
+    pre_tension_percent: textValue(report.pre_tension_percent),
+    line_delivered_running: booleanValue(report.line_delivered_running),
+    blanket_roughening_info_given: textValue(report.blanket_roughening_info_given) as ReportFormValues["blanket_roughening_info_given"],
+    blanket_info_person_name: textValue(report.blanket_info_person_name)
+  } as ReportFormValues;
+}
+
+function reportUpdatePayload(values: ReportFormValues) {
+  const nullable = (value: string) => value.trim() || null;
+  const workItems = compactWorkItems(normalizeWorkItems(values.work_items));
+  const primaryWorkItem = workItems[0] ?? emptyWorkItem();
+  const productCodes = Array.from(new Set(workItems.map((item) => item.belt_code).filter(Boolean)));
+
+  return {
+    report_date: values.report_date,
+    company_contact_name: nullable(values.company_contact_name),
+    company_contact_phone: nullable(values.company_contact_phone),
+    line_name: nullable(primaryWorkItem.line_name || values.line_name),
+    work_items: workItems,
+    machine_brand_model: nullable(values.machine_brand_model),
+    customer_machine_name: nullable(values.customer_machine_name),
+    vehicle_plate: nullable(values.vehicle_plate),
+    vehicle_start_km: nullable(values.vehicle_start_km),
+    vehicle_end_km: nullable(values.vehicle_end_km),
+    used_equipment: nullable(values.used_equipment),
+    workshop_departure_at: nullable(values.workshop_departure_at),
+    customer_arrival_at: nullable(values.customer_arrival_at),
+    customer_departure_at: nullable(values.customer_departure_at),
+    factory_return_at: nullable(values.factory_return_at),
+    product_code: nullable(productCodes.join("\n") || values.product_code),
+    product_measure: null,
+    product_width: nullable(primaryWorkItem.product_width || values.product_width),
+    product_length: nullable(primaryWorkItem.product_length || values.product_length),
+    product_quantity: nullable(primaryWorkItem.product_quantity || values.product_quantity),
+    product_item_coil_code: nullable(values.product_item_coil_code),
+    product_types: values.product_types,
+    product_type_other: nullable(values.product_type_other),
+    process_actions: values.process_actions,
+    edge_cut_method: nullable(values.edge_cut_method),
+    process_action_other: nullable(values.process_action_other),
+    mechanical_connection: nullable(values.mechanical_connection),
+    profile_material: nullable(values.profile_material),
+    removed_belt_years: nullable(values.removed_belt_years),
+    replacement_reasons: values.replacement_reasons,
+    replacement_reason_other: nullable(values.replacement_reason_other),
+    has_test_piece: nullable(values.has_test_piece),
+    test_status: nullable(values.test_status),
+    observer_personnel_id: values.observer_personnel_id || null,
+    observer_external_name: nullable(values.observer_external_name),
+    press_start_time: nullable(values.press_start_time),
+    press_end_time: nullable(values.press_end_time),
+    power_outage: nullable(values.power_outage),
+    pressure_drop: nullable(values.pressure_drop),
+    heat_balance_ok: nullable(values.heat_balance_ok),
+    process_description: nullable(values.process_description),
+    billing_status: nullable(values.billing_status),
+    technical_details: nullable(values.technical_details),
+    tensioning_done: nullable(values.tensioning_done),
+    customer_will_tension: values.customer_will_tension,
+    customer_tensioned_auto: values.customer_tensioned_auto,
+    pressure_value: nullable(values.pressure_value),
+    pressure_unit: nullable(values.pressure_unit),
+    pre_tension_percent: nullable(values.pre_tension_percent),
+    line_delivered_running: values.line_delivered_running,
+    blanket_roughening_info_given: nullable(values.blanket_roughening_info_given),
+    blanket_info_person_name: nullable(values.blanket_info_person_name)
+  };
+}
+
+function emptyWorkItem(): ReportWorkItem {
+  return {
+    belt_code: "",
+    belt_id: "",
+    belt_name: "",
+    line_name: "",
+    product_length: "",
+    product_quantity: "",
+    product_width: ""
+  };
+}
+
+function normalizeWorkItems(items: ReportWorkItem[]) {
+  return items.length > 0 ? items : [emptyWorkItem()];
+}
+
+function syncPrimaryWorkItem<T extends ReportFormValues>(values: T): T {
+  const firstItem = compactWorkItems(values.work_items)[0] ?? values.work_items[0] ?? emptyWorkItem();
+  return {
+    ...values,
+    belt_id: firstItem.belt_id,
+    line_name: firstItem.line_name,
+    product_length: firstItem.product_length,
+    product_quantity: firstItem.product_quantity,
+    product_width: firstItem.product_width
+  };
 }
 
 function compactWorkItems(items: ReportWorkItem[]) {
@@ -606,6 +1460,36 @@ function textValue(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
+function arrayValue(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function equipmentIdsFromValue(value: unknown, fallbackText: string, equipment: Equipment[]) {
+  const directIds = arrayValue(value).filter((id) => equipment.some((item) => item.id === id));
+  if (directIds.length > 0 || !fallbackText.trim()) return directIds;
+
+  const selectedNames = fallbackText
+    .split(/[,;\n]/)
+    .map((item) => item.trim().toLocaleLowerCase("tr-TR"))
+    .filter(Boolean);
+
+  return equipment
+    .filter((item) => selectedNames.includes(item.name.trim().toLocaleLowerCase("tr-TR")))
+    .map((item) => item.id);
+}
+
+function equipmentNamesFromIds(ids: string[], equipment: Equipment[]) {
+  const equipmentById = new Map(equipment.map((item) => [item.id, item]));
+  return ids
+    .map((id) => equipmentById.get(id)?.name ?? "")
+    .filter(Boolean)
+    .join(", ");
+}
+
+function booleanValue(value: unknown) {
+  return typeof value === "boolean" ? value : false;
+}
+
 function text(value: unknown) {
   if (typeof value === "string" && value.trim()) return value;
   return "-";
@@ -633,6 +1517,28 @@ function kmText(start: unknown, end: unknown) {
   const endText = text(end);
   if (startText === "-" && endText === "-") return "-";
   return `${startText} → ${endText}`;
+}
+
+function dateInputValue(value: unknown) {
+  if (typeof value !== "string" || !value) return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+}
+
+function toDatetimeLocal(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function fromDatetimeLocal(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
 function dateOnly(value: unknown) {

@@ -4,8 +4,24 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
 import type { Company, CompanyLine } from "@operations/types";
 import { companyLineSchema } from "@operations/validation";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 type LineForm = {
@@ -25,6 +41,7 @@ export default function LinesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<CompanyLine | null>(null);
 
   const companyNames = useMemo(
     () => new Map(companies.map((company) => [company.id, company.name])),
@@ -81,8 +98,6 @@ export default function LinesPage() {
   }
 
   async function remove(line: CompanyLine) {
-    if (!confirm(`"${line.name}" hattı silinsin mi?`)) return;
-
     setMessage("");
     setLoading(true);
     try {
@@ -97,6 +112,7 @@ export default function LinesPage() {
       setMessage("Hat silindi.");
     } finally {
       setLoading(false);
+      setPendingDelete(null);
     }
   }
 
@@ -109,100 +125,111 @@ export default function LinesPage() {
   }
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Hatlar"
         description="Her firma için mobil raporda seçilecek hat listesini yönetin."
+        action={<StatusBadge label={`${lines.length} hat`} tone="neutral" />}
       />
       <form className="form-panel" onSubmit={submit}>
-        <div className="form-grid">
-          <Field label="Firma">
-            <select
-              onChange={(event) => setForm({ ...form, company_id: event.target.value })}
-              required
-              value={form.company_id}
-            >
-              <option value="">Firma seçin</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Hat Adı">
-            <input
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-              required
-              value={form.name}
-            />
-          </Field>
-        </div>
-        <div className="actions">
-          <button className="button" disabled={loading || companies.length === 0} type="submit">
-            <Save aria-hidden size={18} />
+        <FormSection>
+          <div className="form-grid">
+            <FormField label="Firma">
+              <select
+                onChange={(event) => setForm({ ...form, company_id: event.target.value })}
+                required
+                value={form.company_id}
+              >
+                <option value="">Firma seçin</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Hat Adı">
+              <input
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                required
+                value={form.name}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+        <FormActions>
+          <Button disabled={loading || companies.length === 0} icon={<Save aria-hidden size={18} />} type="submit">
             {editingId ? "Güncelle" : "Hat Ekle"}
-          </button>
+          </Button>
           {editingId ? (
-            <button
-              className="button subtle"
+            <Button
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
-              type="button"
+              icon={<X aria-hidden size={18} />}
+              variant="subtle"
             >
-              <X aria-hidden size={18} />
               Vazgeç
-            </button>
+            </Button>
           ) : null}
-        </div>
+        </FormActions>
       </form>
-      {message ? <div className={message.includes("eklendi") || message.includes("güncellendi") || message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
-      <div className="table-panel">
+      {message ? (
+        <Alert tone={message.includes("eklendi") || message.includes("güncellendi") || message.includes("silindi") ? "success" : "error"}>
+          {message}
+        </Alert>
+      ) : null}
+      <DataTablePanel>
         {lines.length === 0 ? (
-          <div className="empty">Henüz firma hattı eklenmemiş.</div>
+          <EmptyState>Henüz firma hattı eklenmemiş.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Firma</th>
-                <th>Hat</th>
-                <th>Oluşturulma</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>Firma</DataTableHead>
+                <DataTableHead>Hat</DataTableHead>
+                <DataTableHead>Oluşturulma</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {lines.map((line) => (
-                <tr key={line.id}>
-                  <td>{companyNames.get(line.company_id) ?? "-"}</td>
-                  <td>{line.name}</td>
-                  <td>{new Date(line.created_at).toLocaleDateString("tr-TR")}</td>
-                  <td>
-                    <div className="actions" style={{ marginTop: 0 }}>
-                      <button className="button secondary" onClick={() => edit(line)} type="button">
-                        <Pencil aria-hidden size={16} />
+                <DataTableRow key={line.id}>
+                  <DataTableCell>{companyNames.get(line.company_id) ?? "-"}</DataTableCell>
+                  <DataTableCell>{line.name}</DataTableCell>
+                  <DataTableCell>{new Date(line.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
+                  <DataTableCell>
+                    <FormActions style={{ marginTop: 0 }}>
+                      <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(line)} variant="secondary">
                         Düzenle
-                      </button>
-                      <button className="button danger" disabled={loading} onClick={() => remove(line)} type="button">
-                        <Trash2 aria-hidden size={16} />
+                      </Button>
+                      <Button
+                        disabled={loading}
+                        icon={<Trash2 aria-hidden size={16} />}
+                        onClick={() => setPendingDelete(line)}
+                        variant="danger"
+                      >
                         Sil
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      </Button>
+                    </FormActions>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
+      </DataTablePanel>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description={pendingDelete ? `"${pendingDelete.name}" hattı silinsin mi?` : undefined}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            void remove(pendingDelete);
+          }
+        }}
+        open={Boolean(pendingDelete)}
+        title="Hat silme onayı"
+      />
+    </>
   );
 }

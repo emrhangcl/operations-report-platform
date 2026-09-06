@@ -2,11 +2,27 @@
 
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { Download, FilterX, Trash2 } from "lucide-react";
+import { Download, FilterX, LoaderCircle, Trash2 } from "lucide-react";
 import type { Belt, Company, Profile, ReportListItem } from "@operations/types";
-import { AdminShell } from "../../components/admin-shell";
-import { PageHeader } from "../../components/page-header";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  EmptyState,
+  FormActions,
+  FormField,
+  FormSection,
+  PageHeaderShell,
+  StatusBadge
+} from "../../components/ui";
+import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
 
 type Filters = {
   start: string;
@@ -36,7 +52,9 @@ export default function ReportsPage() {
   const [filters, setFilters] = useState(emptyFilters);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
 
   async function loadLookups() {
     const supabase = getBrowserSupabase();
@@ -67,7 +85,9 @@ export default function ReportsPage() {
     if (nextFilters.reportNo) query = query.ilike("report_number", `%${nextFilters.reportNo}%`);
     if (nextFilters.companyId) query = query.eq("company_id", nextFilters.companyId);
     if (nextFilters.personnelId) query = query.eq("created_by_user_id", nextFilters.personnelId);
-    if (nextFilters.beltId) query = query.eq("belt_id", nextFilters.beltId);
+    if (nextFilters.beltId) {
+      query = query.or(`belt_id.eq.${nextFilters.beltId},work_items.cs.${JSON.stringify([{ belt_id: nextFilters.beltId }])}`);
+    }
     if (nextFilters.status) query = query.eq("status", nextFilters.status);
 
     const { data, error } = await query;
@@ -119,49 +139,51 @@ export default function ReportsPage() {
   }
 
   async function exportReports(mode: "selected" | "filtered") {
-    const headers = await authHeaders();
-    if (!headers?.Authorization) {
-      setMessage("Excel aktarımı için oturum doğrulanamadı.");
-      return;
-    }
+    if (exporting) return;
+    setExporting(true);
+    setMessage("");
 
-    const params = new URLSearchParams();
-    if (mode === "selected") {
-      [...selected].forEach((id) => params.append("id", id));
-    } else {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.set(key, value);
-      });
-    }
-
-    const response = await fetch(`/api/admin/reports/export?${params.toString()}`, {
-      headers: {
-        ...headers
+    try {
+      const headers = await authHeaders();
+      if (!headers?.Authorization) {
+        setMessage("Excel aktarımı için oturum doğrulanamadı.");
+        return;
       }
-    });
 
-    if (!response.ok) {
-      setMessage("Excel dosyası üretilemedi.");
-      return;
+      const params = new URLSearchParams();
+      if (mode === "selected") {
+        [...selected].forEach((id) => params.append("id", id));
+      } else {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value) params.set(key, value);
+        });
+      }
+
+      const response = await fetch(`/api/admin/reports/export?${params.toString()}`, {
+        headers: {
+          ...headers
+        }
+      });
+
+      if (!response.ok) {
+        setMessage("Excel dosyası üretilemedi.");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Operasyon_Raporlari_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
     }
-
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Operasyon_Raporlari_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
   }
 
   async function deleteReports(ids: string[]) {
     if (ids.length === 0) return;
-    const approved = confirm(
-      ids.length === 1
-        ? "Bu rapor kalıcı olarak silinsin mi?"
-        : `${ids.length} rapor kalıcı olarak silinsin mi?`
-    );
-    if (!approved) return;
 
     const headers = await authHeaders();
     if (!headers?.Authorization) {
@@ -183,186 +205,208 @@ export default function ReportsPage() {
           return;
         }
       }
+      clearSupabaseReadCache();
       await loadReports();
       setMessage(ids.length === 1 ? "Rapor silindi." : "Seçili raporlar silindi.");
     } finally {
       setLoading(false);
+      setPendingDelete(null);
     }
   }
 
   return (
-    <AdminShell>
-      <PageHeader
+    <>
+      <PageHeaderShell
         title="Raporlar"
         description="Raporları filtreleyin, detaylarını açın ve Excel aktarımı yapın."
         action={
-          <div className="actions" style={{ marginTop: 0 }}>
-            <button
-              className="button"
-              disabled={selected.size === 0}
+          <FormActions style={{ marginTop: 0 }}>
+            <StatusBadge label={`${reports.length} rapor`} tone="neutral" />
+            <Button
+              disabled={exporting || selected.size === 0}
+              icon={exporting ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Download aria-hidden size={18} />}
               onClick={() => exportReports("selected")}
-              type="button"
             >
-              <Download aria-hidden size={18} />
-              Excel&apos;e Aktar
-            </button>
-            <button
-              className="button danger"
+              {exporting ? "Aktarılıyor" : "Excel'e Aktar"}
+            </Button>
+            <Button
               disabled={loading || selected.size === 0}
-              onClick={() => deleteReports([...selected])}
-              type="button"
+              icon={<Trash2 aria-hidden size={18} />}
+              onClick={() => setPendingDelete([...selected])}
+              variant="danger"
             >
-              <Trash2 aria-hidden size={18} />
               Seçilenleri Sil
-            </button>
-          </div>
+            </Button>
+          </FormActions>
         }
       />
 
-      <div className="form-panel">
-        <div className="form-grid">
-          <Field label="Başlangıç Tarihi">
-            <input name="start" onChange={updateFilter} type="date" value={filters.start} />
-          </Field>
-          <Field label="Bitiş Tarihi">
-            <input name="end" onChange={updateFilter} type="date" value={filters.end} />
-          </Field>
-          <Field label="Rapor No">
-            <input name="reportNo" onChange={updateFilter} value={filters.reportNo} />
-          </Field>
-          <Field label="Firma">
-            <select name="companyId" onChange={updateFilter} value={filters.companyId}>
+      <form
+        className="form-panel"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void loadReports();
+        }}
+      >
+        <FormSection>
+          <div className="form-grid">
+            <FormField htmlFor="reports-start" label="Başlangıç Tarihi">
+              <input id="reports-start" name="start" onChange={updateFilter} type="date" value={filters.start} />
+            </FormField>
+            <FormField htmlFor="reports-end" label="Bitiş Tarihi">
+              <input id="reports-end" name="end" onChange={updateFilter} type="date" value={filters.end} />
+            </FormField>
+            <FormField htmlFor="reports-number" label="Rapor No">
+              <input id="reports-number" name="reportNo" onChange={updateFilter} value={filters.reportNo} />
+            </FormField>
+            <FormField htmlFor="reports-company" label="Firma">
+              <select id="reports-company" name="companyId" onChange={updateFilter} value={filters.companyId}>
               <option value="">Tümü</option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>{company.name}</option>
               ))}
-            </select>
-          </Field>
-          <Field label="Personel">
-            <select name="personnelId" onChange={updateFilter} value={filters.personnelId}>
+              </select>
+            </FormField>
+            <FormField htmlFor="reports-personnel" label="Personel">
+              <select id="reports-personnel" name="personnelId" onChange={updateFilter} value={filters.personnelId}>
               <option value="">Tümü</option>
               {personnel.map((profile) => (
                 <option key={profile.id} value={profile.id}>
                   {profile.first_name} {profile.last_name}
                 </option>
               ))}
-            </select>
-          </Field>
-          <Field label="Bant">
-            <select name="beltId" onChange={updateFilter} value={filters.beltId}>
+              </select>
+            </FormField>
+            <FormField htmlFor="reports-belt" label="Bant">
+              <select id="reports-belt" name="beltId" onChange={updateFilter} value={filters.beltId}>
               <option value="">Tümü</option>
               {belts.map((belt) => (
                 <option key={belt.id} value={belt.id}>{formatBeltLabel(belt)}</option>
               ))}
-            </select>
-          </Field>
-          <Field label="Durum">
-            <select name="status" onChange={updateFilter} value={filters.status}>
+              </select>
+            </FormField>
+            <FormField htmlFor="reports-status" label="Durum">
+              <select id="reports-status" name="status" onChange={updateFilter} value={filters.status}>
               <option value="">Tümü</option>
               <option value="DRAFT">Taslak</option>
               <option value="SUBMITTED">Gönderildi</option>
-            </select>
-          </Field>
-        </div>
-        <div className="actions">
-          <button className="button" disabled={loading} onClick={() => loadReports()} type="button">
+              </select>
+            </FormField>
+          </div>
+        </FormSection>
+        <FormActions>
+          <Button disabled={loading} type="submit">
             Filtrele
-          </button>
-          <button
-            className="button subtle"
+          </Button>
+          <Button
+            icon={<FilterX aria-hidden size={18} />}
             onClick={() => {
               setFilters(emptyFilters);
               loadReports(emptyFilters).catch(() => setMessage("Raporlar alınamadı."));
             }}
-            type="button"
+            variant="subtle"
           >
-            <FilterX aria-hidden size={18} />
             Temizle
-          </button>
-          <button className="button secondary" onClick={() => exportReports("filtered")} type="button">
-            Filtre Sonucunu Aktar
-          </button>
+          </Button>
+          <Button
+            disabled={exporting}
+            icon={exporting ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Download aria-hidden size={18} />}
+            onClick={() => exportReports("filtered")}
+            variant="secondary"
+          >
+            {exporting ? "Aktarılıyor" : "Filtre Sonucunu Aktar"}
+          </Button>
           <span>Seçilen: {selected.size} rapor</span>
-        </div>
-      </div>
+        </FormActions>
+      </form>
 
-      {message ? <div className={message.includes("silindi") ? "message info" : "message error"}>{message}</div> : null}
-      <div className="table-panel">
+      {message ? <Alert tone={message.includes("silindi") ? "success" : "error"}>{message}</Alert> : null}
+      <DataTablePanel>
         {reports.length === 0 ? (
-          <div className="empty">Henüz rapor oluşturulmamış.</div>
+          <EmptyState title="Rapor bulunamadı">Henüz rapor oluşturulmamış veya seçili filtrelerle eşleşen rapor yok.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>
-                  <input checked={allSelected} onChange={togglePage} type="checkbox" />
-                </th>
-                <th>Rapor No</th>
-                <th>Tarih</th>
-                <th>Firma</th>
-                <th>Formu Dolduran Personel</th>
-                <th>Giden Personel</th>
-                <th>İşlem</th>
-                <th>Durum</th>
-                <th>Oluşturulma Tarihi</th>
-                <th>İşlemler</th>
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable>
+            <DataTableHeader>
+              <DataTableRow>
+                <DataTableHead>
+                  <input aria-label="Sayfadaki raporları seç" checked={allSelected} onChange={togglePage} type="checkbox" />
+                </DataTableHead>
+                <DataTableHead>Rapor No</DataTableHead>
+                <DataTableHead>Tarih</DataTableHead>
+                <DataTableHead>Firma</DataTableHead>
+                <DataTableHead>Formu Dolduran Personel</DataTableHead>
+                <DataTableHead>Giden Personel</DataTableHead>
+                <DataTableHead>İşlem</DataTableHead>
+                <DataTableHead>Durum</DataTableHead>
+                <DataTableHead>Oluşturulma Tarihi</DataTableHead>
+                <DataTableHead>İşlemler</DataTableHead>
+              </DataTableRow>
+            </DataTableHeader>
+            <DataTableBody>
               {reports.map((report) => (
-                <tr key={report.id}>
-                  <td>
+                <DataTableRow key={report.id}>
+                  <DataTableCell>
                     <input
+                      aria-label={`${report.report_number ?? "Taslak"} raporunu seç`}
                       checked={selected.has(report.id)}
                       onChange={() => toggleReport(report.id)}
                       type="checkbox"
                     />
-                  </td>
-                  <td>
+                  </DataTableCell>
+                  <DataTableCell>
                     <Link href={`/reports/${report.id}`}>
                       {report.report_number ?? "Taslak"}
                     </Link>
-                  </td>
-                  <td>{new Date(report.report_date).toLocaleDateString("tr-TR")}</td>
-                  <td>{report.company_name_snapshot ?? "-"}</td>
-                  <td>{report.created_by_name_snapshot ?? "-"}</td>
-                  <td>
+                  </DataTableCell>
+                  <DataTableCell>{new Date(report.report_date).toLocaleDateString("tr-TR")}</DataTableCell>
+                  <DataTableCell>{report.company_name_snapshot ?? "-"}</DataTableCell>
+                  <DataTableCell>{report.created_by_name_snapshot ?? "-"}</DataTableCell>
+                  <DataTableCell>
                     {report.report_personnel?.map((item) => item.name_snapshot).join(", ") || "-"}
-                  </td>
-                  <td>{report.process_actions?.join(", ") || "-"}</td>
-                  <td>
-                    <span className={`status ${report.status === "SUBMITTED" ? "ok" : "warn"}`}>
-                      {report.status === "SUBMITTED" ? "Gönderildi" : "Taslak"}
-                    </span>
-                  </td>
-                  <td>{new Date(report.created_at).toLocaleString("tr-TR")}</td>
-                  <td>
-                    <button
-                      className="button danger"
+                  </DataTableCell>
+                  <DataTableCell>{report.process_actions?.join(", ") || "-"}</DataTableCell>
+                  <DataTableCell>
+                    <StatusBadge
+                      label={report.status === "SUBMITTED" ? "Gönderildi" : "Taslak"}
+                      tone={report.status === "SUBMITTED" ? "success" : "warning"}
+                    />
+                  </DataTableCell>
+                  <DataTableCell>{new Date(report.created_at).toLocaleString("tr-TR")}</DataTableCell>
+                  <DataTableCell>
+                    <Button
                       disabled={loading}
-                      onClick={() => deleteReports([report.id])}
-                      type="button"
+                      icon={<Trash2 aria-hidden size={16} />}
+                      onClick={() => setPendingDelete([report.id])}
+                      variant="danger"
                     >
-                      <Trash2 aria-hidden size={16} />
                       Sil
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </DataTableCell>
+                </DataTableRow>
               ))}
-            </tbody>
-          </table>
+            </DataTableBody>
+          </DataTable>
         )}
-      </div>
-    </AdminShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      {children}
-    </div>
+      </DataTablePanel>
+      <ConfirmDialog
+        confirmLabel="Sil"
+        description={
+          pendingDelete
+            ? pendingDelete.length === 1
+              ? "Bu rapor kalıcı olarak silinsin mi?"
+              : `${pendingDelete.length} rapor kalıcı olarak silinsin mi?`
+            : undefined
+        }
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            void deleteReports(pendingDelete);
+          }
+        }}
+        open={Boolean(pendingDelete)}
+        title="Rapor silme onayı"
+      />
+    </>
   );
 }
 

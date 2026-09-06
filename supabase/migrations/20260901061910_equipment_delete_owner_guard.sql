@@ -1,0 +1,5 @@
+create policy equipment_delete_owner_guard on public.equipment
+as restrictive
+for delete
+to authenticated
+using (private.is_admin());
