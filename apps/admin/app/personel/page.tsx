@@ -37,7 +37,8 @@ import {
   emptyReportFormValues,
   processActions,
   productTypes,
-  reportFormSchema
+  reportFormSchema,
+  reportReturnCloseoutSchema
 } from "@operations/validation";
 import { customerSignatureSchema, type CustomerSignature } from "@operations/validation";
 import { CustomerSignatureApproval, CustomerSignatureView, SignaturePhotoPreview } from "../../components/customer-signature";
@@ -681,7 +682,7 @@ export default function PersonnelWebPage() {
       ) : null}
 
       {screen === "detail" && selectedReportId ? (
-        <ReportDetailView reportId={selectedReportId} onBack={() => setScreen("submitted")} />
+        <ReportDetailView readOnly={readOnlyMode} reportId={selectedReportId} onBack={() => setScreen("submitted")} />
       ) : null}
 
       {screen === "form" ? (
@@ -951,11 +952,15 @@ function ReportCards({
   );
 }
 
-function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () => void }) {
+function ReportDetailView({ reportId, readOnly, onBack }: { reportId: string; readOnly: boolean; onBack: () => void }) {
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [pdfLoading, setPdfLoading] = useState<"download" | "share" | null>(null);
+  const [closeoutSaving, setCloseoutSaving] = useState(false);
+  const [returnAt, setReturnAt] = useState("");
+  const [returnKm, setReturnKm] = useState("");
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"info" | "error">("error");
 
   useEffect(() => {
     let cancelled = false;
@@ -983,6 +988,8 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
 
       const nextReport = data as ReportDetail;
       setReport(nextReport);
+      setReturnAt(stringValue(nextReport.factory_return_at));
+      setReturnKm(stringValue(nextReport.vehicle_end_km));
 
       const signedEntries = await Promise.all(
         (nextReport.report_photos ?? [])
@@ -1012,6 +1019,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
     if (!report) return;
 
     setMessage("");
+    setMessageTone("error");
     setPdfLoading(mode);
     try {
       const result = await downloadOrShareReportPdf({
@@ -1029,6 +1037,60 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
     }
   }
 
+  async function saveReturnCloseout(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!report || closeoutSaving || readOnly) return;
+
+    const parsed = reportReturnCloseoutSchema.safeParse({
+      customer_departure_at: stringValue(report.customer_departure_at),
+      factory_return_at: returnAt,
+      vehicle_plate: stringValue(report.vehicle_plate),
+      vehicle_start_km: stringValue(report.vehicle_start_km),
+      vehicle_end_km: returnKm
+    });
+    if (!parsed.success) {
+      setMessageTone("error");
+      setMessage(parsed.error.issues[0]?.message ?? "Dönüş bilgilerini kontrol edin.");
+      return;
+    }
+
+    const supabase = getPersonnelSupabase();
+    if (!supabase) {
+      setMessageTone("error");
+      setMessage("Supabase bilgileri girilmedi.");
+      return;
+    }
+
+    setCloseoutSaving(true);
+    setMessage("");
+    try {
+      const result = await supabase
+        .from("reports")
+        .update({
+          factory_return_at: parsed.data.factory_return_at,
+          vehicle_end_km: parsed.data.vehicle_end_km || null
+        })
+        .eq("id", report.id)
+        .eq("status", "SUBMITTED")
+        .not("customer_signature", "is", null)
+        .select("factory_return_at,vehicle_end_km,updated_at")
+        .maybeSingle();
+
+      if (result.error || !result.data) throw new Error(result.error?.message || "Dönüş bilgileri kaydedilemedi.");
+
+      setReport((current) => current ? { ...current, ...result.data } : current);
+      setReturnAt(stringValue(result.data.factory_return_at));
+      setReturnKm(stringValue(result.data.vehicle_end_km));
+      setMessageTone("info");
+      setMessage("Dönüş kapanışı kaydedildi. Güncel bilgiler PDF ve rapor dokümanlarında görünecek.");
+    } catch (error) {
+      setMessageTone("error");
+      setMessage(error instanceof Error ? error.message : "Dönüş bilgileri kaydedilemedi.");
+    } finally {
+      setCloseoutSaving(false);
+    }
+  }
+
   return (
     <section className="personnel-stack">
       <BackHeader title={report?.report_number ?? "Rapor Detayı"} onBack={onBack} />
@@ -1042,7 +1104,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
           </Button>
         </div>
       ) : null}
-      {message ? <div className="message error">{message}</div> : null}
+      {message ? <div role={messageTone === "error" ? "alert" : "status"} className={`message ${messageTone}`}>{message}</div> : null}
       {!report ? (
         <EmptyState className="personnel-empty" title="Rapor yükleniyor">
           Detaylar ve fotoğraf bağlantıları hazırlanıyor.
@@ -1051,6 +1113,23 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
       {report ? (
         <>
           <CustomerSignatureView signature={report.customer_signature} signedAt={typeof report.customer_signed_at === "string" ? report.customer_signed_at : null} />
+          <form className="personnel-section personnel-return-closeout" onSubmit={saveReturnCloseout}>
+            <h2><Clock aria-hidden size={18} /> Dönüş kapanışı</h2>
+            <p className="personnel-section-note">Müşteri imzası iş ve teslim kaydını korur. Eve veya ofise ulaştığınızda aşağıdaki dönüş bilgilerini tamamlayabilirsiniz.</p>
+            <fieldset className="personnel-form-grid" disabled={closeoutSaving || readOnly}>
+              <DateTimeField label="Eve / Ofise Giriş Tarih Saati" value={returnAt} onChange={setReturnAt} />
+              {stringValue(report.vehicle_plate) || stringValue(report.vehicle_start_km) ? (
+                <TextField inputMode="numeric" label="Dönüş Araç Kilometresi" value={returnKm} onChange={setReturnKm} />
+              ) : (
+                <div className="personnel-readonly"><strong>Araç kilometresi</strong><span>Bu raporda araç kullanımı kaydedilmemiş.</span></div>
+              )}
+            </fieldset>
+            <div className="personnel-closeout-actions">
+              <Button className="personnel-primary-action" disabled={closeoutSaving || readOnly} icon={<Save aria-hidden size={18} />} type="submit">
+                {closeoutSaving ? "Kaydediliyor" : "Dönüş bilgilerini kaydet"}
+              </Button>
+            </div>
+          </form>
           <DetailSection
             title="Genel Bilgiler"
             rows={[
@@ -1066,7 +1145,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
               ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"],
               ["Araç Plakası", text(report.vehicle_plate)],
               ["Araç Alış KM", text(report.vehicle_start_km)],
-              ["Araç Teslim KM", text(report.vehicle_end_km)],
+              ["Dönüş Araç KM", text(report.vehicle_end_km)],
               ["Kullanılan Makine ve Ekipman", text(report.used_equipment)]
             ]}
           />
@@ -1076,7 +1155,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
               ["Atölyeden Çıkış", formatDateTimeDisplay(report.workshop_departure_at)],
               ["Müşteriye Varış", formatDateTimeDisplay(report.customer_arrival_at)],
               ["Müşteriden Çıkış", formatDateTimeDisplay(report.customer_departure_at)],
-              ["Fabrikaya Dönüş", formatDateTimeDisplay(report.factory_return_at)]
+              ["Eve / Ofise Giriş", formatDateTimeDisplay(report.factory_return_at)]
             ]}
           />
           <DetailSection
@@ -1354,7 +1433,7 @@ function ReportForm({
               value={values.vehicle_start_km}
             />
           </Field>
-          <Field label="Araç Teslim KM">
+          <Field label="Dönüş Araç Kilometresi">
             <input
               inputMode="numeric"
               onChange={(event) => update("vehicle_end_km", event.target.value)}
@@ -1391,7 +1470,7 @@ function ReportForm({
           <DateTimeField label="Atölyeden Çıkış Tarih Saati" value={values.workshop_departure_at} onChange={(value) => update("workshop_departure_at", value)} />
           <DateTimeField label="Müşteriye Varış Tarih Saati" value={values.customer_arrival_at} onChange={(value) => update("customer_arrival_at", value)} />
           <DateTimeField label="Müşteriden Çıkış Tarih Saati" value={values.customer_departure_at} onChange={(value) => update("customer_departure_at", value)} />
-          <DateTimeField label="Fabrikaya Dönüş Tarih Saati" value={values.factory_return_at} onChange={(value) => update("factory_return_at", value)} />
+          <DateTimeField label="Eve / Ofise Giriş Tarih Saati" value={values.factory_return_at} onChange={(value) => update("factory_return_at", value)} />
         </div>
       </details>
 

@@ -4886,6 +4886,36 @@ td a,
   }
 }
 
+.personnel-return-closeout .personnel-section-note {
+  color: var(--color-stone, #4f5b67);
+  line-height: 1.55;
+  margin: 0;
+  padding: 14px 16px 0;
+}
+
+.personnel-return-closeout fieldset {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.personnel-closeout-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 14px 14px;
+}
+
+.personnel-return-closeout .personnel-readonly {
+  align-content: center;
+  display: grid;
+  gap: 3px;
+}
+
+.personnel-return-closeout .personnel-readonly strong,
+.personnel-return-closeout .personnel-readonly span {
+  color: var(--color-ink, #18212b);
+}
+
 /* Platform owner workspace */
 :root {
   --owner-navy: #0b1424;

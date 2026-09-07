@@ -100,11 +100,11 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
         compactSection("Araç ve Zaman", [
           ["Araç Plakası", text(report.vehicle_plate)],
           ["Araç Alış KM", text(report.vehicle_start_km)],
-          ["Araç Teslim KM", text(report.vehicle_end_km)],
+          ["Dönüş Araç KM", text(report.vehicle_end_km)],
           ["Atölyeden Çıkış", dateTime(report.workshop_departure_at)],
           ["Müşteriye Varış", dateTime(report.customer_arrival_at)],
           ["Müşteriden Çıkış", dateTime(report.customer_departure_at)],
-          ["Fabrikaya Dönüş", dateTime(report.factory_return_at)]
+          ["Eve / Ofise Giriş", dateTime(report.factory_return_at)]
         ])
       ],
       columnGap: 12
@@ -392,7 +392,8 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
                 [{ text: "Ad Soyad", style: "tableLabel" }, { text: clip(signature.signer_name, 90), style: "tableValue" }],
                 [{ text: "Unvan", style: "tableLabel" }, { text: clip(signature.signer_title, 90), style: "tableValue" }],
                 [{ text: "İmza zamanı", style: "tableLabel" }, { text: dateTime(signedAt), style: "tableValue" }],
-                [{ text: "Onay metni", style: "tableLabel" }, { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted" }]
+                [{ text: "Onay metni", style: "tableLabel" }, { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted" }],
+                [{ text: "Dönüş kapanışı", style: "tableLabel" }, { text: "Eve/ofise giriş zamanı ve dönüş araç kilometresi teslim onayından sonra personel tarafından kaydedilir.", style: "muted" }]
               ]
             },
             layout: {

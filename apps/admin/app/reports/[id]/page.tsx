@@ -368,7 +368,7 @@ export default function ReportDetailPage() {
       />
       {message ? <Alert tone={messageTone === "info" ? "success" : "error"}>{message}</Alert> : null}
       {reportLockedByCustomerSignature ? (
-        <Alert tone="info">Firma yetkilisi imzası alındığı için bu rapor düzenlemeye kapatıldı. İmza, zaman ve imzalayan kullanıcı alanları veritabanında değiştirilemez; raporu silme işlemi kullanılabilir.</Alert>
+        <Alert tone="info">Firma yetkilisinin imzaladığı iş ve teslim bilgileri düzenlemeye kapatıldı. Personel, dönüşte eve/ofise giriş zamanını ve dönüş araç kilometresini kendi ekranından tamamlayabilir.</Alert>
       ) : null}
       {!report ? (
         <LoadingState label="Rapor yükleniyor." />
@@ -420,7 +420,7 @@ export default function ReportDetailPage() {
                 ["Atölyeden Çıkış", dateTime(report.workshop_departure_at)],
                 ["Müşteriye Varış", dateTime(report.customer_arrival_at)],
                 ["Müşteriden Çıkış", dateTime(report.customer_departure_at)],
-                ["Fabrikaya Dönüş", dateTime(report.factory_return_at)]
+                ["Eve / Ofise Giriş", dateTime(report.factory_return_at)]
               ]}
             />
             <Section
@@ -588,7 +588,7 @@ function ReportEditForm({
             <EditField label="Araç Alış KM">
               <input inputMode="numeric" onChange={(event) => onUpdate("vehicle_start_km", event.target.value)} value={values.vehicle_start_km} />
             </EditField>
-            <EditField label="Araç Teslim KM">
+            <EditField label="Dönüş Araç Kilometresi">
               <input inputMode="numeric" onChange={(event) => onUpdate("vehicle_end_km", event.target.value)} value={values.vehicle_end_km} />
             </EditField>
             <EditSelectionPicker
@@ -603,7 +603,7 @@ function ReportEditForm({
             <EditDateTimeField label="Atölyeden Çıkış" value={values.workshop_departure_at} onChange={(value) => onUpdate("workshop_departure_at", value)} />
             <EditDateTimeField label="Müşteriye Varış" value={values.customer_arrival_at} onChange={(value) => onUpdate("customer_arrival_at", value)} />
             <EditDateTimeField label="Müşteriden Çıkış" value={values.customer_departure_at} onChange={(value) => onUpdate("customer_departure_at", value)} />
-            <EditDateTimeField label="Fabrikaya Dönüş" value={values.factory_return_at} onChange={(value) => onUpdate("factory_return_at", value)} />
+            <EditDateTimeField label="Eve / Ofise Giriş" value={values.factory_return_at} onChange={(value) => onUpdate("factory_return_at", value)} />
           </div>
         </FormSection>
 

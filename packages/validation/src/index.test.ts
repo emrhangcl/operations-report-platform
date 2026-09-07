@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   emptyReportFormValues,
   organizationRegistrationSchema,
-  reportFormSchema
+  reportFormSchema,
+  reportReturnCloseoutSchema
 } from "./index";
 
 describe("reportFormSchema", () => {
@@ -32,6 +33,33 @@ describe("reportFormSchema", () => {
       process_actions: ["Kenar Kesim"]
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("reportReturnCloseoutSchema", () => {
+  const base = {
+    customer_departure_at: "2026-09-07T15:00:00.000Z",
+    factory_return_at: "2026-09-07T16:30:00.000Z",
+    vehicle_plate: "34 ABC 123",
+    vehicle_start_km: "125000",
+    vehicle_end_km: "125120"
+  };
+
+  it("accepts return details recorded after customer delivery", () => {
+    expect(reportReturnCloseoutSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("requires return odometer data when a vehicle was used", () => {
+    const result = reportReturnCloseoutSchema.safeParse({ ...base, vehicle_end_km: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a return before customer departure or below the starting odometer", () => {
+    expect(reportReturnCloseoutSchema.safeParse({
+      ...base,
+      factory_return_at: "2026-09-07T14:00:00.000Z",
+      vehicle_end_km: "124999"
+    }).success).toBe(false);
   });
 });
 

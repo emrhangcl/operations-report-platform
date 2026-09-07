@@ -118,6 +118,49 @@ export const emptyReportFormValues = {
 
 const optionalDatetime = z.string().trim();
 
+function odometerValue(value: string) {
+  return Number(value.replace(/[.\s]/g, "").replace(",", "."));
+}
+
+export const reportReturnCloseoutSchema = z
+  .object({
+    factory_return_at: z.string().trim().min(1, "Eve veya ofise giriş zamanını girin."),
+    customer_departure_at: z.string().trim(),
+    vehicle_plate: z.string().trim(),
+    vehicle_start_km: z.string().trim(),
+    vehicle_end_km: z.string().trim()
+  })
+  .superRefine((value, ctx) => {
+    const returnAt = Date.parse(value.factory_return_at);
+    if (Number.isNaN(returnAt)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["factory_return_at"], message: "Geçerli bir eve veya ofise giriş zamanı girin." });
+    }
+
+    const customerDepartureAt = value.customer_departure_at ? Date.parse(value.customer_departure_at) : null;
+    if (customerDepartureAt !== null && !Number.isNaN(customerDepartureAt) && !Number.isNaN(returnAt) && returnAt < customerDepartureAt) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["factory_return_at"], message: "Dönüş zamanı müşteriden çıkış zamanından önce olamaz." });
+    }
+
+    const vehicleWasUsed = Boolean(value.vehicle_plate || value.vehicle_start_km);
+    if (vehicleWasUsed && !value.vehicle_end_km) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["vehicle_end_km"], message: "Araç teslim kilometresini girin." });
+      return;
+    }
+
+    if (value.vehicle_end_km && !/^\d{1,9}([.,]\d{1,2})?$/.test(value.vehicle_end_km)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["vehicle_end_km"], message: "Araç teslim kilometresini yalnızca sayı olarak girin." });
+      return;
+    }
+
+    if (value.vehicle_start_km && value.vehicle_end_km) {
+      const startKm = odometerValue(value.vehicle_start_km);
+      const endKm = odometerValue(value.vehicle_end_km);
+      if (Number.isFinite(startKm) && Number.isFinite(endKm) && endKm < startKm) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["vehicle_end_km"], message: "Araç teslim kilometresi alış kilometresinden düşük olamaz." });
+      }
+    }
+  });
+
 export const reportFormSchema = z
   .object({
     client_request_id: z.string().uuid("Taslak kimliği geçersiz."),

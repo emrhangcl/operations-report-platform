@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(47);
+select plan(50);
 
 select has_column('public', 'reports', 'customer_signature', 'customer_signature exists');
 select has_column('public', 'reports', 'customer_signed_at', 'customer_signed_at exists');
@@ -417,6 +417,28 @@ select throws_ok(
   'P0001',
   'İmzalı rapor içeriği gönderimden sonra değiştirilemez.',
   'signed report content cannot be edited'
+);
+
+select lives_ok(
+  $$
+    update public.reports
+       set factory_return_at = '2026-09-07 18:30:00+03'::timestamptz,
+           vehicle_end_km = '125120'
+     where id = '41000000-0000-4000-8000-000000000002'
+  $$,
+  'report owner can complete return details after customer signature'
+);
+
+select is(
+  (select factory_return_at from public.reports where id = '41000000-0000-4000-8000-000000000002'),
+  '2026-09-07 15:30:00+00'::timestamptz,
+  'signed report stores the post-service return time'
+);
+
+select is(
+  (select vehicle_end_km from public.reports where id = '41000000-0000-4000-8000-000000000002'),
+  '125120',
+  'signed report stores the post-service return odometer'
 );
 
 select throws_ok(

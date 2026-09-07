@@ -39,6 +39,7 @@ export function CustomerSignatureView({ signature, signedAt }: { signature: unkn
     <strong>{value.signer_name}</strong><span>{value.signer_title}</span>
     {date && !Number.isNaN(date.getTime()) ? <time dateTime={signedAt!}>{date.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })} (Türkiye saati)</time> : null}
     <p>{CUSTOMER_SIGNATURE_CONSENT}</p>
+    <p>Eve/ofise giriş zamanı ve dönüş araç kilometresi, müşteri teslim onayından sonra personel tarafından kaydedilen kapanış bilgileridir.</p>
   </section>;
 }
 
@@ -111,7 +112,7 @@ export function CustomerSignatureApproval({ companyName, reportDate, summary, in
         <label className={styles.consent}><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{CUSTOMER_SIGNATURE_CONSENT}</span></label>
       </fieldset>
       {error ? <div role="alert" className="message error">{error}</div> : null}
-      <p>İmza bu raporla birlikte saklanır ve PDF belgesinde görünür. Gönderimden sonra rapor değiştirilemez.</p>
+      <p>İmza bu raporla birlikte saklanır ve PDF belgesinde görünür. İmzalanan iş ve teslim bilgileri değiştirilemez; dönüş saati ile araç teslim kilometresi personel tarafından dönüşte tamamlanır.</p>
       <Button className={styles.submit} disabled={loading || drawing.length > 0} icon={<Send size={18} aria-hidden />} onClick={submit}>{loading ? "İmzalı rapor kaydediliyor…" : "Onayla ve raporu gönder"}</Button>
     </div>
   </section>;
