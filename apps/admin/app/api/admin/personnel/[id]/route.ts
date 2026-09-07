@@ -40,7 +40,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     .eq("organization_id", admin.organizationId);
 
   if (profileError) {
-    return NextResponse.json({ message: "Personel profili silinemedi." }, { status: 500 });
+    console.error("Personnel profile delete failed", {
+      code: profileError.code,
+      details: profileError.details,
+      hint: profileError.hint,
+      message: profileError.message
+    });
+    return NextResponse.json(
+      {
+        message: profileError.code === "23503"
+          ? "Personel, bağlı kayıtları güvenli biçimde korunamadığı için silinemedi. Veritabanı güncellemesi gerekli."
+          : "Personel profili silinemedi."
+      },
+      { status: profileError.code === "23503" ? 409 : 500 }
+    );
   }
 
   const { error: userError } = await admin.service.auth.admin.deleteUser(id);

@@ -20,6 +20,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../../components/ui";
+import { CustomerSignatureView } from "../../../components/customer-signature";
 import { downloadOrShareReportPdf } from "../../../lib/report-pdf-client";
 import { clearSupabaseReadCache, getBrowserSupabase } from "../../../lib/supabase-browser";
 
@@ -32,6 +33,9 @@ type ReportDetail = Record<string, unknown> & {
   created_at: string;
   updated_at: string;
   submitted_at: string | null;
+  customer_signature?: unknown;
+  customer_signed_at?: string | null;
+  customer_signed_by?: string | null;
   report_personnel?: Array<{ profile_id?: string | null; name_snapshot: string | null }>;
   report_photos?: Array<{
     id?: string;
@@ -69,6 +73,7 @@ export default function ReportDetailPage() {
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"info" | "error">("error");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const reportLockedByCustomerSignature = report ? isCustomerSigned(report) : false;
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +200,11 @@ export default function ReportDetailPage() {
 
   function beginEdit() {
     if (!report) return;
+    if (isCustomerSigned(report)) {
+      setMessageTone("info");
+      setMessage("Firma yetkilisi imzası alınmış raporlar düzenlenemez. İmza alanları veritabanında kalıcıdır; gerekirse raporu silebilirsiniz.");
+      return;
+    }
     setEditValues(reportToEditValues(report, equipment));
     setMessage("");
     setEditing(true);
@@ -256,6 +266,13 @@ export default function ReportDetailPage() {
 
   async function saveEdit() {
     if (!editValues || !report) return;
+
+    if (isCustomerSigned(report)) {
+      setMessageTone("info");
+      setMessage("Firma yetkilisi imzası alınmış raporlar düzenlenemez. İmza alanları veritabanında kalıcıdır; gerekirse raporu silebilirsiniz.");
+      setSaving(false);
+      return;
+    }
 
     if (!editValues.report_date) {
       setMessageTone("error");
@@ -323,8 +340,8 @@ export default function ReportDetailPage() {
                 </Button>
               </>
             ) : (
-              <Button icon={<Pencil aria-hidden size={18} />} onClick={beginEdit} variant="secondary">
-                Raporu Düzenle
+              <Button disabled={reportLockedByCustomerSignature} icon={<Pencil aria-hidden size={18} />} onClick={beginEdit} title={reportLockedByCustomerSignature ? "Firma yetkilisi imzası alınmış raporlar düzenlenemez." : undefined} variant="secondary">
+                {reportLockedByCustomerSignature ? "Düzenleme Kilitli" : "Raporu Düzenle"}
               </Button>
             )}
             <Button
@@ -350,6 +367,9 @@ export default function ReportDetailPage() {
         ) : null}
       />
       {message ? <Alert tone={messageTone === "info" ? "success" : "error"}>{message}</Alert> : null}
+      {reportLockedByCustomerSignature ? (
+        <Alert tone="info">Firma yetkilisi imzası alındığı için bu rapor düzenlemeye kapatıldı. İmza, zaman ve imzalayan kullanıcı alanları veritabanında değiştirilemez; raporu silme işlemi kullanılabilir.</Alert>
+      ) : null}
       {!report ? (
         <LoadingState label="Rapor yükleniyor." />
       ) : editing && editValues ? (
@@ -459,6 +479,9 @@ export default function ReportDetailPage() {
               photoUrls={photoUrls}
               onOpen={(photo, signedUrl, index) => setActivePhoto({ ...photo, signedUrl, index })}
             />
+            <div className="detail-section-wide">
+              <CustomerSignatureView signature={report.customer_signature} signedAt={report.customer_signed_at ?? null} />
+            </div>
             <Section
               title="Sistem Bilgileri"
               rows={[
@@ -1510,6 +1533,10 @@ function boolText(value: unknown) {
 
 function statusText(value: unknown) {
   return value === "SUBMITTED" ? "Gönderildi" : "Taslak";
+}
+
+function isCustomerSigned(report: ReportDetail) {
+  return Boolean(textValue(report.customer_signed_at));
 }
 
 function kmText(start: unknown, end: unknown) {

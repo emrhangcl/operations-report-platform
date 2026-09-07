@@ -8164,6 +8164,30 @@ textarea:focus-visible {
   color: var(--color-steel) !important;
 }
 
+/* The light enterprise theme is applied after the dark owner theme. Keep
+   foreground colors paired with the final light surfaces. */
+.owner-health-grid span {
+  color: var(--color-stone) !important;
+}
+
+.owner-health-grid strong,
+.owner-table-link strong {
+  color: var(--color-ink) !important;
+}
+
+.owner-health-grid .warning strong {
+  color: #87400a !important;
+}
+
+.owner-overview-table {
+  min-width: 0;
+}
+
+.owner-overview-table th:first-child,
+.owner-overview-table td:first-child {
+  width: 44%;
+}
+
 .field input,
 .field textarea,
 .field select,
@@ -8428,6 +8452,37 @@ tbody tr:hover,
   background: var(--color-chalk) !important;
   border-radius: 2px !important;
   color: var(--color-steel) !important;
+}
+
+.owner-status-active,
+.owner-status-succeeded,
+.owner-status-lifetime {
+  background: #e7f6f0 !important;
+  color: #087050 !important;
+}
+
+.owner-status-pending,
+.owner-status-grace_period {
+  background: #fff3df !important;
+  color: #87400a !important;
+}
+
+.owner-status-read_only {
+  background: #f1ecff !important;
+  color: #5635a8 !important;
+}
+
+.owner-status-suspended,
+.owner-status-past_due,
+.owner-status-failed {
+  background: #fff0f0 !important;
+  color: #a7222a !important;
+}
+
+.owner-status-closed,
+.owner-status-canceled {
+  background: #edf1f5 !important;
+  color: #4b5563 !important;
 }
 
 @media (max-width: 760px) {

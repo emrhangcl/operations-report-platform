@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import type { Column, Content, StyleDictionary, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { ReportWorkItem } from "@operations/types";
+import { customerSignatureSchema, CUSTOMER_SIGNATURE_CONSENT, type CustomerSignature } from "@operations/validation";
 
 const require = createRequire(import.meta.url);
 const pdfMake = require("pdfmake") as typeof import("pdfmake");
@@ -27,6 +28,8 @@ export type PdfReportRow = Record<string, unknown> & {
   created_by_user_id: string | null;
   created_by_name_snapshot: string | null;
   company_name_snapshot: string | null;
+  customer_signed_at?: string | null;
+  customer_signature?: unknown;
   report_personnel?: Array<{ name_snapshot: string | null }>;
 };
 
@@ -154,14 +157,16 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
       columnGap: 10,
       margin: [0, 7, 0, 0]
     },
-    { text: "İmza Alanları", style: "sectionTitle", margin: [0, 9, 0, 4] },
     {
-      columns: [
-        signatureBox("İşlemi Yapan Personel", reportPersonnel),
-        signatureBox("Müşteri Yetkilisi")
-      ],
-      columnGap: 14
-    }
+      unbreakable: true,
+      stack: [
+        { text: "Teslim ve Firma Yetkilisi Onayı", style: "sectionTitle", margin: [0, 9, 0, 4] },
+        { columns: [
+          personnelRecordBox(reportPersonnel),
+          customerSignatureBox(report.customer_signature, report.customer_signed_at)
+        ], columnGap: 14 }
+      ]
+    } as Content
   ];
 
   return {
@@ -182,6 +187,7 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
     footer: (currentPage, pageCount) => ({
       columns: [
         { text: `Oluşturma: ${dateTime(new Date().toISOString())}`, color: "#66707a" },
+        { text: report.report_number ?? "Taslak", alignment: "center", color: "#66707a" },
         { text: `${currentPage} / ${pageCount}`, alignment: "right", color: "#66707a" }
       ],
       fontSize: 6.3,
@@ -325,17 +331,16 @@ function workItemsTable(items: ReportWorkItem[]): Content {
   };
 }
 
-function signatureBox(title: string, name?: string): Column {
+function personnelRecordBox(name?: string): Column {
   return {
     width: "*",
     table: {
       widths: ["*"],
       body: [[{
         stack: [
-          { text: title, bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 5] },
-          { text: name && name !== "-" ? clip(name, 105) : "Ad Soyad", style: name && name !== "-" ? "tableValue" : "muted", margin: [0, 0, 0, 22] },
-          { canvas: [{ type: "line", x1: 0, y1: 0, x2: 330, y2: 0, lineColor: "#66707a", lineWidth: 0.7 }] },
-          { text: "İmza", style: "muted", margin: [0, 4, 0, 0] }
+          { text: "İşlemi Yapan Personel", bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 5] },
+          { text: name && name !== "-" ? clip(name, 105) : "Personel kaydı bulunmuyor", style: name && name !== "-" ? "tableValue" : "muted", margin: [0, 0, 0, 7] },
+          { text: "Personel bilgisi sistem kaydından alınmıştır; bu alanda personel el imzası bulunmaz.", style: "muted" }
         ],
         margin: [8, 7, 8, 7]
       }]]
@@ -347,6 +352,89 @@ function signatureBox(title: string, name?: string): Column {
       vLineWidth: () => 0.6
     }
   };
+}
+
+function customerSignatureBox(value: unknown, signedAt: unknown): Column {
+  const parsed = customerSignatureSchema.safeParse(value);
+
+  if (!parsed.success) {
+    return {
+      width: "*",
+      table: {
+        widths: ["*"],
+        body: [[{
+          stack: [
+            { text: "Müşteri Yetkilisi", bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 5] },
+            { text: "Eski kayıt / imzasız: dijital müşteri imzası yok.", style: "muted", margin: [0, 0, 0, 4] },
+            { text: "Firma yetkilisi imzası mobil tamamlanma akışından alındığında burada görünür.", style: "muted" }
+          ],
+          margin: [8, 7, 8, 7]
+        }]]
+      },
+      layout: signatureBoxLayout()
+    };
+  }
+
+  const signature = parsed.data;
+
+  return {
+    width: "*",
+    table: {
+      widths: ["*"],
+      body: [[{
+        stack: [
+          { text: "Müşteri Yetkilisi", bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 4] },
+          { canvas: signatureCanvas(signature), margin: [0, 0, 0, 5] } as Content,
+          {
+            table: {
+              widths: [66, "*"],
+              body: [
+                [{ text: "Ad Soyad", style: "tableLabel" }, { text: clip(signature.signer_name, 90), style: "tableValue" }],
+                [{ text: "Unvan", style: "tableLabel" }, { text: clip(signature.signer_title, 90), style: "tableValue" }],
+                [{ text: "İmza zamanı", style: "tableLabel" }, { text: dateTime(signedAt), style: "tableValue" }],
+                [{ text: "Onay metni", style: "tableLabel" }, { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted" }]
+              ]
+            },
+            layout: {
+              hLineColor: () => "#eef1f3",
+              hLineWidth: () => 0.35,
+              paddingBottom: () => 1.1,
+              paddingLeft: () => 2,
+              paddingRight: () => 2,
+              paddingTop: () => 1.1,
+              vLineWidth: () => 0
+            }
+          } as Content
+        ],
+        margin: [8, 7, 8, 7]
+      }]]
+    },
+    layout: signatureBoxLayout()
+  };
+}
+
+function signatureBoxLayout() {
+  return {
+    hLineColor: () => "#d8dde2",
+    hLineWidth: () => 0.6,
+    vLineColor: () => "#d8dde2",
+    vLineWidth: () => 0.6
+  };
+}
+
+function signatureCanvas(signature: CustomerSignature) {
+  const scale = 0.4;
+  const padding = 4;
+
+  return [
+    { type: "rect", x: 0, y: 0, w: 600 * scale + padding * 2, h: 240 * scale + padding * 2, lineColor: "#d8dde2", lineWidth: 0.6, color: "#fbfcfd" },
+    ...signature.strokes.map((stroke) => ({
+      type: "polyline",
+      points: stroke.map(([x, y]) => ({ x: x * scale + padding, y: y * scale + padding })),
+      lineColor: "#25282c",
+      lineWidth: 1
+    }))
+  ];
 }
 
 function reportWorkItems(report: Record<string, unknown>) {

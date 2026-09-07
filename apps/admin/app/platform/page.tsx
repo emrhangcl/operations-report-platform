@@ -95,7 +95,7 @@ export default function PlatformOverviewPage() {
             >
               {data.organizations.length === 0 ? <OwnerEmpty text="Henüz kayıtlı firma bulunmuyor." /> : (
                 <DataTablePanel className="owner-compact-table-wrap">
-                  <DataTable className="owner-table">
+                  <DataTable className="owner-table owner-overview-table">
                     <DataTableHeader><DataTableRow><DataTableHead>Firma</DataTableHead><DataTableHead>Durum</DataTableHead><DataTableHead>Abonelik</DataTableHead><DataTableHead>Kayıt</DataTableHead></DataTableRow></DataTableHeader>
                     <DataTableBody>
                       {data.organizations.slice(0, 6).map((organization) => (

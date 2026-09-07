@@ -43,10 +43,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     .map((photo) => photo.storage_path)
     .filter((path): path is string => Boolean(path));
 
-  if (storagePaths.length > 0) {
-    await admin.service.storage.from("report-photos").remove(storagePaths);
-  }
-
   const { error: assignmentError } = await admin.service
     .from("installation_assignments")
     .update({ report_id: null })
@@ -58,19 +54,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "Rapora bağlı montaj ataması temizlenemedi." }, { status: 500 });
   }
 
-  const childTables = ["report_personnel", "report_process_types", "report_process_actions", "report_photos"] as const;
-  for (const table of childTables) {
-    const { error: childDeleteError } = await admin.service
-      .from(table)
-      .delete()
-      .eq("report_id", id);
-
-    if (childDeleteError) {
-      console.error(`Report child delete failed: ${table}`, childDeleteError);
-      return NextResponse.json({ message: "Rapora bağlı kayıtlar silinemedi." }, { status: 500 });
-    }
-  }
-
+  // Child rows cascade in the same transaction. Signed evidence cannot be removed individually.
   const { error } = await admin.service
     .from("reports")
     .delete()
@@ -80,6 +64,17 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (error) {
     console.error("Report delete failed", error);
     return NextResponse.json({ message: "Rapor silinemedi." }, { status: 500 });
+  }
+
+  if (storagePaths.length > 0) {
+    const cleanup = await admin.service.storage.from("report-photos").remove(storagePaths);
+    if (cleanup.error) {
+      await admin.service.from("audit_logs").insert({
+        organization_id: admin.organizationId, actor_id: admin.userId,
+        action: "report_storage_cleanup_failed", entity_table: "reports", entity_id: id,
+        after_data: { storage_paths: storagePaths }
+      });
+    }
   }
 
   await admin.service.from("audit_logs").insert({

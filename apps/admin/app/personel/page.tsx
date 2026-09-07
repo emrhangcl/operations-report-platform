@@ -20,7 +20,7 @@ import {
   Upload,
   X
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   Belt,
   Company,
@@ -39,6 +39,8 @@ import {
   productTypes,
   reportFormSchema
 } from "@operations/validation";
+import { customerSignatureSchema, type CustomerSignature } from "@operations/validation";
+import { CustomerSignatureApproval, CustomerSignatureView, SignaturePhotoPreview } from "../../components/customer-signature";
 import { ProductBrand } from "../../components/logo";
 import { OrganizationBrand } from "../../components/organization-brand";
 import { Button, EmptyState } from "../../components/ui";
@@ -72,6 +74,8 @@ type ReportDetail = ReportRow & {
     created_at: string;
   }>;
 };
+
+type SavedPhoto = { id: string; storage_path: string; caption: string | null; url: string };
 
 type PhotoDraft = {
   localId: string;
@@ -116,6 +120,8 @@ export default function PersonnelWebPage() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [values, setValues] = useState<ReportFormValues>(() => newReportValues());
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
+  const [savedPhotos, setSavedPhotos] = useState<SavedPhoto[]>([]);
+  const submitting = useRef(false);
 
   useEffect(() => {
     const supabase = getPersonnelSupabase();
@@ -265,6 +271,7 @@ export default function PersonnelWebPage() {
   }
 
   async function signOut() {
+    if (submitting.current || loading) return;
     clearAccountContextCache("personnel");
     await getPersonnelSupabase()?.auth.signOut();
     setProfile(null);
@@ -316,14 +323,19 @@ export default function PersonnelWebPage() {
     setScreen("form");
   }
 
-  function openDraft(report: ReportRow) {
+  async function openDraft(report: ReportRow) {
     if (readOnlyMode) {
       showMessage("Aboneliğiniz salt okunur durumda. Taslaklar düzenlenemez.", "error");
       return;
     }
+    if (loading) return;
+    setLoading(true);
+    try { await loadSavedPhotos(report.id); }
+    catch { showMessage("Taslak fotoğrafları alınamadı. Bağlantınızı kontrol edip taslağı yeniden açın.", "error"); return; }
+    finally { setLoading(false); }
     setActiveAssignment(assignments.find((assignment) => assignment.report_id === report.id) ?? null);
     setValues(reportToValues(report, equipment));
-    clearPhotos();
+    setPhotos([]);
     setMessage("");
     setScreen("form");
   }
@@ -341,11 +353,17 @@ export default function PersonnelWebPage() {
     setScreen("form");
 
     if (assignment.report_id) {
+      setLoading(true);
+      try { await loadSavedPhotos(assignment.report_id); }
+      catch { setScreen("assignments"); showMessage("Taslak fotoğrafları alınamadı. Atamayı yeniden açın.", "error"); return; }
+      finally { setLoading(false); }
       const draftValues = await loadAssignmentDraftValues(assignment.report_id);
       if (draftValues) {
         setValues(draftValues);
       } else {
-        showMessage("Bu montaja bağlı taslak rapor alınamadı. Atama bilgileriyle devam edebilirsiniz.", "error");
+        openDetail(assignment.report_id);
+        showMessage("Atamanın kayıtlı raporu açıldı. Gönderilmiş bir rapordan yeni taslak oluşturulmaz.");
+        return;
       }
     }
 
@@ -388,77 +406,108 @@ export default function PersonnelWebPage() {
 
   function clearPhotos() {
     setPhotos([]);
+    setSavedPhotos([]);
   }
 
-  async function submitReport(status: ReportStatus) {
+  async function loadSavedPhotos(reportId: string) {
     const supabase = getPersonnelSupabase();
-    if (!supabase || !profile) return;
+    if (!supabase) throw new Error("Oturum bulunamadı.");
+    const result = await supabase.from("report_photos").select("id,storage_path,caption").eq("report_id", reportId).order("created_at");
+    if (result.error) throw result.error;
+    const resolved = await Promise.all((result.data ?? []).map(async (photo) => {
+      const signed = await supabase.storage.from("report-photos").createSignedUrl(photo.storage_path, 60 * 60);
+      if (signed.error || !signed.data?.signedUrl) throw new Error("Fotoğraf görüntülenemiyor.");
+      return { ...photo, url: signed.data.signedUrl } as SavedPhoto;
+    }));
+    setSavedPhotos(resolved);
+  }
 
+  async function removeSavedPhoto(photo: SavedPhoto) {
+    const supabase = getPersonnelSupabase();
+    if (!supabase || loading) return;
+    setLoading(true);
+    try {
+      const removed = await supabase.from("report_photos").delete().eq("id", photo.id).select("id");
+      if (removed.error || !removed.data?.length) throw new Error("Fotoğraf silinemedi. Rapor gönderilmiş olabilir.");
+      setSavedPhotos((current) => current.filter((item) => item.id !== photo.id));
+      await supabase.storage.from("report-photos").remove([photo.storage_path]);
+    } catch (error) { showMessage(error instanceof Error ? error.message : "Fotoğraf silinemedi.", "error"); }
+    finally { setLoading(false); }
+  }
+
+  async function submitReport(status: ReportStatus, signature?: CustomerSignature) {
+    const supabase = getPersonnelSupabase();
+    if (!supabase || !profile || submitting.current) return;
     if (readOnlyMode) {
       showMessage("Aboneliğiniz salt okunur durumda. Rapor kaydedilemez.", "error");
       return;
     }
-
     setMessage("");
     const preparedValues = prepareReportValues(values, belts, equipment);
-
     if (status === "SUBMITTED") {
       const parsed = reportFormSchema.safeParse(preparedValues);
       if (!parsed.success) {
         showMessage(parsed.error.issues[0]?.message ?? "Form bilgilerini kontrol edin.", "error");
         return;
       }
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("reports")
-        .upsert(reportPayload(preparedValues, status), { onConflict: "client_request_id" })
-        .select("id,report_number")
-        .single();
-
-      if (error || !data) {
-        showMessage("Rapor kaydedilemedi. Bilgileri kontrol edip tekrar deneyin.", "error");
+      if (!customerSignatureSchema.safeParse(signature).success) {
+        showMessage("Firma yetkilisinin teslim onayını ve imzasını alın.", "error");
         return;
       }
-
-      const reportId = String(data.id);
-      await replaceReportPersonnel(reportId);
-      if (photos.length > 0) {
-        await uploadPhotos(reportId);
-      }
-
-      let assignmentMessage = "";
-      if (activeAssignment) {
-        const { error: assignmentError } = await supabase
-          .from("installation_assignments")
-          .update({
-            report_id: reportId,
-            status: status === "SUBMITTED" ? "COMPLETED" : "IN_PROGRESS"
-          })
-          .eq("id", activeAssignment.id);
-
-        if (assignmentError) {
-          assignmentMessage = status === "SUBMITTED"
-            ? " Rapor kaydedildi ancak montaj ataması tamamlandı olarak işaretlenemedi."
-            : " Taslak kaydedildi ancak montaj atamasıyla ilişkilendirilemedi.";
+    }
+    submitting.current = true;
+    setLoading(true);
+    try {
+      // A lost final response must not cause another report or overwrite signed evidence.
+      const existing = await supabase.from("reports").select("*")
+        .eq("client_request_id", preparedValues.client_request_id).maybeSingle();
+      if (existing.error) throw new Error("Rapor durumu doğrulanamadı. Bağlantınızı kontrol edip tekrar deneyin.");
+      if (existing.data?.status === "SUBMITTED") {
+        const expected = reportPayload(preparedValues, "SUBMITTED");
+        const matches = status === "SUBMITTED" && Object.entries(expected).every(([key, value]) =>
+          JSON.stringify(existing.data[key]) === JSON.stringify(value))
+          && JSON.stringify(existing.data.customer_signature) === JSON.stringify(signature);
+        if (!matches) {
+          openDetail(existing.data.id);
+          showMessage("Bu rapor daha önce gönderilmiş. Son değişiklikler uygulanmadı; kayıtlı rapor açıldı.", "error");
+          return;
         }
       }
-
+      let saved = existing.data?.status === "SUBMITTED" ? existing.data : null;
+      if (!saved) {
+        const draft = await supabase.from("reports")
+          .upsert(reportPayload(preparedValues, "DRAFT"), { onConflict: "client_request_id" })
+          .select("id,report_number,status,updated_at").single();
+        if (draft.error || !draft.data) throw new Error("Rapor taslağı kaydedilemedi. Bilgileriniz korunuyor; tekrar deneyin.");
+        await replaceReportPersonnel(draft.data.id);
+        if (photos.length > 0) await uploadPhotos(draft.data.id);
+        if (status === "SUBMITTED") {
+          // The report remains a draft until all attachments exist. Signature and status commit together.
+          const finalized = await supabase.from("reports")
+            .update({ status: "SUBMITTED", customer_signature: signature })
+            .eq("id", draft.data.id).eq("status", "DRAFT")
+            .eq("updated_at", draft.data.updated_at)
+            .select("id,report_number,status").single();
+          if (finalized.error || !finalized.data) throw new Error("İmzalı rapor gönderilemedi. Bilgileriniz ve imzanız korunuyor; bağlantınızı kontrol edip tekrar deneyin.");
+          saved = finalized.data;
+        } else saved = draft.data;
+      }
+      if (activeAssignment) {
+        const result = await supabase.from("installation_assignments")
+          .update({ report_id: saved.id, status: saved.status === "SUBMITTED" ? "COMPLETED" : "IN_PROGRESS" })
+          .eq("id", activeAssignment.id);
+        if (result.error) throw new Error("İmzalı rapor kaydedildi ancak montaj ataması güncellenemedi. Tekrar göndererek atamayı tamamlayabilirsiniz; ikinci bir rapor oluşturulmaz.");
+      }
       await loadBootstrapData();
       clearPhotos();
-
-      if (status === "SUBMITTED") {
-        setValues(newReportValues());
-        setActiveAssignment(null);
-        setScreen("home");
-        showMessage(`Rapor gönderildi: ${String(data.report_number ?? "")}${assignmentMessage}`, assignmentMessage ? "error" : "info");
-      } else {
-        setScreen("home");
-        showMessage(`Taslak kaydedildi.${assignmentMessage}`, assignmentMessage ? "error" : "info");
-      }
+      setValues(newReportValues());
+      setActiveAssignment(null);
+      setScreen("home");
+      showMessage(saved.status === "SUBMITTED" ? "İmzalı rapor gönderildi: " + String(saved.report_number ?? "") : "Taslak kaydedildi.");
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Rapor kaydedilemedi. Tekrar deneyin.", "error");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
@@ -485,7 +534,8 @@ export default function PersonnelWebPage() {
     const supabase = getPersonnelSupabase();
     if (!supabase || !profile) return;
 
-    await supabase.from("report_personnel").delete().eq("report_id", reportId);
+    const removed = await supabase.from("report_personnel").delete().eq("report_id", reportId);
+    if (removed.error) throw new Error("Rapor personeli kaydedilemedi. Tekrar deneyin.");
 
     const selectedProfiles = [
       profile,
@@ -494,38 +544,53 @@ export default function PersonnelWebPage() {
 
     if (selectedProfiles.length === 0) return;
 
-    await supabase.from("report_personnel").insert(
+    const inserted = await supabase.from("report_personnel").insert(
       selectedProfiles.map((item) => ({
         report_id: reportId,
         profile_id: item.id,
         name_snapshot: `${item.first_name} ${item.last_name}`.trim()
       }))
     );
+    if (inserted.error) throw new Error("Rapor personeli kaydedilemedi. Tekrar deneyin.");
   }
 
   async function uploadPhotos(reportId: string) {
     const supabase = getPersonnelSupabase();
-    if (!supabase || !sessionUserId || !profile?.organization_id) return;
+    if (!supabase || !sessionUserId || !profile?.organization_id) throw new Error("Fotoğraflar için oturum doğrulanamadı. Rapor gönderilmedi.");
 
     for (const photo of photos) {
       const extension = safeExtension(photo.file.name, photo.file.type);
       const storagePath = `${profile.organization_id}/${reportId}/${photo.localId}.${extension}`;
+      const existingPhoto = await supabase.from("report_photos").select("id,caption").eq("report_id", reportId).eq("storage_path", storagePath).maybeSingle();
+      if (existingPhoto.error) throw new Error("Fotoğraf durumu doğrulanamadı. Tekrar deneyin.");
+      if (existingPhoto.data) {
+        const updated = await supabase.from("report_photos").update({ caption: photo.caption.trim() || null }).eq("id", existingPhoto.data.id);
+        if (updated.error) throw new Error("Fotoğraf açıklaması kaydedilemedi. Tekrar deneyin.");
+        await loadSavedPhotos(reportId);
+        setPhotos((current) => current.filter((item) => item.localId !== photo.localId));
+        continue;
+      }
       const upload = await supabase.storage.from("report-photos").upload(storagePath, photo.file, {
         contentType: photo.file.type || "image/jpeg",
         upsert: false
       });
 
       if (upload.error) {
-        continue;
+        // A prior upload can succeed before its response reaches the device.
+        const stored = await supabase.storage.from("report-photos").download(storagePath);
+        if (stored.error) throw new Error("Fotoğraf yüklenemedi. Rapor taslak olarak korundu; tekrar deneyin.");
       }
 
-      await supabase.from("report_photos").insert({
+      const insertedPhoto = await supabase.from("report_photos").insert({
         report_id: reportId,
         storage_path: storagePath,
         category: defaultPhotoCategory,
         caption: photo.caption.trim() || null,
         created_by: sessionUserId
       });
+      if (insertedPhoto.error) throw new Error("Fotoğraf rapora eklenemedi. Tekrar deneyin.");
+      await loadSavedPhotos(reportId);
+      setPhotos((current) => current.filter((item) => item.localId !== photo.localId));
     }
   }
 
@@ -628,13 +693,15 @@ export default function PersonnelWebPage() {
           loading={loading}
           personnel={personnel}
           photos={photos}
+          savedPhotos={savedPhotos}
+          removeSavedPhoto={removeSavedPhoto}
           profile={profile}
           readOnly={readOnlyMode}
           values={values}
           vehicles={vehicles}
           assignmentTitle={activeAssignment?.title ?? null}
           addPhotos={addPhotos}
-          onBack={() => setScreen(activeAssignment ? "assignments" : "home")}
+          onBack={() => { if (!loading) setScreen(activeAssignment ? "assignments" : "home"); }}
           removePhoto={removePhoto}
           submitReport={submitReport}
           toggleArray={toggleArray}
@@ -983,6 +1050,7 @@ function ReportDetailView({ reportId, onBack }: { reportId: string; onBack: () =
       ) : null}
       {report ? (
         <>
+          <CustomerSignatureView signature={report.customer_signature} signedAt={typeof report.customer_signed_at === "string" ? report.customer_signed_at : null} />
           <DetailSection
             title="Genel Bilgiler"
             rows={[
@@ -1096,6 +1164,8 @@ function ReportForm({
   loading,
   personnel,
   photos,
+  savedPhotos,
+  removeSavedPhoto,
   profile,
   readOnly,
   removePhoto,
@@ -1117,10 +1187,12 @@ function ReportForm({
   loading: boolean;
   personnel: Profile[];
   photos: PhotoDraft[];
+  savedPhotos: SavedPhoto[];
+  removeSavedPhoto: (photo: SavedPhoto) => Promise<void>;
   profile: Profile | null;
   readOnly: boolean;
   removePhoto: (localId: string) => void;
-  submitReport: (status: ReportStatus) => Promise<void>;
+  submitReport: (status: ReportStatus, signature?: CustomerSignature) => Promise<void>;
   toggleArray: (
     key: "visiting_personnel_ids" | "product_types" | "process_actions" | "replacement_reasons",
     value: string
@@ -1132,6 +1204,8 @@ function ReportForm({
   vehicles: Vehicle[];
   onBack: () => void;
 }) {
+  const [reviewing, setReviewing] = useState(false);
+  const [validationMessage, setValidationMessage] = useState("");
   const isAssignedReport = Boolean(assignmentTitle);
   const selectedCompany = useMemo(
     () => companies.find((company) => company.id === values.company_id),
@@ -1242,7 +1316,7 @@ function ReportForm({
         <div className="message error">Firma bulunamadı. Yetkili amirden firma eklemesini isteyin.</div>
       ) : null}
 
-      <fieldset className="personnel-disabled-form" disabled={readOnly}>
+      <fieldset className="personnel-disabled-form" disabled={readOnly || loading} hidden={reviewing} style={reviewing ? { display: "none" } : undefined}>
       <details className="personnel-section" open>
         <summary><span className="section-number">1</span><span>Genel Bilgiler</span></summary>
         <div className="personnel-form-grid">
@@ -1469,7 +1543,11 @@ function ReportForm({
             </div>
           </details>
         </div>
-        {photos.length === 0 ? <div className="personnel-empty compact">Fotoğraf seçilmedi.</div> : null}
+        {photos.length === 0 && savedPhotos.length === 0 ? <div className="personnel-empty compact">Fotoğraf seçilmedi.</div> : null}
+        {savedPhotos.map((photo) => <div key={photo.id} className="personnel-photo-card">
+          <SignaturePhotoPreview url={photo.url} caption={photo.caption ?? "Kayıtlı fotoğraf"} />
+          <Button variant="subtle" disabled={loading} icon={<Trash2 aria-hidden size={16} />} onClick={() => removeSavedPhoto(photo)}>Kayıtlı fotoğrafı kaldır</Button>
+        </div>)}
         <div className="personnel-selected-photos">
           {photos.map((photo) => (
             <div className="personnel-selected-photo" key={photo.localId}>
@@ -1490,15 +1568,34 @@ function ReportForm({
         </div>
       </details>
 
+      {validationMessage ? <div role="alert" className="message error">{validationMessage}</div> : null}
       <div className="personnel-footer-actions">
         <Button icon={<Save aria-hidden size={18} />} disabled={loading} onClick={() => submitReport("DRAFT")} variant="secondary">
           Taslak Kaydet
         </Button>
-        <Button icon={<Send aria-hidden size={18} />} className="personnel-primary-action" disabled={loading || companies.length === 0} onClick={() => submitReport("SUBMITTED")}>
-          {loading ? "Gönderiliyor" : "Raporu Gönder"}
+        <Button icon={<Send aria-hidden size={18} />} className="personnel-primary-action" disabled={loading || companies.length === 0} onClick={() => {
+          const parsed = reportFormSchema.safeParse(prepareReportValues(values, belts, equipment));
+          if (!parsed.success) { setValidationMessage(parsed.error.issues[0]?.message ?? "Formu kontrol edin."); return; }
+          setValidationMessage(""); setReviewing(true); window.scrollTo({ top: 0, behavior: "instant" });
+        }}>
+          {loading ? "Kaydediliyor" : "Teslim ve imza"}
         </Button>
       </div>
       </fieldset>
+      {reviewing ? <CustomerSignatureApproval companyName={selectedCompany?.name ?? "Firma"} reportDate={values.report_date}
+        initialName={values.company_contact_name} loading={loading} onBack={() => setReviewing(false)}
+        onSubmit={(signature) => submitReport("SUBMITTED", signature)}
+        summary={<>
+          <span>{values.process_actions.join(" · ")}</span>
+          <span>{values.process_description || "İşlem açıklaması girilmedi."}</span>
+          <span>{values.work_items.map((item) => [item.line_name, item.belt_code || item.belt_name, item.product_quantity && item.product_quantity + " adet"].filter(Boolean).join(" / ")).join(" · ")}</span>
+          <span>{values.line_delivered_running ? "Hat çalışır durumda teslim edildi." : "Hat çalışır teslim olarak işaretlenmedi."}</span>
+          {values.technical_details ? <span>{values.technical_details}</span> : null}
+          {values.billing_status ? <strong>{values.billing_status}</strong> : null}
+          <span>{savedPhotos.length + photos.length} fotoğraf · Raporun tamamını incelemek için “Rapora dön” seçeneğini kullanın.</span>
+          {savedPhotos.map((photo) => <SignaturePhotoPreview key={photo.id} url={photo.url} caption={photo.caption ?? "Kayıtlı fotoğraf"} />)}
+          {photos.map((photo) => <SignaturePhotoPreview key={photo.localId} file={photo.file} caption={photo.caption || photo.file.name} />)}
+        </>} /> : null}
     </section>
   );
 }
@@ -1768,6 +1865,7 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
 
   return {
     client_request_id: values.client_request_id,
+    customer_signature_required: true,
     status,
     report_date: values.report_date || formatDateValue(new Date()),
     company_id: values.company_id || null,
