@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { Building2, Loader2, Lock, Mail, Phone, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { AuthField, PasswordStrength } from "./auth-field";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -70,30 +72,15 @@ export function RegisterForm() {
   return (
     <form className="public-form" onSubmit={submit}>
       <div className="public-form-grid two-columns">
-        <label className="field span-2">
-          <span>Firma adı</span>
-          <input autoComplete="organization" maxLength={160} onChange={(event) => setOrganizationName(event.target.value)} required value={organizationName} />
-        </label>
-        <label className="field">
-          <span>Ad</span>
-          <input autoComplete="given-name" maxLength={80} onChange={(event) => setFirstName(event.target.value)} required value={firstName} />
-        </label>
-        <label className="field">
-          <span>Soyad</span>
-          <input autoComplete="family-name" maxLength={80} onChange={(event) => setLastName(event.target.value)} required value={lastName} />
-        </label>
-        <label className="field span-2">
-          <span>İş e-postası</span>
-          <input autoComplete="email" maxLength={254} onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
-        </label>
-        <label className="field">
-          <span>Telefon</span>
-          <input autoComplete="tel" maxLength={32} onChange={(event) => setPhone(event.target.value)} type="tel" value={phone} />
-        </label>
-        <label className="field">
-          <span>Parola</span>
-          <input autoComplete="new-password" minLength={10} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
-        </label>
+        <AuthField autoComplete="organization" containerClassName="span-2" icon={<Building2 size={18} />} label="Firma adı" maxLength={160} onChange={(event) => setOrganizationName(event.target.value)} placeholder="Firma unvanı" required value={organizationName} />
+        <AuthField autoComplete="given-name" icon={<User size={18} />} label="Ad" maxLength={80} onChange={(event) => setFirstName(event.target.value)} placeholder="Adınız" required value={firstName} />
+        <AuthField autoComplete="family-name" icon={<User size={18} />} label="Soyad" maxLength={80} onChange={(event) => setLastName(event.target.value)} placeholder="Soyadınız" required value={lastName} />
+        <AuthField autoComplete="email" containerClassName="span-2" icon={<Mail size={18} />} label="İş e-postası" maxLength={254} onChange={(event) => setEmail(event.target.value)} placeholder="ornek@firma.com" required type="email" value={email} />
+        <AuthField autoComplete="tel" icon={<Phone size={18} />} label="Telefon" maxLength={32} onChange={(event) => setPhone(event.target.value)} placeholder="05xx xxx xx xx" type="tel" value={phone} />
+        <div>
+          <AuthField autoComplete="new-password" icon={<Lock size={18} />} label="Parola" minLength={10} onChange={(event) => setPassword(event.target.value)} placeholder="En az 10 karakter" required type="password" value={password} />
+          <PasswordStrength password={password} />
+        </div>
       </div>
       <fieldset className="segmented-field">
         <legend>Faturalandırma dönemi</legend>
@@ -108,6 +95,7 @@ export function RegisterForm() {
       </label>
       {message ? <div className="message error">{message}</div> : null}
       <button className="button public-form-submit" disabled={loading} type="submit">
+        {loading ? <Loader2 aria-hidden className="auth-spinner" size={18} /> : <Building2 aria-hidden size={18} />}
         {loading ? "Hesap hazırlanıyor" : "Firma Hesabı Oluştur"}
       </button>
     </form>

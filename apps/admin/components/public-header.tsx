@@ -7,8 +7,11 @@ import { useState } from "react";
 import { ProductBrand } from "./logo";
 
 const links = [
+  { href: "/", label: "Ana Sayfa" },
   { href: "/features", label: "Özellikler" },
+  { href: "/workflow", label: "İş Akışı" },
   { href: "/pricing", label: "Paketler" },
+  { href: "/start", label: "Başlangıç" },
   { href: "/contact", label: "Destek" }
 ];
 
@@ -35,17 +38,21 @@ export function PublicHeader() {
           {open ? <X aria-hidden size={22} /> : <Menu aria-hidden size={22} />}
         </button>
         <nav aria-label="Tanıtım menüsü" className={open ? "public-nav open" : "public-nav"} id={navId}>
-          {links.map((link) => (
-            <Link aria-current={pathname === link.href ? "page" : undefined} className={pathname === link.href ? "active" : ""} href={link.href} key={link.href} onClick={() => setOpen(false)}>
-              {link.label}
+          <div className="public-route-tabs">
+            {links.map((link) => (
+              <Link aria-current={pathname === link.href ? "page" : undefined} className={pathname === link.href ? "active" : ""} href={link.href} key={link.href} onClick={() => setOpen(false)}>
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="public-auth-actions">
+            <Link className="public-login-link" href="/login" onClick={() => setOpen(false)}>
+              Giriş
             </Link>
-          ))}
-          <Link className="public-login-link" href="/login" onClick={() => setOpen(false)}>
-            Giriş
-          </Link>
-          <Link className="button public-register-link" href="/register" onClick={() => setOpen(false)}>
-            Firma Kaydı
-          </Link>
+            <Link className="button public-register-link" href="/register" onClick={() => setOpen(false)}>
+              Firma Kaydı
+            </Link>
+          </div>
         </nav>
       </div>
     </header>

@@ -1,11 +1,12 @@
 "use client";
 
-import { LogIn } from "lucide-react";
+import { Loader2, Lock, LogIn, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { getSubscriptionAccessMode } from "@operations/shared";
 import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
+import { AuthField } from "../../components/auth-field";
 import { AuthShell } from "../../components/auth-shell";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
@@ -141,38 +142,18 @@ export default function LoginPage() {
     <AuthShell
       description="Yetkili yönetici veya personel hesabınızla devam edin."
       footer={<span>Firma hesabınız yok mu? <Link href="/register">Kayıt olun</Link></span>}
+      mode="login"
       title="Giriş"
     >
       <form aria-describedby={error ? "login-error" : notice ? "login-notice" : undefined} className="public-form" onSubmit={submit}>
-        <label className="field">
-          <span>E-posta</span>
-          <input
-            autoComplete="email"
-            id="login-email"
-            name="email"
-            onChange={(event) => setEmail(event.target.value)}
-            required
-            type="email"
-            value={email}
-          />
-        </label>
-        <label className="field">
-          <span>Parola</span>
-          <input
-            autoComplete="current-password"
-            id="login-password"
-            name="password"
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            type="password"
-            value={password}
-          />
-        </label>
+        <AuthField autoComplete="email" icon={<Mail size={18} />} id="login-email" label="E-posta" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="ornek@firma.com" required type="email" value={email} />
+        <AuthField autoComplete="current-password" icon={<Lock size={18} />} id="login-password" label="Parola" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="Parolanızı girin" required type="password" value={password} />
         <div className="form-inline-link"><Link href="/forgot-password">Parolamı unuttum</Link></div>
         {notice ? <div className="message info" id="login-notice">{notice}</div> : null}
         {error ? <div className="message error" id="login-error" role="alert">{error}</div> : null}
         <button className="button public-form-submit" disabled={loading} type="submit">
-          <LogIn aria-hidden size={18} /> {loading ? "Giriş yapılıyor" : "Giriş Yap"}
+          {loading ? <Loader2 aria-hidden className="auth-spinner" size={18} /> : <LogIn aria-hidden size={18} />}
+          {loading ? "Giriş yapılıyor" : "Giriş Yap"}
         </button>
       </form>
     </AuthShell>

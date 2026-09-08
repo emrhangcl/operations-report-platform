@@ -1,4 +1,4 @@
-import { FeaturesSection, WorkflowSection } from "../../components/feature-sections";
+import { FeaturesSection } from "../../components/feature-sections";
 import { MarketingShell } from "../../components/marketing-shell";
 
 export default function FeaturesPage() {
@@ -12,7 +12,6 @@ export default function FeaturesPage() {
         </div>
       </section>
       <FeaturesSection heading="Operasyon ekibinin günlük çalışma alanı" />
-      <WorkflowSection />
     </MarketingShell>
   );
 }

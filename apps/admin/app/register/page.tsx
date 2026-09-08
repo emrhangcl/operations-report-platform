@@ -7,6 +7,7 @@ export default function RegisterPage() {
     <AuthShell
       description="Firma hesabını ve ilk yetkili kullanıcıyı oluşturun. Uygulama erişimi e-posta ve ödeme doğrulamasından sonra açılır."
       footer={<span>Zaten hesabınız var mı? <Link href="/login">Giriş yapın</Link></span>}
+      mode="register"
       title="Firma Kaydı"
     >
       <RegisterForm />

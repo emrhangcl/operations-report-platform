@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { KeyRound, Loader2, Lock } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { AuthField, PasswordStrength } from "../../components/auth-field";
 import { AuthShell } from "../../components/auth-shell";
 import { getBrowserSupabase } from "../../lib/supabase-browser";
 
@@ -46,21 +48,13 @@ export default function ResetPasswordPage() {
       {!updated && !ready ? <div className="message error" role="alert">Geçerli parola yenileme oturumu bulunamadı.</div> : null}
       {!updated && ready ? (
         <form aria-describedby={message ? "reset-password-error" : undefined} className="public-form" onSubmit={submit}>
-          <label className="field">
-            <span>Yeni parola</span>
-            <input
-              autoComplete="new-password"
-              id="reset-password"
-              minLength={10}
-              name="new-password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </label>
+          <AuthField autoComplete="new-password" icon={<Lock size={18} />} id="reset-password" label="Yeni parola" minLength={10} name="new-password" onChange={(event) => setPassword(event.target.value)} placeholder="En az 10 karakter" required type="password" value={password} />
+          <PasswordStrength password={password} />
           {message ? <div className="message error" id="reset-password-error" role="alert">{message}</div> : null}
-          <button className="button public-form-submit" disabled={loading} type="submit">{loading ? "Güncelleniyor" : "Parolayı Güncelle"}</button>
+          <button className="button public-form-submit" disabled={loading} type="submit">
+            {loading ? <Loader2 aria-hidden className="auth-spinner" size={18} /> : <KeyRound aria-hidden size={18} />}
+            {loading ? "Güncelleniyor" : "Parolayı Güncelle"}
+          </button>
         </form>
       ) : null}
     </AuthShell>
