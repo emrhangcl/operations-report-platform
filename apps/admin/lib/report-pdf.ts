@@ -121,7 +121,7 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
       columnGap: 12,
       margin: [0, 7, 0, 0]
     },
-    { text: "Ürün Kalemleri", style: "sectionTitle", margin: [0, 8, 0, 3] },
+    { text: "Ürün Kalemleri", style: "sectionTitle", margin: [0, 5, 0, 3] },
     workItemsTable(workItems),
     {
       columns: [
@@ -147,12 +147,12 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
         ])
       ],
       columnGap: 10,
-      margin: [0, 7, 0, 0]
+      margin: [0, 5, 0, 0]
     },
     {
       unbreakable: true,
       stack: [
-        { text: "Teslim ve Firma Yetkilisi Onayı", style: "sectionTitle", margin: [0, 9, 0, 4] },
+        { text: "Teslim ve Firma Yetkilisi Onayı", style: "sectionTitle", margin: [0, 6, 0, 4] },
         { columns: [
           personnelRecordBox(reportPersonnel),
           customerSignatureBox(report.customer_signature, report.customer_signed_at)
@@ -268,7 +268,7 @@ function compactSection(title: string, rows: Array<[string, string]>): Column {
       { text: title, style: "sectionTitle", margin: [0, 0, 0, 2] },
       {
         table: {
-          widths: [82, "*"],
+          widths: [76, "*"],
           body: rows.map(([label, value]) => [
             { text: label, style: "tableLabel" },
             { text: value || "-", style: "tableValue" }
@@ -277,10 +277,10 @@ function compactSection(title: string, rows: Array<[string, string]>): Column {
         layout: {
           hLineColor: () => "#eef1f3",
           hLineWidth: () => 0.35,
-          paddingBottom: () => 1.3,
+          paddingBottom: () => 1,
           paddingLeft: () => 2,
           paddingRight: () => 2,
-          paddingTop: () => 1.3,
+          paddingTop: () => 1,
           vLineWidth: () => 0
         }
       }
@@ -325,15 +325,15 @@ function workItemsTable(items: ReportWorkItem[]): Content {
   return {
     table: {
       headerRows: 1,
-      widths: ["*", 70, "*", 82, 68, 42, 46, 38],
+      widths: [70, 150, 120, 140, 105, 50, 62, 45],
       body: [
-        ["Hat", "Bant Kodu", "Bant Adı", "Makine Adı", "Item / Coil", "En", "Boy", "Miktar"].map((label) => ({ text: label, style: "tableLabel" })),
+        ["Hat", "Bant Kodu", "Bant Adı", "Makine Adı", "Item / Coil", "En", "Boy", "Miktar"].map((label, index) => ({ text: label, style: "tableLabel", noWrap: index === 1 })),
         ...items.map((item) => [
           clip(text(item.line_name), 58),
-          clip(text(item.belt_code), 28),
+          { text: clip(text(item.belt_code), 40), noWrap: true },
           clip(text(item.belt_name), 60),
-          clip(text(item.machine_name), 42),
-          clip(text(item.coil_code), 36),
+          clip(text(item.machine_name), 58),
+          clip(text(item.coil_code), 46),
           text(item.product_width),
           text(item.product_length),
           text(item.product_quantity)
@@ -407,40 +407,48 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
       body: [[{
         stack: [
           { text: "Müşteri Yetkilisi", bold: true, color: "#25292f", fontSize: 7.5, margin: [0, 0, 0, 4] },
-          { canvas: signatureCanvas(signature), margin: [0, 0, 0, 5] } as Content,
           {
-            table: {
-              widths: [52, "*", 52, "*"],
-              body: [
-                [
-                  { text: "Ad Soyad", style: "tableLabel" },
-                  { text: clip(signature.signer_name, 58), style: "tableValue" },
-                  { text: "Unvan", style: "tableLabel" },
-                  { text: clip(signature.signer_title, 58), style: "tableValue" }
-                ],
-                [
-                  { text: "İmza zamanı", style: "tableLabel" },
-                  { text: dateTime(signedAt), style: "tableValue" },
-                  { text: "Dönüş", style: "tableLabel" },
-                  { text: "KM ve giriş saati sonradan tamamlanır.", style: "muted" }
-                ],
-                [
-                  { text: "Onay metni", style: "tableLabel" },
-                  { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted", colSpan: 3 },
-                  {},
-                  {}
-                ]
-              ]
-            },
-            layout: {
-              hLineColor: () => "#eef1f3",
-              hLineWidth: () => 0.35,
-              paddingBottom: () => 1.1,
-              paddingLeft: () => 2,
-              paddingRight: () => 2,
-              paddingTop: () => 1.1,
-              vLineWidth: () => 0
-            }
+            columns: [
+              { width: 132, canvas: signatureCanvas(signature) },
+              {
+                width: "*",
+                table: {
+                  widths: [52, "*"],
+                  body: [
+                    [
+                      { text: "Ad Soyad", style: "tableLabel" },
+                      { text: clip(signature.signer_name, 72), style: "tableValue" }
+                    ],
+                    [
+                      { text: "Unvan", style: "tableLabel" },
+                      { text: clip(signature.signer_title, 72), style: "tableValue" }
+                    ],
+                    [
+                      { text: "İmza zamanı", style: "tableLabel" },
+                      { text: dateTime(signedAt), style: "tableValue" }
+                    ],
+                    [
+                      { text: "Dönüş", style: "tableLabel" },
+                      { text: "KM ve giriş saati sonradan tamamlanır.", style: "muted" }
+                    ],
+                    [
+                      { text: "Onay metni", style: "tableLabel" },
+                      { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted" }
+                    ]
+                  ]
+                },
+                layout: {
+                  hLineColor: () => "#eef1f3",
+                  hLineWidth: () => 0.35,
+                  paddingBottom: () => 0.8,
+                  paddingLeft: () => 2,
+                  paddingRight: () => 2,
+                  paddingTop: () => 0.8,
+                  vLineWidth: () => 0
+                }
+              }
+            ],
+            columnGap: 8
           } as Content
         ],
         margin: [7, 5, 7, 5]
@@ -460,7 +468,7 @@ function signatureBoxLayout() {
 }
 
 function signatureCanvas(signature: CustomerSignature) {
-  const scale = 0.26;
+  const scale = 0.2;
   const padding = 4;
 
   return [
