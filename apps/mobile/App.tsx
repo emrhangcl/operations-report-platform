@@ -546,7 +546,7 @@ function formatBeltLabel(belt: Belt) {
 }
 
 function emptyReportWorkItem(): ReportWorkItem {
-  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" };
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", machine_name: "", coil_code: "", product_width: "", product_length: "", product_quantity: "" };
 }
 
 function compactReportWorkItems(items: ReportWorkItem[]) {
@@ -556,11 +556,13 @@ function compactReportWorkItems(items: ReportWorkItem[]) {
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
       belt_name: item.belt_name.trim(),
+      machine_name: (item.machine_name ?? "").trim(),
+      coil_code: (item.coil_code ?? "").trim(),
       product_width: item.product_width.trim(),
       product_length: item.product_length.trim(),
       product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 }
 
 function workItemsFromValues(values: ReportFormValues) {
@@ -572,6 +574,8 @@ function workItemsFromValues(values: ReportFormValues) {
       belt_id: values.belt_id,
       belt_code: "",
       belt_name: "",
+      machine_name: values.machine_brand_model,
+      coil_code: values.product_item_coil_code,
       product_width: values.product_width,
       product_length: values.product_length,
       product_quantity: values.product_quantity
@@ -581,12 +585,14 @@ function workItemsFromValues(values: ReportFormValues) {
 
 function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFormValues {
   const beltsById = new Map(belts.map((belt) => [belt.id, belt]));
-  const workItems = workItemsFromValues(values).map((item) => {
+  const workItems = workItemsFromValues(values).map((item, index) => {
     const belt = beltsById.get(item.belt_id);
     return {
       ...item,
       belt_code: item.belt_code || belt?.code || "",
       belt_name: item.belt_name || belt?.name || "",
+      machine_name: item.machine_name || (index === 0 ? values.machine_brand_model : ""),
+      coil_code: item.coil_code || (index === 0 ? values.product_item_coil_code : ""),
       product_width: item.product_width || values.product_width,
       product_length: item.product_length || values.product_length,
       product_quantity: item.product_quantity || values.product_quantity
@@ -604,7 +610,9 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[]): ReportFor
     product_measure: "",
     product_width: primaryWorkItem.product_width || values.product_width,
     product_length: primaryWorkItem.product_length || values.product_length,
-    product_quantity: primaryWorkItem.product_quantity || values.product_quantity
+    product_quantity: primaryWorkItem.product_quantity || values.product_quantity,
+    machine_brand_model: primaryWorkItem.machine_name || values.machine_brand_model,
+    product_item_coil_code: primaryWorkItem.coil_code || values.product_item_coil_code
   };
 }
 
@@ -693,7 +701,7 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
     company_contact_phone: nullable(values.company_contact_phone),
     line_name: nullable(primaryWorkItem.line_name || values.line_name),
     work_items: workItems,
-    machine_brand_model: nullable(values.machine_brand_model),
+    machine_brand_model: nullable(primaryWorkItem.machine_name || values.machine_brand_model),
     customer_machine_name: nullable(values.customer_machine_name),
     belt_id: primaryWorkItem.belt_id || values.belt_id || null,
     vehicle_plate: nullable(values.vehicle_plate),
@@ -707,7 +715,7 @@ function reportPayload(values: ReportFormValues, status: "DRAFT" | "SUBMITTED") 
     product_width: nullable(primaryWorkItem.product_width || values.product_width),
     product_length: nullable(primaryWorkItem.product_length || values.product_length),
     product_quantity: nullable(primaryWorkItem.product_quantity || values.product_quantity),
-    product_item_coil_code: nullable(values.product_item_coil_code),
+    product_item_coil_code: nullable(primaryWorkItem.coil_code || values.product_item_coil_code),
     product_types: values.product_types,
     product_type_other: nullable(values.product_type_other),
     process_actions: values.process_actions,
@@ -1230,7 +1238,7 @@ function ReportForm(props: {
           <SelectOption label={values.company_id ? "Hat seçin" : "Önce firma seçin"} value="" />
           {selectedCompanyLines.map((line) => <SelectOption key={line.id} label={line.name} value={line.name} />)}
         </Select>
-        <Input label="Makina Marka Modeli" value={values.machine_brand_model} onChange={(value) => update("machine_brand_model", value)} />
+        <Input label="Ürün Makine Adı" value={values.machine_brand_model} onChange={(value) => update("machine_brand_model", value)} />
         <Select label="Bant Seç" value={values.belt_id} onChange={(value) => update("belt_id", value)}>
           <SelectOption label="Bant seçin" value="" />
           {belts.map((belt) => <SelectOption key={belt.id} label={formatBeltLabel(belt)} value={belt.id} />)}

@@ -88,23 +88,16 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
     divider(),
     {
       columns: [
-        compactSection("Genel Bilgiler", [
-          ["Rapor No", report.report_number ?? "Taslak"],
-          ["Tarih", dateOnly(report.report_date)],
-          ["Firma", text(report.company_name_snapshot)],
-          ["Yetkili", text(report.company_contact_name)],
-          ["Telefon", text(report.company_contact_phone)],
-          ["Giden Personel", clip(personnelText(report), 95)],
-          ["Formu Dolduran", text(report.created_by_name_snapshot)]
+        pairedCompactSection("Genel Bilgiler", [
+          ["Rapor No", report.report_number ?? "Taslak", "Tarih", dateOnly(report.report_date)],
+          ["Firma", clip(text(report.company_name_snapshot), 58), "Yetkili", text(report.company_contact_name)],
+          ["Telefon", text(report.company_contact_phone), "Formu Dolduran", text(report.created_by_name_snapshot)],
+          ["Giden Personel", clip(personnelText(report), 68), "Durum", report.status === "SUBMITTED" ? "Gönderildi" : "Taslak"]
         ]),
-        compactSection("Araç ve Zaman", [
-          ["Araç Plakası", text(report.vehicle_plate)],
-          ["Araç Alış KM", text(report.vehicle_start_km)],
-          ["Dönüş Araç KM", text(report.vehicle_end_km)],
-          ["Atölyeden Çıkış", dateTime(report.workshop_departure_at)],
-          ["Müşteriye Varış", dateTime(report.customer_arrival_at)],
-          ["Müşteriden Çıkış", dateTime(report.customer_departure_at)],
-          ["Eve / Ofise Giriş", dateTime(report.factory_return_at)]
+        pairedCompactSection("Araç ve Zaman", [
+          ["Araç Plakası", text(report.vehicle_plate), "Alış / Teslim KM", kmText(report.vehicle_start_km, report.vehicle_end_km)],
+          ["Atölyeden Çıkış", dateTime(report.workshop_departure_at), "Müşteriye Varış", dateTime(report.customer_arrival_at)],
+          ["Müşteriden Çıkış", dateTime(report.customer_departure_at), "Eve / Ofise Giriş", dateTime(report.factory_return_at)]
         ])
       ],
       columnGap: 12
@@ -115,7 +108,6 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
           ["Hat", text(report.line_name)],
           ["Bant Kodu", reportBeltCodesText(report)],
           ["İş Kalemleri", clip(reportWorkItemsText(report), 120)],
-          ["Makina Marka Model", text(report.machine_brand_model)],
           ["Makine / Ekipman", clip(text(report.used_equipment), 120)]
         ]),
         compactSection("İşlem ve Teknik", [
@@ -172,7 +164,7 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
   return {
     pageOrientation: "landscape",
     pageSize: "A4",
-    pageMargins: [24, 22, 24, 24],
+    pageMargins: [20, 16, 20, 18],
     info: {
       title: report.report_number ?? "Operasyon Raporu",
       author: "Operasyon Portalı",
@@ -181,8 +173,8 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
     defaultStyle: {
       color: "#25282c",
       font: "Roboto",
-      fontSize: 7.2,
-      lineHeight: 1.08
+      fontSize: 6.9,
+      lineHeight: 1.02
     },
     footer: (currentPage, pageCount) => ({
       columns: [
@@ -190,8 +182,8 @@ function createReportDocument(report: PdfReportRow, options: ReportPdfOptions): 
         { text: report.report_number ?? "Taslak", alignment: "center", color: "#66707a" },
         { text: `${currentPage} / ${pageCount}`, alignment: "right", color: "#66707a" }
       ],
-      fontSize: 6.3,
-      margin: [24, 4, 24, 0]
+      fontSize: 5.9,
+      margin: [20, 3, 20, 0]
     }),
     content,
     styles
@@ -202,7 +194,7 @@ const styles: StyleDictionary = {
   title: {
     bold: true,
     color: "#25292f",
-    fontSize: 15
+    fontSize: 13.5
   },
   subtitle: {
     color: "#66707a",
@@ -211,7 +203,7 @@ const styles: StyleDictionary = {
   sectionTitle: {
     bold: true,
     color: "#0b5f59",
-    fontSize: 8.7
+    fontSize: 8.2
   },
   tableLabel: {
     bold: true,
@@ -220,7 +212,7 @@ const styles: StyleDictionary = {
   },
   tableValue: {
     color: "#25282c",
-    fontSize: 7.05
+    fontSize: 6.8
   },
   muted: {
     color: "#66707a",
@@ -241,7 +233,7 @@ function header(report: PdfReportRow, logoDataUrl?: string | null): Content {
             ? [
                 {
                   image: logoDataUrl,
-                  fit: [120, 34],
+                  fit: [100, 28],
                   margin: [0, 0, 0, 2]
                 } as Content
               ]
@@ -296,6 +288,35 @@ function compactSection(title: string, rows: Array<[string, string]>): Column {
   };
 }
 
+function pairedCompactSection(title: string, rows: Array<[string, string, string, string]>): Column {
+  return {
+    width: "*",
+    stack: [
+      { text: title, style: "sectionTitle", margin: [0, 0, 0, 2] },
+      {
+        table: {
+          widths: [62, "*", 72, "*"],
+          body: rows.map(([leftLabel, leftValue, rightLabel, rightValue]) => [
+            { text: leftLabel, style: "tableLabel" },
+            { text: leftValue || "-", style: "tableValue" },
+            { text: rightLabel, style: "tableLabel" },
+            { text: rightValue || "-", style: "tableValue" }
+          ])
+        },
+        layout: {
+          hLineColor: () => "#eef1f3",
+          hLineWidth: () => 0.35,
+          paddingBottom: () => 1.2,
+          paddingLeft: () => 2,
+          paddingRight: () => 2,
+          paddingTop: () => 1.2,
+          vLineWidth: () => 0
+        }
+      }
+    ]
+  };
+}
+
 function workItemsTable(items: ReportWorkItem[]): Content {
   if (items.length === 0) {
     return { text: "Ürün kalemi girilmemiş.", style: "muted" };
@@ -304,13 +325,15 @@ function workItemsTable(items: ReportWorkItem[]): Content {
   return {
     table: {
       headerRows: 1,
-      widths: ["*", 92, "*", 55, 60, 46],
+      widths: ["*", 70, "*", 82, 68, 42, 46, 38],
       body: [
-        ["Hat", "Bant Kodu", "Bant Adı", "En", "Boy", "Miktar"].map((label) => ({ text: label, style: "tableLabel" })),
+        ["Hat", "Bant Kodu", "Bant Adı", "Makine Adı", "Item / Coil", "En", "Boy", "Miktar"].map((label) => ({ text: label, style: "tableLabel" })),
         ...items.map((item) => [
           clip(text(item.line_name), 58),
           clip(text(item.belt_code), 28),
           clip(text(item.belt_name), 60),
+          clip(text(item.machine_name), 42),
+          clip(text(item.coil_code), 36),
           text(item.product_width),
           text(item.product_length),
           text(item.product_quantity)
@@ -342,7 +365,7 @@ function personnelRecordBox(name?: string): Column {
           { text: name && name !== "-" ? clip(name, 105) : "Personel kaydı bulunmuyor", style: name && name !== "-" ? "tableValue" : "muted", margin: [0, 0, 0, 7] },
           { text: "Personel bilgisi sistem kaydından alınmıştır; bu alanda personel el imzası bulunmaz.", style: "muted" }
         ],
-        margin: [8, 7, 8, 7]
+        margin: [7, 5, 7, 5]
       }]]
     },
     layout: {
@@ -368,7 +391,7 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
             { text: "Eski kayıt / imzasız: dijital müşteri imzası yok.", style: "muted", margin: [0, 0, 0, 4] },
             { text: "Firma yetkilisi imzası mobil tamamlanma akışından alındığında burada görünür.", style: "muted" }
           ],
-          margin: [8, 7, 8, 7]
+          margin: [7, 5, 7, 5]
         }]]
       },
       layout: signatureBoxLayout()
@@ -387,13 +410,26 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
           { canvas: signatureCanvas(signature), margin: [0, 0, 0, 5] } as Content,
           {
             table: {
-              widths: [66, "*"],
+              widths: [52, "*", 52, "*"],
               body: [
-                [{ text: "Ad Soyad", style: "tableLabel" }, { text: clip(signature.signer_name, 90), style: "tableValue" }],
-                [{ text: "Unvan", style: "tableLabel" }, { text: clip(signature.signer_title, 90), style: "tableValue" }],
-                [{ text: "İmza zamanı", style: "tableLabel" }, { text: dateTime(signedAt), style: "tableValue" }],
-                [{ text: "Onay metni", style: "tableLabel" }, { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted" }],
-                [{ text: "Dönüş kapanışı", style: "tableLabel" }, { text: "Eve/ofise giriş zamanı ve dönüş araç kilometresi teslim onayından sonra personel tarafından kaydedilir.", style: "muted" }]
+                [
+                  { text: "Ad Soyad", style: "tableLabel" },
+                  { text: clip(signature.signer_name, 58), style: "tableValue" },
+                  { text: "Unvan", style: "tableLabel" },
+                  { text: clip(signature.signer_title, 58), style: "tableValue" }
+                ],
+                [
+                  { text: "İmza zamanı", style: "tableLabel" },
+                  { text: dateTime(signedAt), style: "tableValue" },
+                  { text: "Dönüş", style: "tableLabel" },
+                  { text: "KM ve giriş saati sonradan tamamlanır.", style: "muted" }
+                ],
+                [
+                  { text: "Onay metni", style: "tableLabel" },
+                  { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted", colSpan: 3 },
+                  {},
+                  {}
+                ]
               ]
             },
             layout: {
@@ -407,7 +443,7 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
             }
           } as Content
         ],
-        margin: [8, 7, 8, 7]
+        margin: [7, 5, 7, 5]
       }]]
     },
     layout: signatureBoxLayout()
@@ -424,7 +460,7 @@ function signatureBoxLayout() {
 }
 
 function signatureCanvas(signature: CustomerSignature) {
-  const scale = 0.4;
+  const scale = 0.26;
   const padding = 4;
 
   return [
@@ -448,7 +484,9 @@ function reportWorkItems(report: Record<string, unknown>) {
       textValue(report.belt_name_snapshot),
       textValue(report.product_width),
       textValue(report.product_length),
-      textValue(report.product_quantity)
+      textValue(report.product_quantity),
+      textValue(report.machine_brand_model),
+      textValue(report.product_item_coil_code)
     )
   );
 }
@@ -460,11 +498,13 @@ function compactWorkItems(items: ReportWorkItem[]) {
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
       belt_name: item.belt_name.trim(),
+      machine_name: (item.machine_name ?? "").trim(),
+      coil_code: (item.coil_code ?? "").trim(),
       product_width: item.product_width.trim(),
       product_length: item.product_length.trim(),
       product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 }
 
 function workItemsFromValue(
@@ -475,21 +515,25 @@ function workItemsFromValue(
   fallbackBeltName = "",
   fallbackProductWidth = "",
   fallbackProductLength = "",
-  fallbackProductQuantity = ""
+  fallbackProductQuantity = "",
+  fallbackMachineName = "",
+  fallbackCoilCode = ""
 ): ReportWorkItem[] {
   if (Array.isArray(value)) {
     const items = value
       .map((item) => toRecord(item))
-      .map((item) => ({
+      .map((item, index) => ({
         line_name: textValue(item.line_name),
         belt_id: textValue(item.belt_id),
         belt_code: textValue(item.belt_code),
         belt_name: textValue(item.belt_name),
+        machine_name: textValue(item.machine_name) || (index === 0 ? fallbackMachineName : ""),
+        coil_code: textValue(item.coil_code) || (index === 0 ? fallbackCoilCode : ""),
         product_width: textValue(item.product_width),
         product_length: textValue(item.product_length),
         product_quantity: textValue(item.product_quantity)
       }))
-      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 
     if (items.length > 0) return items;
   }
@@ -499,6 +543,8 @@ function workItemsFromValue(
     belt_id: fallbackBeltId,
     belt_code: fallbackBeltCode,
     belt_name: fallbackBeltName,
+    machine_name: fallbackMachineName,
+    coil_code: fallbackCoilCode,
     product_width: fallbackProductWidth,
     product_length: fallbackProductLength,
     product_quantity: fallbackProductQuantity
@@ -514,7 +560,8 @@ function reportWorkItemsText(report: Record<string, unknown>) {
   return reportWorkItems(report)
     .map((item) => {
       const beltLabel = item.belt_code ? (item.belt_name ? `${item.belt_code} - ${item.belt_name}` : item.belt_code) : "";
-      return [item.line_name, beltLabel].filter(Boolean).join(" / ");
+      const machineAndCoil = [item.machine_name, item.coil_code].filter(Boolean).join(" / ");
+      return [item.line_name, beltLabel, machineAndCoil].filter(Boolean).join(" / ");
     })
     .filter(Boolean)
     .join(" • ") || "-";
@@ -555,6 +602,13 @@ function arrayText(value: unknown) {
 function boolText(value: unknown) {
   if (typeof value !== "boolean") return "-";
   return value ? "Evet" : "Hayır";
+}
+
+function kmText(start: unknown, end: unknown) {
+  const startText = text(start);
+  const endText = text(end);
+  if (startText === "-" && endText === "-") return "-";
+  return `${startText} / ${endText}`;
 }
 
 function dateOnly(value: unknown) {

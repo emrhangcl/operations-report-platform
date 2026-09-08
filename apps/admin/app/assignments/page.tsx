@@ -88,7 +88,7 @@ const emptyForm: AssignmentForm = {
   company_contact_name: "",
   company_contact_phone: "",
   line_name: "",
-  work_items: [{ line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" }],
+  work_items: [{ line_name: "", belt_id: "", belt_code: "", belt_name: "", machine_name: "", coil_code: "", product_width: "", product_length: "", product_quantity: "" }],
   machine_brand_model: "",
   belt_id: "",
   vehicle_plate: "",
@@ -507,12 +507,6 @@ export default function AssignmentsPage() {
                 onRemove={removeWorkItem}
                 onUpdate={updateWorkItem}
               />
-              <FormField label="Makina Marka Modeli">
-                <input
-                  onChange={(event) => update("machine_brand_model", event.target.value)}
-                  value={form.machine_brand_model}
-                />
-              </FormField>
             </div>
           </FormSection>
 
@@ -538,12 +532,6 @@ export default function AssignmentsPage() {
                 </select>
               </FormField>
               <ProductItemsField items={form.work_items} onUpdate={updateWorkItem} />
-              <FormField label="Item / Coil Kodu">
-                <input
-                  onChange={(event) => update("product_item_coil_code", event.target.value)}
-                  value={form.product_item_coil_code}
-                />
-              </FormField>
             </div>
           </FormSection>
 
@@ -769,7 +757,7 @@ function buildReportValues(form: AssignmentForm, belts: Belt[], equipment: Equip
     company_contact_phone: contacts[0]?.phone ?? "",
     line_name: primaryWorkItem.line_name,
     work_items: workItems,
-    machine_brand_model: form.machine_brand_model,
+    machine_brand_model: primaryWorkItem.machine_name || form.machine_brand_model,
     belt_id: primaryWorkItem.belt_id,
     vehicle_plate: form.vehicle_plate,
     used_equipment_ids: form.used_equipment_ids,
@@ -779,7 +767,7 @@ function buildReportValues(form: AssignmentForm, belts: Belt[], equipment: Equip
     product_width: primaryWorkItem.product_width || form.product_width,
     product_length: primaryWorkItem.product_length || form.product_length,
     product_quantity: primaryWorkItem.product_quantity || form.product_quantity,
-    product_item_coil_code: form.product_item_coil_code,
+    product_item_coil_code: primaryWorkItem.coil_code || form.product_item_coil_code,
     product_types: form.product_types,
     product_type_other: form.product_type_other,
     process_actions: form.process_actions,
@@ -806,7 +794,9 @@ function formFromAssignment(assignment: InstallationAssignment, equipment: Equip
     stringValue(values.belt_id),
     stringValue(values.product_width),
     stringValue(values.product_length),
-    stringValue(values.product_quantity)
+    stringValue(values.product_quantity),
+    stringValue(values.machine_brand_model),
+    stringValue(values.product_item_coil_code)
   );
   const primaryWorkItem = compactWorkItems(workItems)[0] ?? workItems[0] ?? emptyWorkItem();
   const equipmentIds = equipmentIdsFromValue(values.used_equipment_ids, stringValue(values.used_equipment), equipment);
@@ -823,7 +813,7 @@ function formFromAssignment(assignment: InstallationAssignment, equipment: Equip
     company_contact_phone: primaryContact.phone,
     line_name: primaryWorkItem.line_name,
     work_items: workItems,
-    machine_brand_model: stringValue(values.machine_brand_model),
+    machine_brand_model: primaryWorkItem.machine_name || stringValue(values.machine_brand_model),
     belt_id: primaryWorkItem.belt_id,
     vehicle_plate: stringValue(values.vehicle_plate),
     used_equipment_ids: equipmentIds,
@@ -833,7 +823,7 @@ function formFromAssignment(assignment: InstallationAssignment, equipment: Equip
     product_width: primaryWorkItem.product_width || stringValue(values.product_width),
     product_length: primaryWorkItem.product_length || stringValue(values.product_length),
     product_quantity: primaryWorkItem.product_quantity || stringValue(values.product_quantity),
-    product_item_coil_code: stringValue(values.product_item_coil_code),
+    product_item_coil_code: primaryWorkItem.coil_code || stringValue(values.product_item_coil_code),
     product_types: arrayValue(values.product_types),
     product_type_other: stringValue(values.product_type_other),
     process_actions: arrayValue(values.process_actions),
@@ -944,7 +934,7 @@ function syncPrimaryContact<T extends AssignmentForm>(form: T): T {
 }
 
 function emptyWorkItem(): ReportWorkItem {
-  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" };
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", machine_name: "", coil_code: "", product_width: "", product_length: "", product_quantity: "" };
 }
 
 function normalizeWorkItems(items: ReportWorkItem[]) {
@@ -958,11 +948,13 @@ function compactWorkItems(items: ReportWorkItem[]) {
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
       belt_name: item.belt_name.trim(),
+      machine_name: (item.machine_name ?? "").trim(),
+      coil_code: (item.coil_code ?? "").trim(),
       product_width: item.product_width.trim(),
       product_length: item.product_length.trim(),
       product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 }
 
 function enrichWorkItems(items: ReportWorkItem[], belts: Belt[]) {
@@ -989,21 +981,25 @@ function workItemsFromValue(
   fallbackBeltId: string,
   fallbackProductWidth = "",
   fallbackProductLength = "",
-  fallbackProductQuantity = ""
+  fallbackProductQuantity = "",
+  fallbackMachineName = "",
+  fallbackCoilCode = ""
 ): ReportWorkItem[] {
   if (Array.isArray(value)) {
     const items = value
       .map((item) => toRecord(item))
-      .map((item) => ({
+      .map((item, index) => ({
         line_name: stringValue(item.line_name),
         belt_id: stringValue(item.belt_id),
         belt_code: stringValue(item.belt_code),
         belt_name: stringValue(item.belt_name),
+        machine_name: stringValue(item.machine_name) || (index === 0 ? fallbackMachineName : ""),
+        coil_code: stringValue(item.coil_code) || (index === 0 ? fallbackCoilCode : ""),
         product_width: stringValue(item.product_width),
         product_length: stringValue(item.product_length),
         product_quantity: stringValue(item.product_quantity)
       }))
-      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 
     if (items.length > 0) {
       return items;
@@ -1016,6 +1012,8 @@ function workItemsFromValue(
       belt_id: fallbackBeltId,
       belt_code: "",
       belt_name: "",
+      machine_name: fallbackMachineName,
+      coil_code: fallbackCoilCode,
       product_width: fallbackProductWidth,
       product_length: fallbackProductLength,
       product_quantity: fallbackProductQuantity
@@ -1028,7 +1026,9 @@ function syncPrimaryWorkItem<T extends AssignmentForm>(form: T): T {
   return {
     ...form,
     line_name: firstItem.line_name,
-    belt_id: firstItem.belt_id
+    belt_id: firstItem.belt_id,
+    machine_brand_model: firstItem.machine_name,
+    product_item_coil_code: firstItem.coil_code
   };
 }
 
@@ -1106,10 +1106,12 @@ function ProductItemsField({
   const rows = normalizeWorkItems(items);
 
   return (
-    <FormField className="span-4 product-items-field" label="Ürün Kodları ve Ölçüler">
+    <FormField className="span-4 product-items-field" label="Ürün Detayları">
       <div className="product-item-list">
         <div className="product-item-row product-item-head">
           <span>Ürün Kodu</span>
+          <span>Makine Adı</span>
+          <span>Item / Coil Kodu</span>
           <span>En</span>
           <span>Boy</span>
           <span>Miktar</span>
@@ -1117,6 +1119,18 @@ function ProductItemsField({
         {rows.map((item, index) => (
           <div className="product-item-row" key={index}>
             <div className="product-code-chip">{item.belt_code || "Bant kodu seçin"}</div>
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır makine adı`}
+              onChange={(event) => onUpdate(index, "machine_name", event.target.value)}
+              placeholder="Makine adı"
+              value={item.machine_name}
+            />
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır item veya coil kodu`}
+              onChange={(event) => onUpdate(index, "coil_code", event.target.value)}
+              placeholder="Item / Coil kodu"
+              value={item.coil_code}
+            />
             <input
               aria-label={`${item.belt_code || index + 1}. satır en`}
               onChange={(event) => onUpdate(index, "product_width", event.target.value)}

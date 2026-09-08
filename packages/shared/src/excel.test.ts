@@ -28,6 +28,16 @@ describe("Excel export mapping", () => {
       product_length: null,
       product_quantity: null,
       belt_code_snapshot: null,
+      work_items: [{
+        line_name: "Hat 1",
+        belt_code: "B-101",
+        belt_name: "Ana Bant",
+        machine_name: "Paketleme Makinesi",
+        coil_code: "COIL-A",
+        product_width: "500",
+        product_length: "1200",
+        product_quantity: "1"
+      }],
       product_types: ["Konveyör Bant"],
       process_actions: ["Yeni Bant"],
       edge_cut_method: null,
@@ -65,6 +75,7 @@ describe("Excel export mapping", () => {
     expect(row[4]).toBe("A Personel");
     expect(row[5]).toBe("B Personel");
     expect(row[6]).toBe("C Personel");
+    expect(row[24]).toBe("Hat 1 / B-101 - Ana Bant / Paketleme Makinesi / COIL-A");
     expect(row[row.length - 1]).toBe(1);
   });
 });

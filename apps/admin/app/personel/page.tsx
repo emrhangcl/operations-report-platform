@@ -1141,7 +1141,6 @@ function ReportDetailView({ reportId, readOnly, onBack }: { reportId: string; re
               ["Hat Adı", text(report.line_name)],
               ["Bant Kodu", reportBeltCodesText(report)],
               ["İş Kalemleri", reportWorkItemsText(report)],
-              ["Makina Marka Model", text(report.machine_brand_model)],
               ["Giden Personel", report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-"],
               ["Araç Plakası", text(report.vehicle_plate)],
               ["Araç Alış KM", text(report.vehicle_start_km)],
@@ -1308,7 +1307,9 @@ function ReportForm({
         "",
         values.product_width,
         values.product_length,
-        values.product_quantity
+        values.product_quantity,
+        values.machine_brand_model,
+        values.product_item_coil_code
       ),
       beltsById
     ),
@@ -1316,6 +1317,8 @@ function ReportForm({
       beltsById,
       values.belt_id,
       values.line_name,
+      values.machine_brand_model,
+      values.product_item_coil_code,
       values.product_length,
       values.product_quantity,
       values.product_width,
@@ -1330,6 +1333,8 @@ function ReportForm({
     update("work_items", enriched);
     update("line_name", primaryWorkItem.line_name);
     update("belt_id", primaryWorkItem.belt_id);
+    update("machine_brand_model", primaryWorkItem.machine_name);
+    update("product_item_coil_code", primaryWorkItem.coil_code);
   }
 
   function updateReportWorkItem(index: number, key: keyof ReportWorkItem, value: string) {
@@ -1422,7 +1427,6 @@ function ReportForm({
           <Field label="Bant Kodu">
             <div className="personnel-readonly">{beltCodesText}</div>
           </Field>
-          <TextField label="Makina Marka Modeli" value={values.machine_brand_model} onChange={(value) => update("machine_brand_model", value)} />
           <Field label="Formu Dolduran Personel">
             <div className="personnel-readonly">{profile ? `${profile.first_name} ${profile.last_name}` : "-"}</div>
           </Field>
@@ -1478,7 +1482,6 @@ function ReportForm({
         <summary><span className="section-number">3</span><span>Ürün Bilgileri</span></summary>
         <div className="personnel-form-grid personnel-product-grid">
           <ProductItemsField items={formWorkItems} onUpdate={updateReportWorkItem} />
-          <TextField label="Ürün Item ve Coil Kodu" value={values.product_item_coil_code} onChange={(value) => update("product_item_coil_code", value)} />
           <CheckPicker
             className="span-2 personnel-compact-picker"
             label="İşlem Görecek Ürün Türü"
@@ -1829,10 +1832,12 @@ function ProductItemsField({
 
   return (
     <div className="personnel-field span-2 product-items-field">
-      <span>Ürün Kodları ve Ölçüler</span>
+      <span>Ürün Detayları</span>
       <div className="product-item-list">
         <div className="product-item-row product-item-head">
           <span>Ürün Kodu</span>
+          <span>Makine Adı</span>
+          <span>Item / Coil Kodu</span>
           <span>En</span>
           <span>Boy</span>
           <span>Miktar</span>
@@ -1840,6 +1845,18 @@ function ProductItemsField({
         {rows.map((item, index) => (
           <div className="product-item-row" key={index}>
             <div className="product-code-chip">{item.belt_code || "Bant kodu seçin"}</div>
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır makine adı`}
+              onChange={(event) => onUpdate(index, "machine_name", event.target.value)}
+              placeholder="Makine adı"
+              value={item.machine_name}
+            />
+            <input
+              aria-label={`${item.belt_code || index + 1}. satır item veya coil kodu`}
+              onChange={(event) => onUpdate(index, "coil_code", event.target.value)}
+              placeholder="Item / Coil kodu"
+              value={item.coil_code}
+            />
             <input
               aria-label={`${item.belt_code || index + 1}. satır en`}
               onChange={(event) => onUpdate(index, "product_width", event.target.value)}
@@ -1952,7 +1969,7 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
     company_contact_phone: nullable(values.company_contact_phone),
     line_name: nullable(primaryWorkItem.line_name || values.line_name),
     work_items: workItems,
-    machine_brand_model: nullable(values.machine_brand_model),
+    machine_brand_model: nullable(primaryWorkItem.machine_name || values.machine_brand_model),
     customer_machine_name: nullable(values.customer_machine_name),
     belt_id: primaryWorkItem.belt_id || values.belt_id || null,
     vehicle_plate: nullable(values.vehicle_plate),
@@ -1968,7 +1985,7 @@ function reportPayload(values: ReportFormValues, status: ReportStatus) {
     product_width: nullable(primaryWorkItem.product_width || values.product_width),
     product_length: nullable(primaryWorkItem.product_length || values.product_length),
     product_quantity: nullable(primaryWorkItem.product_quantity || values.product_quantity),
-    product_item_coil_code: nullable(values.product_item_coil_code),
+    product_item_coil_code: nullable(primaryWorkItem.coil_code || values.product_item_coil_code),
     product_types: values.product_types,
     product_type_other: nullable(values.product_type_other),
     process_actions: values.process_actions,
@@ -2012,7 +2029,9 @@ function reportToValues(report: ReportRow, equipment: Equipment[]): ReportFormVa
     stringValue(report.belt_name_snapshot),
     stringValue(report.product_width),
     stringValue(report.product_length),
-    stringValue(report.product_quantity)
+    stringValue(report.product_quantity),
+    stringValue(report.machine_brand_model),
+    stringValue(report.product_item_coil_code)
   );
   const primaryWorkItem = compactReportWorkItems(workItems)[0] ?? workItems[0] ?? emptyReportWorkItem();
   const equipmentIds = equipmentIdsFromValue(report.used_equipment_ids, stringValue(report.used_equipment), equipment);
@@ -2026,7 +2045,7 @@ function reportToValues(report: ReportRow, equipment: Equipment[]): ReportFormVa
     company_contact_phone: stringValue(report.company_contact_phone),
     line_name: primaryWorkItem.line_name,
     work_items: workItems,
-    machine_brand_model: stringValue(report.machine_brand_model),
+    machine_brand_model: primaryWorkItem.machine_name || stringValue(report.machine_brand_model),
     customer_machine_name: stringValue(report.customer_machine_name),
     belt_id: primaryWorkItem.belt_id,
     visiting_personnel_ids: (report.report_personnel ?? [])
@@ -2046,7 +2065,7 @@ function reportToValues(report: ReportRow, equipment: Equipment[]): ReportFormVa
     product_width: primaryWorkItem.product_width || stringValue(report.product_width),
     product_length: primaryWorkItem.product_length || stringValue(report.product_length),
     product_quantity: primaryWorkItem.product_quantity || stringValue(report.product_quantity),
-    product_item_coil_code: stringValue(report.product_item_coil_code),
+    product_item_coil_code: primaryWorkItem.coil_code || stringValue(report.product_item_coil_code),
     product_types: arrayValue(report.product_types) as ReportFormValues["product_types"],
     product_type_other: stringValue(report.product_type_other),
     process_actions: arrayValue(report.process_actions) as ReportFormValues["process_actions"],
@@ -2091,7 +2110,9 @@ function assignmentToValues(assignment: InstallationAssignment, equipment: Equip
     stringValue(values.belt_name),
     stringValue(values.product_width),
     stringValue(values.product_length),
-    stringValue(values.product_quantity)
+    stringValue(values.product_quantity),
+    stringValue(values.machine_brand_model),
+    stringValue(values.product_item_coil_code)
   );
   const primaryWorkItem = compactReportWorkItems(workItems)[0] ?? workItems[0] ?? emptyReportWorkItem();
   const equipmentIds = equipmentIdsFromValue(values.used_equipment_ids, stringValue(values.used_equipment), equipment);
@@ -2105,7 +2126,7 @@ function assignmentToValues(assignment: InstallationAssignment, equipment: Equip
     company_contact_phone: stringValue(values.company_contact_phone),
     line_name: primaryWorkItem.line_name,
     work_items: workItems,
-    machine_brand_model: stringValue(values.machine_brand_model),
+    machine_brand_model: primaryWorkItem.machine_name || stringValue(values.machine_brand_model),
     customer_machine_name: stringValue(values.customer_machine_name),
     belt_id: primaryWorkItem.belt_id,
     visiting_personnel_ids: arrayValue(values.visiting_personnel_ids),
@@ -2123,7 +2144,7 @@ function assignmentToValues(assignment: InstallationAssignment, equipment: Equip
     product_width: primaryWorkItem.product_width || stringValue(values.product_width),
     product_length: primaryWorkItem.product_length || stringValue(values.product_length),
     product_quantity: primaryWorkItem.product_quantity || stringValue(values.product_quantity),
-    product_item_coil_code: stringValue(values.product_item_coil_code),
+    product_item_coil_code: primaryWorkItem.coil_code || stringValue(values.product_item_coil_code),
     product_types: arrayValue(values.product_types) as ReportFormValues["product_types"],
     product_type_other: stringValue(values.product_type_other),
     process_actions: arrayValue(values.process_actions) as ReportFormValues["process_actions"],
@@ -2288,7 +2309,9 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[], equipment:
         "",
         values.product_width,
         values.product_length,
-        values.product_quantity
+        values.product_quantity,
+        values.machine_brand_model,
+        values.product_item_coil_code
       ),
       beltsById
     )
@@ -2307,6 +2330,8 @@ function prepareReportValues(values: ReportFormValues, belts: Belt[], equipment:
     product_width: primaryWorkItem.product_width || values.product_width,
     product_length: primaryWorkItem.product_length || values.product_length,
     product_quantity: primaryWorkItem.product_quantity || values.product_quantity,
+    machine_brand_model: primaryWorkItem.machine_name || values.machine_brand_model,
+    product_item_coil_code: primaryWorkItem.coil_code || values.product_item_coil_code,
     used_equipment: usedEquipment
   };
 }
@@ -2316,7 +2341,7 @@ function formatBeltLabel(belt: Belt) {
 }
 
 function emptyReportWorkItem(): ReportWorkItem {
-  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", product_width: "", product_length: "", product_quantity: "" };
+  return { line_name: "", belt_id: "", belt_code: "", belt_name: "", machine_name: "", coil_code: "", product_width: "", product_length: "", product_quantity: "" };
 }
 
 function normalizeReportWorkItems(items: ReportWorkItem[]) {
@@ -2330,11 +2355,13 @@ function compactReportWorkItems(items: ReportWorkItem[]) {
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
       belt_name: item.belt_name.trim(),
+      machine_name: (item.machine_name ?? "").trim(),
+      coil_code: (item.coil_code ?? "").trim(),
       product_width: item.product_width.trim(),
       product_length: item.product_length.trim(),
       product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 }
 
 function workItemsFromValue(
@@ -2345,21 +2372,25 @@ function workItemsFromValue(
   fallbackBeltName = "",
   fallbackProductWidth = "",
   fallbackProductLength = "",
-  fallbackProductQuantity = ""
+  fallbackProductQuantity = "",
+  fallbackMachineName = "",
+  fallbackCoilCode = ""
 ): ReportWorkItem[] {
   if (Array.isArray(value)) {
     const items = value
       .map((item) => toRecord(item))
-      .map((item) => ({
+      .map((item, index) => ({
         line_name: stringValue(item.line_name),
         belt_id: stringValue(item.belt_id),
         belt_code: stringValue(item.belt_code),
         belt_name: stringValue(item.belt_name),
+        machine_name: stringValue(item.machine_name) || (index === 0 ? fallbackMachineName : ""),
+        coil_code: stringValue(item.coil_code) || (index === 0 ? fallbackCoilCode : ""),
         product_width: stringValue(item.product_width),
         product_length: stringValue(item.product_length),
         product_quantity: stringValue(item.product_quantity)
       }))
-      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 
     if (items.length > 0) {
       return items;
@@ -2372,6 +2403,8 @@ function workItemsFromValue(
       belt_id: fallbackBeltId,
       belt_code: fallbackBeltCode,
       belt_name: fallbackBeltName,
+      machine_name: fallbackMachineName,
+      coil_code: fallbackCoilCode,
       product_width: fallbackProductWidth,
       product_length: fallbackProductLength,
       product_quantity: fallbackProductQuantity
@@ -2392,7 +2425,8 @@ function enrichReportWorkItems(items: ReportWorkItem[], beltsById: Map<string, B
 
 function formatReportWorkItemLabel(item: ReportWorkItem) {
   const beltLabel = item.belt_code ? (item.belt_name ? `${item.belt_code} - ${item.belt_name}` : item.belt_code) : "";
-  return [item.line_name, beltLabel].filter(Boolean).join(" / ");
+  const machineAndCoil = [item.machine_name, item.coil_code].filter(Boolean).join(" / ");
+  return [item.line_name, beltLabel, machineAndCoil].filter(Boolean).join(" / ");
 }
 
 function workItemBeltCodesText(items: ReportWorkItem[], fallbackBeltId: string, beltsById: Map<string, Belt>) {
@@ -2430,7 +2464,9 @@ function reportWorkItemsText(report: Record<string, unknown>) {
       stringValue(report.belt_name_snapshot),
       stringValue(report.product_width),
       stringValue(report.product_length),
-      stringValue(report.product_quantity)
+      stringValue(report.product_quantity),
+      stringValue(report.machine_brand_model),
+      stringValue(report.product_item_coil_code)
     )
   );
 
@@ -2510,7 +2546,18 @@ function reportProductMeasurementsText(report: Record<string, unknown>) {
 function assignmentWorkItemsText(assignment: InstallationAssignment) {
   const values = toRecord(assignment.report_values);
   const items = compactReportWorkItems(
-    workItemsFromValue(values.work_items, assignment.line_name ?? "", stringValue(values.belt_id))
+    workItemsFromValue(
+      values.work_items,
+      assignment.line_name ?? "",
+      stringValue(values.belt_id),
+      "",
+      "",
+      stringValue(values.product_width),
+      stringValue(values.product_length),
+      stringValue(values.product_quantity),
+      stringValue(values.machine_brand_model),
+      stringValue(values.product_item_coil_code)
+    )
   );
   return items.map(formatReportWorkItemLabel).filter(Boolean).join(" • ") || assignment.line_name || "";
 }

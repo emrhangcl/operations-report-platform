@@ -408,7 +408,6 @@ export default function ReportDetailPage() {
                 ["Hat Adı", text(report.line_name)],
                 ["Bant Kodu", reportBeltCodesText(report)],
                 ["İş Kalemleri", reportWorkItemsText(report)],
-                ["Makina Marka Model", text(report.machine_brand_model)],
                 ["Araç Plakası", text(report.vehicle_plate)],
                 ["Araç KM", kmText(report.vehicle_start_km, report.vehicle_end_km)],
                 ["Kullanılan Makine ve Ekipman", text(report.used_equipment)]
@@ -428,7 +427,6 @@ export default function ReportDetailPage() {
               rows={[
                 ["Ürün Kodları", reportProductCodesText(report)],
                 ["Ürün Ölçüleri", reportProductMeasurementsText(report)],
-                ["Ürün Item / Coil Kodu", text(report.product_item_coil_code)],
                 ["Ürün Türü", arrayText(report.product_types)]
               ]}
             />
@@ -571,9 +569,6 @@ function ReportEditForm({
               removeWorkItem={removeWorkItem}
               onUpdate={onUpdateWorkItem}
             />
-            <EditField label="Makina Marka Modeli">
-              <input onChange={(event) => onUpdate("machine_brand_model", event.target.value)} value={values.machine_brand_model} />
-            </EditField>
             <EditField label="Raporu Oluşturan">
               <div className="personnel-readonly">{text(report.created_by_name_snapshot)}</div>
             </EditField>
@@ -609,9 +604,6 @@ function ReportEditForm({
 
         <FormSection className="form-subsection" title="Ürün ve İşlem">
           <div className="form-grid assignment-grid">
-            <EditField label="Item / Coil Kodu">
-              <input onChange={(event) => onUpdate("product_item_coil_code", event.target.value)} value={values.product_item_coil_code} />
-            </EditField>
             <EditCheckPicker
               className="span-2 assignment-compact-picker"
               label="Ürün Türü"
@@ -898,11 +890,13 @@ function EditWorkItemsField({
 
   return (
     <div className="field span-4 product-items-field">
-      <label>Hat, Bant Kodu ve Ölçüler</label>
+      <label>Hat, Bant ve Ürün Detayları</label>
       <div className="product-item-list">
         <div className="product-item-row product-item-head report-edit-work-row">
           <span>Hat</span>
           <span>Bant Kodu</span>
+          <span>Makine Adı</span>
+          <span>Item / Coil Kodu</span>
           <span>En</span>
           <span>Boy</span>
           <span>Miktar</span>
@@ -921,6 +915,18 @@ function EditWorkItemsField({
               onChange={(event) => onUpdate(index, "belt_code", event.target.value)}
               placeholder="Bant kodu"
               value={item.belt_code}
+            />
+            <input
+              aria-label={`${index + 1}. satır makine adı`}
+              onChange={(event) => onUpdate(index, "machine_name", event.target.value)}
+              placeholder="Makine adı"
+              value={item.machine_name}
+            />
+            <input
+              aria-label={`${index + 1}. satır item veya coil kodu`}
+              onChange={(event) => onUpdate(index, "coil_code", event.target.value)}
+              placeholder="Item / Coil kodu"
+              value={item.coil_code}
             />
             <input
               aria-label={`${index + 1}. satır en`}
@@ -1170,7 +1176,9 @@ function reportToEditValues(report: ReportDetail, equipment: Equipment[]): Repor
       textValue(report.belt_name_snapshot),
       textValue(report.product_width),
       textValue(report.product_length),
-      textValue(report.product_quantity)
+      textValue(report.product_quantity),
+      textValue(report.machine_brand_model),
+      textValue(report.product_item_coil_code)
     )
   );
   const primaryWorkItem = compactWorkItems(workItems)[0] ?? workItems[0] ?? emptyWorkItem();
@@ -1185,7 +1193,7 @@ function reportToEditValues(report: ReportDetail, equipment: Equipment[]): Repor
     company_contact_phone: textValue(report.company_contact_phone),
     line_name: primaryWorkItem.line_name,
     work_items: workItems,
-    machine_brand_model: textValue(report.machine_brand_model),
+    machine_brand_model: primaryWorkItem.machine_name || textValue(report.machine_brand_model),
     customer_machine_name: textValue(report.customer_machine_name),
     belt_id: primaryWorkItem.belt_id || textValue(report.belt_id),
     visiting_personnel_ids: [],
@@ -1203,7 +1211,7 @@ function reportToEditValues(report: ReportDetail, equipment: Equipment[]): Repor
     product_width: primaryWorkItem.product_width || textValue(report.product_width),
     product_length: primaryWorkItem.product_length || textValue(report.product_length),
     product_quantity: primaryWorkItem.product_quantity || textValue(report.product_quantity),
-    product_item_coil_code: textValue(report.product_item_coil_code),
+    product_item_coil_code: primaryWorkItem.coil_code || textValue(report.product_item_coil_code),
     product_types: arrayValue(report.product_types) as ReportFormValues["product_types"],
     product_type_other: textValue(report.product_type_other),
     process_actions: arrayValue(report.process_actions) as ReportFormValues["process_actions"],
@@ -1250,7 +1258,7 @@ function reportUpdatePayload(values: ReportFormValues) {
     company_contact_phone: nullable(values.company_contact_phone),
     line_name: nullable(primaryWorkItem.line_name || values.line_name),
     work_items: workItems,
-    machine_brand_model: nullable(values.machine_brand_model),
+    machine_brand_model: nullable(primaryWorkItem.machine_name || values.machine_brand_model),
     customer_machine_name: nullable(values.customer_machine_name),
     vehicle_plate: nullable(values.vehicle_plate),
     vehicle_start_km: nullable(values.vehicle_start_km),
@@ -1265,7 +1273,7 @@ function reportUpdatePayload(values: ReportFormValues) {
     product_width: nullable(primaryWorkItem.product_width || values.product_width),
     product_length: nullable(primaryWorkItem.product_length || values.product_length),
     product_quantity: nullable(primaryWorkItem.product_quantity || values.product_quantity),
-    product_item_coil_code: nullable(values.product_item_coil_code),
+    product_item_coil_code: nullable(primaryWorkItem.coil_code || values.product_item_coil_code),
     product_types: values.product_types,
     product_type_other: nullable(values.product_type_other),
     process_actions: values.process_actions,
@@ -1306,6 +1314,8 @@ function emptyWorkItem(): ReportWorkItem {
     belt_id: "",
     belt_name: "",
     line_name: "",
+    machine_name: "",
+    coil_code: "",
     product_length: "",
     product_quantity: "",
     product_width: ""
@@ -1322,6 +1332,8 @@ function syncPrimaryWorkItem<T extends ReportFormValues>(values: T): T {
     ...values,
     belt_id: firstItem.belt_id,
     line_name: firstItem.line_name,
+    machine_brand_model: firstItem.machine_name,
+    product_item_coil_code: firstItem.coil_code,
     product_length: firstItem.product_length,
     product_quantity: firstItem.product_quantity,
     product_width: firstItem.product_width
@@ -1335,11 +1347,13 @@ function compactWorkItems(items: ReportWorkItem[]) {
       belt_id: item.belt_id.trim(),
       belt_code: item.belt_code.trim(),
       belt_name: item.belt_name.trim(),
+      machine_name: (item.machine_name ?? "").trim(),
+      coil_code: (item.coil_code ?? "").trim(),
       product_width: item.product_width.trim(),
       product_length: item.product_length.trim(),
       product_quantity: item.product_quantity.trim()
     }))
-    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+    .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 }
 
 function workItemsFromValue(
@@ -1350,21 +1364,25 @@ function workItemsFromValue(
   fallbackBeltName = "",
   fallbackProductWidth = "",
   fallbackProductLength = "",
-  fallbackProductQuantity = ""
+  fallbackProductQuantity = "",
+  fallbackMachineName = "",
+  fallbackCoilCode = ""
 ): ReportWorkItem[] {
   if (Array.isArray(value)) {
     const items = value
       .map((item) => toRecord(item))
-      .map((item) => ({
+      .map((item, index) => ({
         line_name: textValue(item.line_name),
         belt_id: textValue(item.belt_id),
         belt_code: textValue(item.belt_code),
         belt_name: textValue(item.belt_name),
+        machine_name: textValue(item.machine_name) || (index === 0 ? fallbackMachineName : ""),
+        coil_code: textValue(item.coil_code) || (index === 0 ? fallbackCoilCode : ""),
         product_width: textValue(item.product_width),
         product_length: textValue(item.product_length),
         product_quantity: textValue(item.product_quantity)
       }))
-      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.product_width || item.product_length || item.product_quantity);
+      .filter((item) => item.line_name || item.belt_id || item.belt_code || item.belt_name || item.machine_name || item.coil_code || item.product_width || item.product_length || item.product_quantity);
 
     if (items.length > 0) return items;
   }
@@ -1374,6 +1392,8 @@ function workItemsFromValue(
     belt_id: fallbackBeltId,
     belt_code: fallbackBeltCode,
     belt_name: fallbackBeltName,
+    machine_name: fallbackMachineName,
+    coil_code: fallbackCoilCode,
     product_width: fallbackProductWidth,
     product_length: fallbackProductLength,
     product_quantity: fallbackProductQuantity
@@ -1390,14 +1410,17 @@ function reportWorkItemsText(report: Record<string, unknown>) {
       textValue(report.belt_name_snapshot),
       textValue(report.product_width),
       textValue(report.product_length),
-      textValue(report.product_quantity)
+      textValue(report.product_quantity),
+      textValue(report.machine_brand_model),
+      textValue(report.product_item_coil_code)
     )
   );
 
   return items
     .map((item) => {
       const beltLabel = item.belt_code ? (item.belt_name ? `${item.belt_code} - ${item.belt_name}` : item.belt_code) : "";
-      return [item.line_name, beltLabel].filter(Boolean).join(" / ");
+      const machineAndCoil = [item.machine_name, item.coil_code].filter(Boolean).join(" / ");
+      return [item.line_name, beltLabel, machineAndCoil].filter(Boolean).join(" / ");
     })
     .filter(Boolean)
     .join(" • ") || "-";

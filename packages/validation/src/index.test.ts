@@ -27,6 +27,46 @@ describe("reportFormSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts machine and coil details for each product item", () => {
+    const result = reportFormSchema.safeParse({
+      ...base,
+      process_description: "İki farklı makinede kurulum yapıldı.",
+      work_items: [
+        {
+          line_name: "Hat 1",
+          belt_id: "",
+          belt_code: "B-101",
+          belt_name: "Ana Bant",
+          machine_name: "Paketleme Makinesi",
+          coil_code: "COIL-A",
+          product_width: "500",
+          product_length: "1200",
+          product_quantity: "1"
+        },
+        {
+          line_name: "Hat 2",
+          belt_id: "",
+          belt_code: "B-101",
+          belt_name: "Ana Bant",
+          machine_name: "Kesim Makinesi",
+          coil_code: "COIL-B",
+          product_width: "500",
+          product_length: "1200",
+          product_quantity: "1"
+        }
+      ]
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.work_items.map((item) => item.machine_name)).toEqual([
+        "Paketleme Makinesi",
+        "Kesim Makinesi"
+      ]);
+      expect(result.data.work_items.map((item) => item.coil_code)).toEqual(["COIL-A", "COIL-B"]);
+    }
+  });
+
   it("requires edge cut method when edge cut is selected", () => {
     const result = reportFormSchema.safeParse({
       ...base,

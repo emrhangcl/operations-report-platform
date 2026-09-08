@@ -82,6 +82,8 @@ export interface ExportReportRow {
     belt_id?: string | null;
     belt_code?: string | null;
     belt_name?: string | null;
+    machine_name?: string | null;
+    coil_code?: string | null;
     product_width?: string | null;
     product_length?: string | null;
     product_quantity?: string | null;
@@ -142,7 +144,9 @@ function workItemsText(report: ExportReportRow) {
       const beltCode = item.belt_code?.trim() ?? "";
       const beltName = item.belt_name?.trim() ?? "";
       const beltLabel = beltCode ? (beltName ? `${beltCode} - ${beltName}` : beltCode) : "";
-      return [lineName, beltLabel].filter(Boolean).join(" / ");
+      const machineName = item.machine_name?.trim() ?? "";
+      const coilCode = item.coil_code?.trim() ?? "";
+      return [lineName, beltLabel, machineName, coilCode].filter(Boolean).join(" / ");
     })
     .filter(Boolean);
 

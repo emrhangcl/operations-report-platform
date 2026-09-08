@@ -164,6 +164,8 @@ export interface ReportWorkItem {
   belt_id: string;
   belt_code: string;
   belt_name: string;
+  machine_name: string;
+  coil_code: string;
   product_width: string;
   product_length: string;
   product_quantity: string;

@@ -1457,7 +1457,7 @@ tr:last-child td {
   align-items: center;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(118px, 0.9fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(118px, 0.9fr) repeat(2, minmax(112px, 1fr)) repeat(3, minmax(72px, 0.7fr));
 }
 
 .product-item-head {
@@ -1471,7 +1471,7 @@ tr:last-child td {
 }
 
 .report-edit-work-row {
-  grid-template-columns: minmax(130px, 1fr) minmax(120px, 0.95fr) repeat(3, minmax(86px, 0.7fr)) auto;
+  grid-template-columns: minmax(110px, 1fr) minmax(100px, 0.9fr) repeat(2, minmax(108px, 0.9fr)) repeat(3, minmax(68px, 0.65fr)) auto;
 }
 
 .product-code-chip {
