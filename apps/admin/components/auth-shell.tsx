@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, LockKeyhole, ShieldCheck } from "lucide-react";
+import { CheckCircle2, LockKeyhole } from "lucide-react";
 import { ProductBrand } from "./logo";
 
 export function AuthShell({
@@ -23,7 +23,6 @@ export function AuthShell({
             <ProductBrand />
           </Link>
           <div className="public-auth-context-copy">
-            <span className="public-auth-eyebrow"><ShieldCheck aria-hidden size={16} /> Güvenli operasyon erişimi</span>
             <h2>Saha operasyonlarınızı tek merkezden yönetin.</h2>
             <p>Atamalar, servis raporları, müşteri onayları ve ekip takibi aynı güvenli çalışma alanında.</p>
             <ul>

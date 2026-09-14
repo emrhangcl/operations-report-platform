@@ -6,7 +6,6 @@ export default function PricingPage() {
     <MarketingShell>
       <section className="public-band">
         <div className="public-container public-section-heading">
-          <span>Paketler</span>
           <h1>Firmanızın kullanım dönemini seçin</h1>
           <p>Satışa açık paketler doğrudan sistemdeki plan kayıtlarından gösterilir.</p>
         </div>

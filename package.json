@@ -11,6 +11,7 @@
     "dev:mobile": "pnpm --filter @operations/mobile start",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
+    "design:check": "node scripts/impeccable-design-check.mjs",
     "test": "pnpm -r --if-present test",
     "build": "pnpm --filter @operations/admin build && pnpm --filter @operations/mobile typecheck",
     "create-admin": "tsx scripts/create-admin.ts"

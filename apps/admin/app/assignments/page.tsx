@@ -457,14 +457,14 @@ export default function AssignmentsPage() {
         <div className="assignment-form-sections">
           <FormSection title="Atama ve Firma">
             <div className="form-grid assignment-grid">
-              <FormField label="Atama Başlığı">
+              <FormField className="assignment-field-amber" label="Atama Başlığı">
                 <input
                   onChange={(event) => update("title", event.target.value)}
                   placeholder="Boş bırakılırsa firma ve hat adı kullanılır"
                   value={form.title}
                 />
               </FormField>
-              <FormField label="Atanacak Personel">
+              <FormField className="assignment-field-amber" label="Atanacak Personel">
                 <select
                   onChange={(event) => update("assigned_to_profile_id", event.target.value)}
                   value={form.assigned_to_profile_id}
@@ -477,14 +477,14 @@ export default function AssignmentsPage() {
                   ))}
                 </select>
               </FormField>
-              <FormField label="Planlanan Tarih">
+              <FormField className="assignment-field-amber" label="Planlanan Tarih">
                 <input
                   onChange={(event) => update("scheduled_date", event.target.value)}
                   type="date"
                   value={form.scheduled_date}
                 />
               </FormField>
-              <FormField label="Firma">
+              <FormField className="assignment-field-amber" label="Firma">
                 <select onChange={(event) => updateCompany(event.target.value)} value={form.company_id}>
                   <option value="">Firma seçin</option>
                   {companies.map((company) => (
@@ -512,7 +512,7 @@ export default function AssignmentsPage() {
 
           <FormSection title="Araç ve Ürün">
             <div className="form-grid assignment-grid">
-              <FormField label="Araç Plakası">
+              <FormField className="assignment-field-strong-border" label="Araç Plakası">
                 <select onChange={(event) => update("vehicle_plate", event.target.value)} value={form.vehicle_plate}>
                   <option value="">Plaka seçin</option>
                   {vehicles.map((vehicle) => (
@@ -520,7 +520,7 @@ export default function AssignmentsPage() {
                   ))}
                 </select>
               </FormField>
-              <FormField className="span-2" label="Kullanılacak Makine/Ekipman">
+              <FormField className="span-2 assignment-field-strong-border" label="Kullanılacak Makine/Ekipman">
                 <select
                   onChange={(event) => updateEquipment(event.target.value)}
                   value={form.used_equipment_ids[0] ?? ""}
@@ -681,7 +681,11 @@ export default function AssignmentsPage() {
                     </DataTableCell>
                     <DataTableCell>{assignment.scheduled_date ? formatDate(assignment.scheduled_date) : "-"}</DataTableCell>
                     <DataTableCell>
-                      <StatusBadge label={statusLabels[assignment.status]} tone={statusTone(assignment.status)} />
+                      <StatusBadge
+                        className={assignment.status === "IN_PROGRESS" ? "assignment-status-in-progress" : undefined}
+                        label={statusLabels[assignment.status]}
+                        tone={statusTone(assignment.status)}
+                      />
                     </DataTableCell>
                     <DataTableCell>{assignment.report_id ? "Rapor oluşturuldu" : "-"}</DataTableCell>
                     <DataTableCell>
@@ -1061,7 +1065,7 @@ function ContactFields({
   onUpdate: (index: number, key: keyof CompanyContactDraft, value: string) => void;
 }) {
   return (
-    <FormField className="span-2 contact-list-field" label="Yetkili Kişiler">
+    <FormField className="span-2 contact-list-field assignment-field-amber" label="Yetkili Kişiler">
       <div className="contact-list">
         {contacts.map((contact, index) => (
           <div className="contact-row" key={index}>

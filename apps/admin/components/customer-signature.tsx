@@ -25,7 +25,7 @@ export function SignaturePhotoPreview({ file, url, caption }: { file?: File; url
 }
 
 function SignatureDrawing({ strokes }: { strokes: Point[][] }) {
-  return <>{strokes.map((stroke, i) => <polyline key={i} points={stroke.map((point) => point.join(",")).join(" ")} fill="none" stroke="#172b4d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}</>;
+  return <>{strokes.map((stroke, i) => <polyline key={i} points={stroke.map((point) => point.join(",")).join(" ")} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}</>;
 }
 
 export function CustomerSignatureView({ signature, signedAt }: { signature: unknown; signedAt?: string | null }) {

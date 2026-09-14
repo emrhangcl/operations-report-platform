@@ -1,0 +1,770 @@
+/*
+ * Shared Frosted Technical skin.
+ * Loaded last so every web workflow inherits the public landing visual system
+ * without changing route behavior, authorization, validation, or data flow.
+ */
+
+:root {
+  color-scheme: dark;
+  --op-bg: oklch(0.196 0.014 259);
+  --op-bg-subtle: oklch(0.218 0.016 259);
+  --op-surface: oklch(0.246 0.018 259);
+  --op-surface-raised: oklch(0.272 0.02 259);
+  --op-surface-subtle: oklch(0.226 0.017 259);
+  --op-surface-muted: oklch(0.286 0.019 259);
+  --op-text: oklch(0.955 0.006 250);
+  --op-text-soft: oklch(0.86 0.012 250);
+  --op-text-muted: oklch(0.671 0.023 250);
+  --op-text-subtle: oklch(0.57 0.025 250);
+  --op-text-faint: oklch(0.57 0.025 250);
+  --op-border: oklch(0.332 0.021 258);
+  --op-border-strong: oklch(0.405 0.024 258);
+  --op-ring: oklch(0.775 0.152 71);
+  --op-primary: oklch(0.775 0.152 71);
+  --op-primary-hover: oklch(0.83 0.145 76);
+  --op-primary-soft: oklch(0.775 0.152 71 / 0.13);
+  --op-accent: oklch(0.775 0.152 71);
+  --op-accent-soft: oklch(0.775 0.152 71 / 0.13);
+  --op-success: oklch(0.79 0.12 160);
+  --op-success-soft: oklch(0.58 0.1 160 / 0.16);
+  --op-warning: oklch(0.82 0.14 76);
+  --op-warning-soft: oklch(0.68 0.14 76 / 0.16);
+  --op-danger: oklch(0.72 0.16 25);
+  --op-danger-hover: oklch(0.78 0.16 25);
+  --op-danger-soft: oklch(0.58 0.15 25 / 0.16);
+  --op-info: oklch(0.78 0.1 225);
+  --op-info-soft: oklch(0.58 0.1 225 / 0.16);
+  --op-font-sans: var(--source-font-body), ui-sans-serif, system-ui, sans-serif;
+  --op-shadow-1: 0 12px 28px -22px rgb(0 0 0 / 0.72);
+  --op-shadow-2: 0 26px 70px -44px rgb(0 0 0 / 0.9);
+  --op-shadow-overlay: 0 28px 80px -30px rgb(0 0 0 / 0.94);
+
+  --bg: var(--op-bg);
+  --surface: var(--op-surface);
+  --surface-soft: var(--op-surface-muted);
+  --surface-strong: var(--op-surface-subtle);
+  --text: var(--op-text);
+  --muted: var(--op-text-muted);
+  --line: var(--op-border);
+  --brand: var(--op-primary);
+  --brand-dark: var(--op-primary-hover);
+  --brand-soft: var(--op-primary-soft);
+  --accent: var(--op-accent);
+  --accent-warm: var(--op-warning);
+  --ink: var(--op-text-soft);
+  --ink-dark: var(--op-text);
+  --danger: var(--op-danger);
+  --danger-dark: var(--op-danger-hover);
+  --ok: var(--op-success);
+  --warn: var(--op-warning);
+  --shadow: var(--op-shadow-2);
+  --shadow-soft: var(--op-shadow-1);
+
+  --color-paper: var(--op-surface);
+  --color-cloud: var(--op-surface-muted);
+  --color-chalk: var(--op-bg-subtle);
+  --color-pebble: var(--op-border);
+  --color-mist: var(--op-border-strong);
+  --color-fog: var(--op-text-faint);
+  --color-stone: var(--op-text-muted);
+  --color-graphite: var(--op-text-soft);
+  --color-ink: var(--op-text);
+  --color-slate: var(--op-surface-raised);
+  --color-steel: var(--op-text-muted);
+  --color-signal-blue: var(--op-primary);
+  --color-electric-cobalt: var(--op-primary);
+}
+
+html,
+body {
+  background: var(--op-bg) !important;
+  color: var(--op-text) !important;
+  font-family: var(--op-font-sans) !important;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--op-primary) 32%, transparent);
+  color: var(--op-text);
+}
+
+* {
+  scrollbar-color: var(--op-border-strong) var(--op-bg);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: var(--op-bg); }
+*::-webkit-scrollbar-thumb { background: var(--op-border-strong); border: 2px solid var(--op-bg); border-radius: 999px; }
+
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline-color: var(--op-primary) !important;
+}
+
+/* Shared controls and work surfaces */
+.button,
+.owner-button:not(.owner-button-secondary):not(.owner-button-ghost):not(.owner-button-danger),
+.button.personnel-primary-action,
+.personnel-primary-action {
+  background: var(--op-primary) !important;
+  border-color: color-mix(in oklab, var(--op-primary) 62%, var(--op-border)) !important;
+  box-shadow: none !important;
+  color: var(--op-bg) !important;
+}
+
+.button:hover:not(:disabled),
+.owner-button:not(.owner-button-secondary):not(.owner-button-ghost):not(.owner-button-danger):hover,
+.button.personnel-primary-action:hover:not(:disabled),
+.personnel-primary-action:hover:not(:disabled) {
+  background: var(--op-primary-hover) !important;
+  border-color: var(--op-primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+.button.secondary,
+.button.subtle,
+.owner-button-secondary,
+.owner-button-ghost,
+.icon-button,
+.owner-icon-button,
+.contact-add-button {
+  background: transparent !important;
+  border-color: var(--op-border) !important;
+  box-shadow: none !important;
+  color: var(--op-text) !important;
+}
+
+.button.secondary:hover:not(:disabled),
+.button.subtle:hover:not(:disabled),
+.owner-button-secondary:hover:not(:disabled),
+.owner-button-ghost:hover:not(:disabled),
+.icon-button:hover:not(:disabled),
+.owner-icon-button:hover:not(:disabled) {
+  background: var(--op-surface-muted) !important;
+  border-color: var(--op-border-strong) !important;
+}
+
+.owner-button-danger,
+.owner-icon-button.danger {
+  background: var(--op-danger-soft) !important;
+  border-color: color-mix(in oklab, var(--op-danger) 45%, var(--op-border)) !important;
+  color: var(--op-danger) !important;
+}
+
+:where(input, textarea, select) {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+  caret-color: var(--op-primary);
+}
+
+:where(input, textarea)::placeholder { color: var(--op-text-faint) !important; opacity: 1; }
+:where(input, textarea, select):hover:not(:disabled) { border-color: var(--op-border-strong) !important; }
+:where(input, textarea, select):focus { border-color: var(--op-primary) !important; box-shadow: 0 0 0 3px var(--op-primary-soft) !important; }
+:where(input, textarea, select):disabled { background: var(--op-bg-subtle) !important; color: var(--op-text-faint) !important; }
+
+.card,
+.table-panel,
+.form-panel,
+.modal-card,
+.detail-section,
+.report-summary-card,
+.subscription-summary,
+.branding-upload-panel,
+.branding-preview-panel,
+.owner-panel,
+.owner-metric-card,
+.owner-plan-card,
+.owner-detail-tabs-panel,
+.owner-branding-panel,
+.owner-branding-preview,
+.owner-system-summary,
+.owner-modal-card,
+.personnel-section,
+.personnel-tile,
+.personnel-report-card,
+.personnel-choice-panel,
+.personnel-photo-card,
+.personnel-login-panel,
+.operations-focus,
+.operations-registers,
+.operations-support-grid > * {
+  background: var(--op-surface) !important;
+  border-color: var(--op-border) !important;
+  box-shadow: none !important;
+  color: var(--op-text) !important;
+}
+
+.page-header,
+.owner-page-header,
+.branding-section-heading,
+.owner-panel-heading,
+.detail-section-title,
+.operations-registers-heading {
+  border-color: var(--op-border) !important;
+}
+
+:is(.page-header, .owner-page-header, .branding-section-heading, .owner-panel-heading, .detail-section-title) h1,
+:is(.page-header, .owner-page-header, .branding-section-heading, .owner-panel-heading, .detail-section-title) h2,
+:is(.card, .form-panel, .owner-panel, .personnel-section, .personnel-tile) h2,
+:is(.card, .form-panel, .owner-panel, .personnel-section, .personnel-tile) h3 {
+  color: var(--op-primary) !important;
+}
+
+:is(.card, .form-panel, .owner-panel, .personnel-section, .personnel-tile) h2 {
+  font-size: var(--op-text-2xl) !important;
+}
+
+:is(.card, .form-panel, .owner-panel, .personnel-section, .personnel-tile) h3 {
+  font-size: var(--op-text-xl) !important;
+}
+
+:is(
+  .form-section > h2,
+  .form-subsection > h2,
+  .personnel-section > summary,
+  .personnel-section > h2,
+  .platform-panel-heading h2,
+  .owner-panel-heading h2,
+  .detail-section-title h2
+) {
+  color: var(--op-primary) !important;
+  font-size: var(--op-text-2xl) !important;
+  font-weight: 700 !important;
+}
+
+:is(
+  .field > label,
+  .field > span,
+  .personnel-field > span,
+  .personnel-field > label,
+  .auth-field > label,
+  .public-auth-panel .public-form > label,
+  .segmented-field legend,
+  .owner-form-grid label > span,
+  table th
+) {
+  color: var(--op-primary) !important;
+  font-size: var(--op-text-lg) !important;
+  font-weight: 700 !important;
+}
+
+:where(.page-header, .owner-page-header, .card, .form-panel, .owner-panel, .personnel-section, .personnel-tile) p,
+:where(.page-header, .owner-page-header, .card, .form-panel, .owner-panel, .personnel-section, .personnel-tile) small {
+  color: var(--op-text-muted) !important;
+}
+
+.message.info,
+.owner-message.info { background: var(--op-info-soft) !important; border-color: color-mix(in oklab, var(--op-info) 38%, var(--op-border)) !important; color: var(--op-info) !important; }
+.message.error,
+.owner-message.error { background: var(--op-danger-soft) !important; border-color: color-mix(in oklab, var(--op-danger) 38%, var(--op-border)) !important; color: var(--op-danger) !important; }
+.message.success,
+.owner-message.success { background: var(--op-success-soft) !important; border-color: color-mix(in oklab, var(--op-success) 38%, var(--op-border)) !important; color: var(--op-success) !important; }
+
+.table-panel,
+.owner-compact-table-wrap { border-color: var(--op-border) !important; background: var(--op-surface) !important; }
+
+:where(table, .owner-table) { color: var(--op-text) !important; }
+:where(table, .owner-table) thead,
+:where(table, .owner-table) th { background: var(--op-surface-subtle) !important; color: var(--op-primary) !important; }
+:where(table, .owner-table) th,
+:where(table, .owner-table) td { border-color: var(--op-border) !important; }
+:where(table, .owner-table) tbody tr:hover { background: var(--op-surface-muted) !important; }
+
+/* Admin and owner workspaces */
+.app-shell,
+.owner-shell,
+.enterprise-owner-shell,
+.content,
+.owner-main {
+  background: var(--op-bg) !important;
+  color: var(--op-text) !important;
+}
+
+.sidebar,
+.owner-sidebar.enterprise-sidebar {
+  background: oklch(0.174 0.014 259) !important;
+  border-right-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+}
+
+.sidebar .brand,
+.admin-sidebar-brand,
+.owner-brand {
+  border-bottom-color: var(--op-border) !important;
+}
+
+.sidebar .brand-symbol,
+.owner-brand .brand-symbol,
+.platform-topbar .brand-symbol,
+.brand-symbol {
+  background: var(--op-primary) !important;
+  color: var(--op-bg) !important;
+}
+
+.sidebar .brand-copy strong,
+.sidebar .organization-brand-copy strong,
+.owner-brand .brand-copy strong,
+.platform-topbar .brand-copy strong,
+.brand-lockup,
+.organization-brand-lockup { color: var(--op-text) !important; }
+
+.sidebar .brand-copy > span,
+.sidebar .organization-brand-copy span,
+.owner-brand .brand-copy > span,
+.platform-topbar .brand-copy > span,
+.brand-copy > span { color: var(--op-text-muted) !important; }
+
+.admin-workspace-card,
+.owner-workspace-label {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+}
+
+.admin-workspace-card > span,
+.owner-workspace-label > span {
+  background: var(--op-primary-soft) !important;
+  border-color: color-mix(in oklab, var(--op-primary) 38%, var(--op-border)) !important;
+  color: var(--op-primary) !important;
+}
+
+.nav a,
+.nav button,
+.owner-nav a,
+.owner-sidebar-footer a,
+.owner-sidebar-footer button { color: var(--op-text-muted) !important; }
+
+.nav a:hover,
+.nav button:hover,
+.owner-nav a:hover,
+.owner-sidebar-footer a:hover,
+.owner-sidebar-footer button:hover {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+}
+
+.nav a.active,
+.owner-nav a.active {
+  background: var(--op-primary-soft) !important;
+  border-color: color-mix(in oklab, var(--op-primary) 38%, var(--op-border)) !important;
+  box-shadow: inset 3px 0 0 var(--op-primary) !important;
+  color: var(--op-primary) !important;
+}
+
+.admin-topbar {
+  background: oklch(0.218 0.016 259 / 0.94) !important;
+  border-bottom-color: var(--op-border) !important;
+  backdrop-filter: blur(14px);
+}
+
+.admin-topbar h1 { color: var(--op-primary) !important; }
+.admin-account-context strong { color: var(--op-text) !important; }
+.admin-topbar span,
+.admin-account-context span { color: var(--op-text-muted) !important; }
+
+.admin-mobile-menu,
+.owner-mobile-menu {
+  background: var(--op-primary) !important;
+  border-color: var(--op-primary) !important;
+  color: var(--op-bg) !important;
+}
+
+.admin-sidebar-scrim,
+.owner-sidebar-scrim { background: rgb(0 0 0 / 0.68) !important; backdrop-filter: blur(3px); }
+
+.operations-focus-icon,
+.summary-icon,
+.owner-plan-icon,
+.owner-activity-icon,
+.owner-list-icon { background: var(--op-primary-soft) !important; color: var(--op-primary) !important; }
+
+.operations-focus-action,
+.owner-text-link,
+.owner-table-link,
+.owner-icon-link { color: var(--op-primary) !important; }
+
+.owner-progress { background: var(--op-surface-muted) !important; }
+.owner-progress span { background: var(--op-primary) !important; }
+
+/* Authentication: the landing page continues into the form without a theme reset. */
+.public-auth-page,
+.auth-page,
+.standalone-error {
+  background: var(--op-bg) !important;
+  color: var(--op-text) !important;
+}
+
+.public-auth-page::before {
+  background: color-mix(in oklab, var(--op-primary) 10%, transparent) !important;
+  filter: blur(120px);
+}
+
+.public-auth-layout { max-width: 80rem !important; }
+
+.public-auth-context {
+  background: transparent !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+}
+
+.public-auth-context-copy h2 { color: var(--op-text) !important; font-family: var(--source-font-display), ui-sans-serif, sans-serif !important; }
+.public-auth-context-copy > p,
+.public-auth-context-copy li { color: var(--op-text-muted) !important; }
+.public-auth-context-copy li svg { color: var(--op-primary) !important; }
+
+.public-auth-security-note {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text-muted) !important;
+}
+
+.public-auth-security-note svg { color: var(--op-primary) !important; }
+
+.public-auth-panel,
+.login-panel {
+  background: oklch(0.246 0.018 259 / 0.82) !important;
+  border-color: var(--op-border) !important;
+  border-radius: 1rem !important;
+  box-shadow: var(--op-shadow-2) !important;
+  color: var(--op-text) !important;
+  backdrop-filter: blur(16px);
+}
+
+.public-auth-panel > header h1,
+.login-panel h1 { color: var(--op-primary) !important; }
+.public-auth-panel > header p,
+.public-auth-panel > footer,
+.public-auth-panel > footer p { color: var(--op-text-muted) !important; }
+.public-auth-panel > footer { border-top-color: var(--op-border) !important; }
+.public-auth-panel a,
+.public-form a,
+.form-inline-link a { color: var(--op-primary) !important; }
+
+.auth-mode-tabs {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+}
+
+.auth-mode-tabs a { color: var(--op-text-muted) !important; }
+.auth-mode-tabs a:hover { color: var(--op-text) !important; }
+.auth-mode-tabs a[aria-current="page"],
+.auth-mode-tabs a.active {
+  background: var(--op-primary) !important;
+  box-shadow: none !important;
+  color: var(--op-bg) !important;
+}
+
+.auth-field > label,
+.public-auth-panel .public-form > label,
+.segmented-field legend {
+  color: var(--op-primary) !important;
+  font-size: var(--op-text-lg) !important;
+}
+
+.auth-input-shell input { background: var(--op-surface-subtle) !important; border-color: var(--op-border) !important; color: var(--op-text) !important; }
+.auth-input-icon,
+.auth-password-toggle { color: var(--op-text-muted) !important; }
+.auth-input-shell:focus-within .auth-input-icon,
+.auth-password-toggle:hover { color: var(--op-primary) !important; }
+
+.segmented-control {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+}
+
+.segmented-control button { color: var(--op-text-muted) !important; }
+.segmented-control button.active {
+  background: var(--op-primary-soft) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--op-primary) 42%, var(--op-border)) !important;
+  color: var(--op-primary) !important;
+}
+
+.consent-row,
+.password-strength p,
+.password-strength-heading span { color: var(--op-text-muted) !important; }
+.consent-row input { accent-color: var(--op-primary) !important; }
+.password-strength-track { background: var(--op-surface-muted) !important; }
+.password-strength-track span.passed { background: var(--op-primary) !important; }
+
+/* Personnel web workspace */
+.personnel-page,
+.personnel-center {
+  background: var(--op-bg) !important;
+  color: var(--op-text) !important;
+}
+
+.personnel-topbar,
+.personnel-back-header {
+  background: oklch(0.218 0.016 259 / 0.94) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+  backdrop-filter: blur(14px);
+}
+
+.personnel-hero {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+}
+
+.personnel-hero p,
+.personnel-section-note,
+.personnel-kv dt,
+.personnel-empty p,
+.personnel-report-card p { color: var(--op-text-muted) !important; }
+
+.personnel-tile.primary {
+  background: var(--op-primary-soft) !important;
+  border-color: color-mix(in oklab, var(--op-primary) 42%, var(--op-border)) !important;
+}
+
+.personnel-field > span,
+.personnel-field label {
+  color: var(--op-primary) !important;
+  font-size: var(--op-text-lg) !important;
+}
+.personnel-kv dd { color: var(--op-text-soft) !important; }
+
+.personnel-readonly,
+.personnel-empty,
+.personnel-photo-placeholder,
+.personnel-disabled-form {
+  background: var(--op-surface-subtle) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text-muted) !important;
+}
+
+.personnel-check-row,
+.personnel-toggle-row,
+.work-item-row,
+.product-item-row,
+.contact-row { border-color: var(--op-border) !important; }
+
+.product-code-chip,
+.section-number {
+  background: var(--op-primary-soft) !important;
+  border-color: color-mix(in oklab, var(--op-primary) 40%, var(--op-border)) !important;
+  color: var(--op-primary) !important;
+}
+
+/* Personnel report form: targeted readability corrections. */
+.personnel-report-form .personnel-field > span,
+.personnel-report-form .personnel-field > label,
+.personnel-report-form .personnel-section > summary {
+  color: var(--op-primary) !important;
+  font-size: var(--op-text-lg) !important;
+  font-weight: 600;
+}
+
+.personnel-report-form .personnel-section,
+.personnel-report-form .personnel-field input,
+.personnel-report-form .personnel-field select,
+.personnel-report-form .personnel-field textarea,
+.personnel-report-form .personnel-choice-panel > summary,
+.personnel-report-form .personnel-readonly {
+  border-width: 2px !important;
+}
+
+.personnel-report-form .personnel-footer-actions {
+  background: oklch(0.218 0.016 259 / 0.96) !important;
+  border: 2px solid var(--op-border) !important;
+  box-shadow: none !important;
+}
+
+/* Assignment form: screenshot-directed color and border emphasis. */
+.assignment-form .assignment-field-amber > label {
+  color: var(--op-primary) !important;
+}
+
+.assignment-form .contact-add-button {
+  background: var(--op-danger-soft) !important;
+  border-color: color-mix(in oklab, var(--op-danger) 58%, var(--op-border)) !important;
+  color: var(--op-danger-hover) !important;
+}
+
+.assignment-form .contact-add-button:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--op-danger-soft) 78%, var(--op-surface-muted)) !important;
+  border-color: var(--op-danger) !important;
+  color: var(--op-danger-hover) !important;
+}
+
+.assignment-form .assignment-field-strong-border > select {
+  border-width: 2px !important;
+  border-color: var(--op-border-strong) !important;
+}
+
+.assignment-status-in-progress {
+  color: var(--op-warning) !important;
+  font-size: var(--op-text-base) !important;
+  font-weight: 700;
+}
+
+/* Remaining public routes */
+.public-site {
+  --public-ink: var(--op-text);
+  --public-copy: var(--op-text-muted);
+  --public-muted: var(--op-text-subtle);
+  --public-line: var(--op-border);
+  --public-line-strong: var(--op-border-strong);
+  --public-canvas: var(--op-bg);
+  --public-surface: var(--op-surface);
+  --public-navy: oklch(0.174 0.014 259);
+  --public-blue: var(--op-primary);
+}
+
+.public-site,
+.public-site main,
+.public-band,
+.public-account-page,
+.legal-page,
+.public-status-page { background: var(--op-bg) !important; color: var(--op-text) !important; }
+
+.public-site .public-header,
+.public-site .public-footer {
+  background: oklch(0.218 0.016 259 / 0.96) !important;
+  border-color: var(--op-border) !important;
+  color: var(--op-text) !important;
+  backdrop-filter: blur(14px);
+}
+
+.public-header-inner { min-height: 4rem !important; }
+.public-route-tabs,
+.public-auth-actions { border-color: var(--op-border) !important; }
+.public-route-tabs a,
+.public-login-link,
+.public-footer a { color: var(--op-text-muted) !important; }
+.public-route-tabs a:hover,
+.public-login-link:hover,
+.public-footer a:hover { color: var(--op-text) !important; }
+.public-route-tabs a[aria-current="page"] { background: var(--op-primary-soft) !important; color: var(--op-primary) !important; }
+.public-menu-button { background: var(--op-surface) !important; border-color: var(--op-border) !important; color: var(--op-text) !important; }
+
+.public-site .public-band,
+.public-site .public-band-soft,
+.public-site .pricing-standalone,
+.public-page-intro,
+.public-cta-band { background: var(--op-bg-subtle) !important; border-color: var(--op-border) !important; }
+.public-site .public-band-dark { background: oklch(0.174 0.014 259) !important; }
+
+.public-site .public-brand .brand-copy strong,
+.public-auth-brand .brand-copy strong,
+.public-auth-brand .brand-lockup { color: var(--op-text) !important; }
+
+.public-site .public-brand .brand-copy > span,
+.public-auth-brand .brand-copy > span { color: var(--op-text-muted) !important; }
+
+.public-site :where(h1, h2, h3),
+.public-auth-page :where(h1, h2),
+.personnel-page :where(h1, h2, h3) {
+  font-family: var(--source-font-display), ui-sans-serif, sans-serif !important;
+}
+
+.public-site .workflow-list li > span,
+.public-site .feature-item > svg {
+  background: var(--op-primary-soft) !important;
+  border-color: color-mix(in oklab, var(--op-primary) 38%, var(--op-border)) !important;
+  color: var(--op-primary) !important;
+}
+
+.public-section-heading h1,
+.public-section-heading h2,
+.public-page-intro h1,
+.public-cta-band h2,
+.legal-page h1,
+.legal-page h2,
+.public-status-page h1 { color: var(--op-text) !important; }
+
+.public-section-heading p,
+.legal-page p,
+.legal-page li,
+.public-status-page p,
+.public-footer span { color: var(--op-text-muted) !important; }
+
+.public-section-heading > span,
+.public-page-intro > span,
+.public-cta-band span,
+.plan-code { color: var(--op-primary) !important; }
+
+.capability-ledger,
+.public-site .workflow-list li,
+.public-site .feature-item,
+.pricing-card,
+.public-empty {
+  background: var(--op-surface) !important;
+  border-color: var(--op-border) !important;
+  box-shadow: none !important;
+  color: var(--op-text) !important;
+}
+
+.capability-ledger h3,
+.public-site .workflow-list h3,
+.public-site .feature-item h3,
+.pricing-card h3,
+.pricing-card dd,
+.public-empty strong { color: var(--op-text) !important; }
+.capability-ledger p,
+.public-site .workflow-list p,
+.public-site .feature-item p,
+.pricing-card p,
+.pricing-card dt,
+.public-empty { color: var(--op-text-muted) !important; }
+.pricing-card dl div,
+.workflow-list li { border-color: var(--op-border) !important; }
+
+.subscription-status-line,
+.subscription-summary dl div,
+.billing-sections { border-color: var(--op-border) !important; }
+.subscription-summary dt { color: var(--op-text-muted) !important; }
+.subscription-summary dd { color: var(--op-text) !important; }
+
+.legal-draft-badge {
+  background: var(--op-warning-soft) !important;
+  border-color: color-mix(in oklab, var(--op-warning) 40%, var(--op-border)) !important;
+  color: var(--op-warning) !important;
+}
+
+.confirm-dialog-backdrop,
+.owner-modal { background: rgb(0 0 0 / 0.72) !important; backdrop-filter: blur(4px); }
+.confirm-dialog,
+.photo-lightbox-panel { background: var(--op-surface-raised) !important; border-color: var(--op-border) !important; color: var(--op-text) !important; }
+
+@media (max-width: 900px) {
+  .sidebar,
+  .owner-sidebar.enterprise-sidebar { background: oklch(0.174 0.014 259) !important; }
+
+  .public-auth-layout { gap: 1rem !important; }
+  .public-auth-context { background: var(--op-surface-subtle) !important; }
+}
+
+@media (max-width: 620px) {
+  .public-auth-page { padding: 0 !important; }
+  .public-auth-layout { gap: 0 !important; }
+  .public-auth-context {
+    background: oklch(0.174 0.014 259) !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--op-border) !important;
+    border-radius: 0 !important;
+    padding: 1rem !important;
+  }
+  .public-auth-context-copy,
+  .public-auth-security-note { display: none !important; }
+  .public-auth-panel {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-height: calc(100dvh - 4.5rem) !important;
+    padding: 1.25rem 1rem 2rem !important;
+  }
+
+  .admin-content-inner,
+  .owner-page { padding-inline: 0.75rem !important; }
+  .card,
+  .table-panel,
+  .form-panel,
+  .owner-panel,
+  .personnel-section { border-radius: 0.75rem !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button:hover:not(:disabled) { transform: none !important; }
+}

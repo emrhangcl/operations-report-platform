@@ -7,7 +7,6 @@ export default function ContactPage() {
       <section className="public-account-page contact-page">
         <Headphones aria-hidden size={32} />
         <div className="public-section-heading">
-          <span>İletişim</span>
           <h1>Satış ve Destek</h1>
           <p>Kurumsal destek e-postası, telefon ve çalışma saatleri yayın öncesinde şirket tarafından bu alana eklenmelidir.</p>
         </div>

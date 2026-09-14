@@ -8,6 +8,10 @@ node_modules
 **/.expo
 .vercel
 .playwright-cli
+.agents
+.codex
+.omx
+**/.impeccable/review
 artifacts
 coverage
 dist

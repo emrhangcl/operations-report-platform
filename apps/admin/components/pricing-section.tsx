@@ -53,7 +53,6 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
     <section className={standalone ? "public-band pricing-standalone" : "public-band public-band-soft"} id="paketler">
       <div className="public-container">
         <div className="public-section-heading">
-          <span>Paketler</span>
           <h2>Aylık veya yıllık kullanım</h2>
           <p>Yalnızca sistemde aktif ve satışa açık olarak tanımlanan gerçek paketler burada gösterilir.</p>
         </div>
@@ -75,7 +74,7 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
                 <div>
                   <span className="plan-code">{plan.code}</span>
                   <h3>{plan.name}</h3>
-                  <p>{plan.description || "Paket açıklaması henüz eklenmedi."}</p>
+                  <p>{plan.description || "Bu paketin kapsamı satışa açan ekip tarafından henüz yayınlanmadı."}</p>
                 </div>
                 <dl>
                   <div><dt>Aylık</dt><dd>{monthly ?? "Tanımlanmadı"}</dd></div>

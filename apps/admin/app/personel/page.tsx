@@ -1400,7 +1400,7 @@ function ReportForm({
         <div className="message error">Firma bulunamadı. Yetkili amirden firma eklemesini isteyin.</div>
       ) : null}
 
-      <fieldset className="personnel-disabled-form" disabled={readOnly || loading} hidden={reviewing} style={reviewing ? { display: "none" } : undefined}>
+      <fieldset className="personnel-disabled-form personnel-report-form" disabled={readOnly || loading} hidden={reviewing} style={reviewing ? { display: "none" } : undefined}>
       <details className="personnel-section" open>
         <summary><span className="section-number">1</span><span>Genel Bilgiler</span></summary>
         <div className="personnel-form-grid">

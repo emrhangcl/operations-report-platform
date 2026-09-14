@@ -84,9 +84,8 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeaderShell
-        eyebrow="Operasyon merkezi"
         title="Yönetim Paneli"
-        description="Güncel operasyon, rapor ve kayıt özeti."
+        description="Aktif işler, tamamlanmayı bekleyen kayıtlar ve organizasyon kapsamı."
         action={(
           <Link className="button" href="/assignments">
             <ClipboardCheck aria-hidden size={18} /> Montaj Ata
@@ -97,29 +96,64 @@ export default function DashboardPage() {
       {isLoading ? (
         <LoadingState label="Operasyon özeti hazırlanıyor..." />
       ) : (
-        <section aria-label="Operasyon metrikleri" className="grid stats">
-          <StatCard href="/reports" icon={FileText} label="Toplam Rapor" value={counts.totalReports} />
-          <StatCard href="/reports" icon={CalendarDays} label="Bu Ayki Raporlar" value={counts.monthlyReports} />
-          <StatCard href="/reports" icon={FileClock} label="Taslaklar" value={counts.drafts} />
-          <StatCard href="/assignments" icon={ClipboardCheck} label="Aktif Montajlar" value={counts.assignments} />
-          <StatCard href="/personnel" icon={Users} label="Personel" value={counts.personnel} />
-          <StatCard href="/companies" icon={Building2} label="Firma" value={counts.companies} />
-          <StatCard href="/lines" icon={GitBranch} label="Hat" value={counts.lines} />
-          <StatCard href="/vehicles" icon={Car} label="Araç" value={counts.vehicles} />
+        <section aria-label="Operasyon özeti" className="operations-dashboard">
+          <div className="operations-dashboard-main">
+            <Link className="operations-focus" href="/assignments">
+              <span className="operations-focus-icon"><ClipboardCheck aria-hidden size={22} /></span>
+              <span className="operations-focus-copy">
+                <span>Aktif montajlar</span>
+                <strong>{counts.assignments}</strong>
+                <small>Atanmış veya sahada devam eden işler</small>
+              </span>
+              <span className="operations-focus-action">Atamaları aç</span>
+            </Link>
+
+            <div className="operations-support-grid">
+              <Link href="/reports">
+                <CalendarDays aria-hidden size={19} />
+                <span><small>Bu ayki raporlar</small><strong>{counts.monthlyReports}</strong></span>
+              </Link>
+              <Link href="/reports">
+                <FileClock aria-hidden size={19} />
+                <span><small>Tamamlanmayı bekleyen taslaklar</small><strong>{counts.drafts}</strong></span>
+              </Link>
+            </div>
+          </div>
+
+          <aside className="operations-report-total">
+            <div>
+              <FileText aria-hidden size={20} />
+              <span>Rapor arşivi</span>
+            </div>
+            <strong>{counts.totalReports}</strong>
+            <p>Organizasyon kapsamında kayıtlı toplam rapor.</p>
+            <Link href="/reports">Rapor listesini aç</Link>
+          </aside>
+
+          <div className="operations-registers">
+            <div className="operations-registers-heading">
+              <h2>Operasyon altyapısı</h2>
+              <p>Atama ve rapor akışında kullanılan güncel kayıt kapsamı.</p>
+            </div>
+            <div className="operations-register-list">
+              <RegisterMetric href="/personnel" icon={Users} label="Personel" value={counts.personnel} />
+              <RegisterMetric href="/companies" icon={Building2} label="Firmalar" value={counts.companies} />
+              <RegisterMetric href="/lines" icon={GitBranch} label="Hatlar" value={counts.lines} />
+              <RegisterMetric href="/vehicles" icon={Car} label="Araçlar" value={counts.vehicles} />
+            </div>
+          </div>
         </section>
       )}
     </>
   );
 }
 
-function StatCard({ href, icon: Icon, label, value }: { href: string; icon: LucideIcon; label: string; value: number }) {
+function RegisterMetric({ href, icon: Icon, label, value }: { href: string; icon: LucideIcon; label: string; value: number }) {
   return (
-    <Link className="card stat-card" href={href}>
-      <span className="stat-icon"><Icon aria-hidden size={18} /></span>
-      <span className="stat-content">
-        <span className="stat-label">{label}</span>
-        <strong className="stat-value">{value}</strong>
-      </span>
+    <Link href={href}>
+      <Icon aria-hidden size={18} />
+      <span>{label}</span>
+      <strong>{value}</strong>
     </Link>
   );
 }

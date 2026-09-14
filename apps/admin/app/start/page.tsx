@@ -31,21 +31,19 @@ export default function StartPage() {
     <MarketingShell>
       <section className="public-band">
         <div className="public-container public-section-heading">
-          <span>Başlangıç</span>
           <h1>Operasyon çalışma alanınızı açın</h1>
           <p>Yeni firma kaydı oluşturun veya mevcut hesabınızla güvenli biçimde giriş yapın.</p>
         </div>
       </section>
-      <section className="public-band public-band-soft">
+      <section className="public-band public-band-soft public-action-section">
         <div className="public-container">
-          <div className="feature-grid start-options-grid">
+          <div className="public-action-list">
             {startOptions.map((option) => {
               const Icon = option.icon;
               return (
-                <article className="feature-item" key={option.href}>
-                  <Icon aria-hidden size={23} />
-                  <h2>{option.title}</h2>
-                  <p>{option.text}</p>
+                <article key={option.href}>
+                  <span><Icon aria-hidden size={21} /></span>
+                  <div><h2>{option.title}</h2><p>{option.text}</p></div>
                   <Link className="button secondary" href={option.href}>{option.action} <ArrowRight aria-hidden size={16} /></Link>
                 </article>
               );

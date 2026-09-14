@@ -1,0 +1,423 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-09T00:00:00+03:00",
+  "title": "Design System: Operasyon Portalı Admin",
+  "extensions": {
+    "colorMeta": {
+      "graphite": {
+        "role": "primary",
+        "displayName": "Graphite",
+        "sourceToken": "--op-bg",
+        "purpose": "Full-page canvas and continuity layer for every web route.",
+        "tonalRamp": [
+          "oklch(0.12 0.014 259)",
+          "oklch(0.16 0.014 259)",
+          "oklch(0.196 0.014 259)",
+          "oklch(0.28 0.014 259)",
+          "oklch(0.40 0.014 259)",
+          "oklch(0.58 0.014 259)",
+          "oklch(0.76 0.014 259)",
+          "oklch(0.94 0.014 259)"
+        ]
+      },
+      "panel": {
+        "role": "primary",
+        "displayName": "Panel",
+        "sourceToken": "--op-surface",
+        "purpose": "Standard dark working surface for cards, forms, tables, and public boards.",
+        "tonalRamp": [
+          "oklch(0.14 0.018 259)",
+          "oklch(0.19 0.018 259)",
+          "oklch(0.246 0.018 259)",
+          "oklch(0.34 0.018 259)",
+          "oklch(0.46 0.018 259)",
+          "oklch(0.62 0.018 259)",
+          "oklch(0.78 0.018 259)",
+          "oklch(0.94 0.018 259)"
+        ]
+      },
+      "line": {
+        "role": "primary",
+        "displayName": "Line",
+        "sourceToken": "--op-border",
+        "purpose": "Fine steel divider for structure, fields, navigation, tables, and ledgers.",
+        "tonalRamp": [
+          "oklch(0.16 0.021 258)",
+          "oklch(0.24 0.021 258)",
+          "oklch(0.332 0.021 258)",
+          "oklch(0.42 0.021 258)",
+          "oklch(0.54 0.021 258)",
+          "oklch(0.68 0.021 258)",
+          "oklch(0.82 0.021 258)",
+          "oklch(0.95 0.021 258)"
+        ]
+      },
+      "mist": {
+        "role": "primary",
+        "displayName": "Mist",
+        "sourceToken": "--op-text-muted",
+        "purpose": "Supporting copy, subdued metadata, captions, and inactive navigation text.",
+        "tonalRamp": [
+          "oklch(0.24 0.023 250)",
+          "oklch(0.36 0.023 250)",
+          "oklch(0.48 0.023 250)",
+          "oklch(0.671 0.023 250)",
+          "oklch(0.76 0.023 250)",
+          "oklch(0.84 0.023 250)",
+          "oklch(0.90 0.023 250)",
+          "oklch(0.96 0.023 250)"
+        ]
+      },
+      "signal": {
+        "role": "primary",
+        "displayName": "Signal",
+        "sourceToken": "--op-primary",
+        "purpose": "Amber action, focus, route state, progress, counters, and proof markers.",
+        "tonalRamp": [
+          "oklch(0.24 0.152 71)",
+          "oklch(0.36 0.152 71)",
+          "oklch(0.50 0.152 71)",
+          "oklch(0.64 0.152 71)",
+          "oklch(0.775 0.152 71)",
+          "oklch(0.86 0.122 71)",
+          "oklch(0.92 0.075 71)",
+          "oklch(0.96 0.035 71)"
+        ]
+      },
+      "ice": {
+        "role": "primary",
+        "displayName": "Ice",
+        "sourceToken": "--op-text",
+        "purpose": "Primary text, headings, lockups, and high-confidence operational values.",
+        "tonalRamp": [
+          "oklch(0.28 0.006 250)",
+          "oklch(0.40 0.006 250)",
+          "oklch(0.56 0.006 250)",
+          "oklch(0.70 0.006 250)",
+          "oklch(0.82 0.006 250)",
+          "oklch(0.90 0.006 250)",
+          "oklch(0.955 0.006 250)",
+          "oklch(0.99 0.003 250)"
+        ]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Success",
+        "sourceToken": "--op-success",
+        "purpose": "Completed, approved, constructive, and valid workflow states.",
+        "tonalRamp": [
+          "oklch(0.24 0.12 160)",
+          "oklch(0.36 0.12 160)",
+          "oklch(0.50 0.12 160)",
+          "oklch(0.64 0.12 160)",
+          "oklch(0.79 0.12 160)",
+          "oklch(0.86 0.09 160)",
+          "oklch(0.92 0.055 160)",
+          "oklch(0.96 0.03 160)"
+        ]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Warning",
+        "sourceToken": "--op-warning",
+        "purpose": "Subscription, draft, pending, grace, and caution states.",
+        "tonalRamp": [
+          "oklch(0.24 0.14 76)",
+          "oklch(0.38 0.14 76)",
+          "oklch(0.52 0.14 76)",
+          "oklch(0.68 0.14 76)",
+          "oklch(0.82 0.14 76)",
+          "oklch(0.88 0.10 76)",
+          "oklch(0.93 0.06 76)",
+          "oklch(0.97 0.03 76)"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Danger",
+        "sourceToken": "--op-danger",
+        "purpose": "Destructive, failed, invalid, irreversible, or blocked states.",
+        "tonalRamp": [
+          "oklch(0.22 0.16 25)",
+          "oklch(0.34 0.16 25)",
+          "oklch(0.46 0.16 25)",
+          "oklch(0.58 0.16 25)",
+          "oklch(0.72 0.16 25)",
+          "oklch(0.82 0.11 25)",
+          "oklch(0.91 0.06 25)",
+          "oklch(0.96 0.03 25)"
+        ]
+      },
+      "info": {
+        "role": "tertiary",
+        "displayName": "Info",
+        "sourceToken": "--op-info",
+        "purpose": "Informational system messages only.",
+        "tonalRamp": [
+          "oklch(0.24 0.1 225)",
+          "oklch(0.36 0.1 225)",
+          "oklch(0.50 0.1 225)",
+          "oklch(0.64 0.1 225)",
+          "oklch(0.78 0.1 225)",
+          "oklch(0.86 0.075 225)",
+          "oklch(0.92 0.045 225)",
+          "oklch(0.96 0.025 225)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Space Grotesk Display",
+        "purpose": "Public hero and authentication context headlines."
+      },
+      "headline": {
+        "displayName": "Space Grotesk Headline",
+        "purpose": "Public sections and major app headings where the surface can breathe."
+      },
+      "title": {
+        "displayName": "IBM Plex Sans Title",
+        "purpose": "Panels, tables, cards, forms, dialogs, shell headers, and compact product sections."
+      },
+      "body": {
+        "displayName": "IBM Plex Sans Body",
+        "purpose": "Dense task content, table cells, helper copy, report context, and normal UI text."
+      },
+      "label": {
+        "displayName": "IBM Plex Sans Label",
+        "purpose": "Navigation, field labels, button labels, account context, and operational metadata."
+      },
+      "technical": {
+        "displayName": "Technical Mark",
+        "purpose": "Status headers, plan codes, proof labels, and small public system marks."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-1",
+        "value": "0 12px 28px -22px rgb(0 0 0 / 0.72)",
+        "purpose": "Low dark lift for subtle stacked affordances."
+      },
+      {
+        "name": "shadow-2",
+        "value": "0 26px 70px -44px rgb(0 0 0 / 0.9)",
+        "purpose": "Public product shell, auth panel, and raised frosted panels."
+      },
+      {
+        "name": "overlay-shadow",
+        "value": "0 28px 80px -30px rgb(0 0 0 / 0.94)",
+        "purpose": "Dialogs, drawers, menus, and modal layers."
+      },
+      {
+        "name": "landing-product-lift",
+        "value": "0 30px 80px -40px rgba(0,0,0,0.8)",
+        "purpose": "First-viewport product proof shell."
+      },
+      {
+        "name": "floating-note-lift",
+        "value": "0 20px 50px -30px rgba(0,0,0,0.9)",
+        "purpose": "Small floating notes attached to the public product shell."
+      }
+    ],
+    "motion": [
+      {
+        "name": "source-standard",
+        "value": "200ms ease",
+        "purpose": "Public navigation and button color transitions."
+      },
+      {
+        "name": "op-fast",
+        "value": "120ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Immediate product-control feedback."
+      },
+      {
+        "name": "op-standard",
+        "value": "180ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Navigation, border, background, and color transitions."
+      },
+      {
+        "name": "op-slow",
+        "value": "240ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Drawer and slower shell movement; disabled under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "source-sm",
+        "value": "40rem"
+      },
+      {
+        "name": "source-md",
+        "value": "48rem"
+      },
+      {
+        "name": "source-lg",
+        "value": "64rem"
+      },
+      {
+        "name": "admin-drawer",
+        "value": "900px"
+      },
+      {
+        "name": "auth-compact",
+        "value": "620px"
+      },
+      {
+        "name": "admin-compact",
+        "value": "560px"
+      }
+    ],
+    "frost": [
+      {
+        "name": "landing-frost",
+        "value": "oklch(0.246 0.018 259 / 0.55)",
+        "purpose": "Sticky header, public product shell, plans, and CTA panels."
+      },
+      {
+        "name": "shell-frost",
+        "value": "oklch(0.218 0.016 259 / 0.94)",
+        "purpose": "Admin, owner, personnel, and public top bars."
+      },
+      {
+        "name": "auth-panel-frost",
+        "value": "oklch(0.246 0.018 259 / 0.82)",
+        "purpose": "Login and register working panels."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Signal Button",
+      "kind": "button",
+      "refersTo": "button-signal",
+      "description": "Primary amber action used for public CTAs and product commands.",
+      "html": "<button class=\"ds-signal-button\">Devam et</button>",
+      "css": ".ds-signal-button { display: inline-flex; min-height: 2.625rem; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid color-mix(in oklab, var(--source-signal, oklch(0.775 0.152 71)) 40%, transparent); border-radius: 0.75rem; background: var(--source-signal, oklch(0.775 0.152 71)); color: var(--source-graphite, oklch(0.196 0.014 259)); padding: 0.625rem 1.25rem; font: 600 0.875rem/1.2 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); transition: background-color 200ms ease, border-color 200ms ease, transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-signal-button:hover { background: var(--source-signal-hover, oklch(0.83 0.145 76)); border-color: var(--source-signal-hover, oklch(0.83 0.145 76)); transform: translateY(-1px); } .ds-signal-button:focus-visible { outline: 2px solid var(--source-signal, oklch(0.775 0.152 71)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary command that stays quiet on graphite and panel backgrounds.",
+      "html": "<button class=\"ds-outline-button\">İptal</button>",
+      "css": ".ds-outline-button { display: inline-flex; min-height: 2.625rem; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid var(--source-line, oklch(0.332 0.021 258)); border-radius: 0.75rem; background: transparent; color: var(--source-ice, oklch(0.955 0.006 250)); padding: 0.625rem 1.25rem; font: 500 0.875rem/1.2 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease; } .ds-outline-button:hover { border-color: color-mix(in oklab, var(--source-mist, oklch(0.671 0.023 250)) 60%, transparent); background: color-mix(in oklab, var(--source-panel, oklch(0.246 0.018 259)) 35%, transparent); } .ds-outline-button:focus-visible { outline: 2px solid var(--source-signal, oklch(0.775 0.152 71)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Dark operational field with visible amber focus and muted placeholder.",
+      "html": "<label class=\"ds-field\"><span>Firma adı</span><input value=\"Örnek Firma\" /></label>",
+      "css": ".ds-field { display: grid; gap: 0.375rem; color: var(--op-text-soft, oklch(0.86 0.012 250)); font: 500 0.8125rem/1.25 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-field input { width: 100%; min-height: 2.5rem; border: 1px solid var(--op-border, oklch(0.332 0.021 258)); border-radius: 0.5rem; background: var(--op-surface-subtle, oklch(0.226 0.017 259)); color: var(--op-text, oklch(0.955 0.006 250)); padding: 0.625rem 0.75rem; caret-color: var(--op-primary, oklch(0.775 0.152 71)); font: 400 0.875rem/1.5 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-field input:hover { border-color: var(--op-border-strong, oklch(0.405 0.024 258)); } .ds-field input:focus-visible { outline: 2px solid var(--op-primary, oklch(0.775 0.152 71)); outline-offset: 2px; box-shadow: 0 0 0 3px var(--op-primary-soft, oklch(0.775 0.152 71 / 0.13)); }"
+    },
+    {
+      "name": "Active Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-active",
+      "description": "Current route marker in the dark rail.",
+      "html": "<a class=\"ds-nav-active\" href=\"#\">Raporlar</a>",
+      "css": ".ds-nav-active { display: flex; min-height: 2.5rem; align-items: center; width: 100%; border: 1px solid color-mix(in oklab, var(--op-primary, oklch(0.775 0.152 71)) 38%, var(--op-border, oklch(0.332 0.021 258))); border-radius: 0.5rem; background: var(--op-primary-soft, oklch(0.775 0.152 71 / 0.13)); box-shadow: inset 3px 0 0 var(--op-primary, oklch(0.775 0.152 71)); color: var(--op-primary, oklch(0.775 0.152 71)); padding: 0 0.75rem; font: 500 0.8125rem/1.25 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); text-decoration: none; transition: background-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1), color 180ms cubic-bezier(0.2, 0.8, 0.2, 1); } .ds-nav-active:focus-visible { outline: 2px solid var(--op-primary, oklch(0.775 0.152 71)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "description": "Semantic status badge with text and color reinforcement.",
+      "html": "<span class=\"ds-status-badge\">Tamamlandı</span>",
+      "css": ".ds-status-badge { display: inline-flex; min-height: 1.5rem; align-items: center; border: 1px solid color-mix(in oklab, var(--op-success, oklch(0.79 0.12 160)) 38%, var(--op-border, oklch(0.332 0.021 258))); border-radius: 999px; background: var(--op-success-soft, oklch(0.58 0.1 160 / 0.16)); color: var(--op-success, oklch(0.79 0.12 160)); padding: 0.3125rem 0.625rem; font: 500 0.75rem/1.2 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); }"
+    },
+    {
+      "name": "Frosted Auth Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Login/register working panel that continues the landing-screen visual world.",
+      "html": "<section class=\"ds-auth-panel\"><header><p>Güvenli giriş</p><h2>Operasyon alanına girin</h2></header><div class=\"ds-auth-tabs\"><button>Giriş</button><button class=\"active\">Kayıt</button></div></section>",
+      "css": ".ds-auth-panel { display: grid; gap: 1rem; border: 1px solid var(--op-border, oklch(0.332 0.021 258)); border-radius: 1rem; background: oklch(0.246 0.018 259 / 0.82); box-shadow: var(--op-shadow-2, 0 26px 70px -44px rgb(0 0 0 / 0.9)); color: var(--op-text, oklch(0.955 0.006 250)); padding: 1.5rem; backdrop-filter: blur(16px); font-family: var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-auth-panel p { margin: 0; color: var(--op-primary, oklch(0.775 0.152 71)); font: 600 0.6875rem/1 var(--source-font-display, Space Grotesk, ui-sans-serif, sans-serif); letter-spacing: 0.14em; text-transform: uppercase; } .ds-auth-panel h2 { margin: 0.25rem 0 0; font: 600 1.5rem/1.2 var(--source-font-display, Space Grotesk, ui-sans-serif, sans-serif); } .ds-auth-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; border: 1px solid var(--op-border, oklch(0.332 0.021 258)); border-radius: 0.75rem; background: var(--op-surface-subtle, oklch(0.226 0.017 259)); padding: 0.25rem; } .ds-auth-tabs button { border: 0; border-radius: 0.5rem; background: transparent; color: var(--op-text-muted, oklch(0.671 0.023 250)); padding: 0.625rem 0.75rem; font: 500 0.8125rem/1.2 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-auth-tabs button.active { background: var(--op-primary, oklch(0.775 0.152 71)); color: var(--op-bg, oklch(0.196 0.014 259)); }"
+    },
+    {
+      "name": "Work Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Everyday bordered product panel for dashboards, forms, and report sections.",
+      "html": "<section class=\"ds-work-panel\"><h3>Aktif görevler</h3><p>Organizasyon kapsamındaki bekleyen işler ve son durumlar.</p></section>",
+      "css": ".ds-work-panel { display: grid; gap: 0.5rem; border: 1px solid var(--op-border, oklch(0.332 0.021 258)); border-radius: 0.75rem; background: var(--op-surface, oklch(0.246 0.018 259)); color: var(--op-text, oklch(0.955 0.006 250)); padding: 1rem; box-shadow: none; font-family: var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-work-panel h3 { margin: 0; font-size: 1.125rem; font-weight: 600; line-height: 1.25; } .ds-work-panel p { margin: 0; color: var(--op-text-muted, oklch(0.671 0.023 250)); font-size: 0.875rem; line-height: 1.5; }"
+    },
+    {
+      "name": "Data Table Panel",
+      "kind": "custom",
+      "description": "Scrollable bordered table container for dense operational records.",
+      "html": "<div class=\"ds-table-panel\"><table><thead><tr><th>Rapor</th><th>Durum</th></tr></thead><tbody><tr><td>OP-001</td><td>Tamamlandı</td></tr></tbody></table></div>",
+      "css": ".ds-table-panel { width: 100%; overflow-x: auto; border: 1px solid var(--op-border, oklch(0.332 0.021 258)); border-radius: 0.75rem; background: var(--op-surface, oklch(0.246 0.018 259)); color: var(--op-text, oklch(0.955 0.006 250)); } .ds-table-panel table { width: 100%; min-width: 28rem; border-collapse: collapse; font: 400 0.875rem/1.5 var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-table-panel th, .ds-table-panel td { border-bottom: 1px solid var(--op-border, oklch(0.332 0.021 258)); padding: 0.75rem; text-align: left; } .ds-table-panel th { background: var(--op-surface-subtle, oklch(0.226 0.017 259)); color: var(--op-text-soft, oklch(0.86 0.012 250)); font-weight: 600; } .ds-table-panel td { color: var(--op-text, oklch(0.955 0.006 250)); } .ds-table-panel tbody tr:hover { background: var(--op-surface-muted, oklch(0.286 0.019 259)); }"
+    },
+    {
+      "name": "Public Product Shell",
+      "kind": "custom",
+      "description": "Signature proof shell for the assignment-to-report workflow.",
+      "html": "<section class=\"ds-product-shell\"><div class=\"ds-product-card\"><header><span></span><strong>CANLI AKIŞ</strong></header><div class=\"ds-job-box\"><small>Atama</small><p>Firma, hat, bant ve sorumlu aynı kayıt içinde.</p></div><ol><li><span>1</span><p>Personel raporu tamamlar</p></li><li><span>2</span><p class=\"muted\">PDF ve Excel yetkiye göre paylaşılır</p></li></ol></div></section>",
+      "css": ".ds-product-shell { position: relative; border: 1px solid color-mix(in oklab, var(--source-line, oklch(0.332 0.021 258)) 70%, transparent); border-radius: 1rem; background: var(--source-frost, oklch(0.246 0.018 259 / 0.55)); padding: 0.75rem; box-shadow: 0 30px 80px -40px rgba(0,0,0,0.8); color: var(--source-ice, oklch(0.955 0.006 250)); backdrop-filter: blur(16px); font-family: var(--source-font-body, IBM Plex Sans, ui-sans-serif, system-ui, sans-serif); } .ds-product-shell::before { content: \"\"; position: absolute; top: 0; right: 0; left: 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--source-signal, oklch(0.775 0.152 71)) 55%, transparent), transparent); } .ds-product-card { overflow: hidden; border: 1px solid color-mix(in oklab, var(--source-line, oklch(0.332 0.021 258)) 60%, transparent); border-radius: 0.75rem; background: color-mix(in oklab, var(--source-panel, oklch(0.246 0.018 259)) 80%, transparent); } .ds-product-card header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in oklab, var(--source-line, oklch(0.332 0.021 258)) 60%, transparent); padding: 0.75rem 1rem; } .ds-product-card header span { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--source-signal, oklch(0.775 0.152 71)); } .ds-product-card header strong { color: var(--source-signal, oklch(0.775 0.152 71)); font: 600 0.6875rem/1 var(--source-font-display, Space Grotesk, ui-sans-serif, sans-serif); letter-spacing: 0.14em; } .ds-job-box { margin: 1rem; border: 1px solid color-mix(in oklab, var(--source-line, oklch(0.332 0.021 258)) 50%, transparent); border-radius: 0.5rem; background: color-mix(in oklab, var(--source-graphite, oklch(0.196 0.014 259)) 40%, transparent); padding: 0.75rem; } .ds-job-box small, .ds-product-card .muted { color: var(--source-mist, oklch(0.671 0.023 250)); } .ds-job-box p { margin: 0.25rem 0 0; font-size: 0.8125rem; line-height: 1.625; } .ds-product-card ol { display: grid; gap: 0.5rem; margin: 0; padding: 0 1rem 1rem; list-style: none; } .ds-product-card li { display: flex; align-items: center; gap: 0.625rem; font-size: 0.75rem; } .ds-product-card li span { display: grid; width: 1rem; height: 1rem; place-items: center; border-radius: 999px; background: color-mix(in oklab, var(--source-signal, oklch(0.775 0.152 71)) 15%, transparent); color: var(--source-signal, oklch(0.775 0.152 71)); font: 600 0.625rem/1 var(--source-font-display, Space Grotesk, ui-sans-serif, sans-serif); } .ds-product-card li p { margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Frosted Technical Operations",
+    "overview": "Operasyon Portalı Admin now belongs to the first-open landing screen's dark technical world. The system is graphite first: a low-glare operational canvas, translucent dark panels, fine steel borders, ice text, mist support copy, and amber signal for action, focus, route state, and proof. Every public, authentication, admin, owner, and personnel web surface should feel like one continuous operating environment rather than a jump between marketing and product skins.\n\nThe design should stay technical, compact, and calm. Frost is a material layer for sticky headers, authentication panels, drawers, dialogs, and the public product shell; it is not decorative glass. Product truth, role context, organization boundaries, report integrity, and permission state remain more important than atmosphere.",
+    "keyCharacteristics": [
+      "Graphite canvas with dark panel layering across public and authenticated routes.",
+      "Amber signal reserved for primary action, focus, route state, counters, proof markers, and active progress.",
+      "Ice text and mist support copy create hierarchy without returning to a light enterprise surface.",
+      "Space Grotesk is public/display voice; IBM Plex Sans is the operational UI and body voice.",
+      "Borders, translucent panels, blur, and restrained shadow build depth without decorative dashboard novelty.",
+      "Turkish operational copy stays direct, role-safe, tenant-aware, and grounded in real workflows."
+    ],
+    "rules": [
+      {
+        "name": "The First-Viewport Authority Rule",
+        "body": "New web surfaces inherit the landing page's graphite, panel, line, mist, signal, and ice world before local styling decisions.",
+        "section": "colors"
+      },
+      {
+        "name": "The Amber Signal Rule",
+        "body": "Signal is operational amber, not generic brand color; use it for state, action, focus, progress, and proof.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Reserve Rule",
+        "body": "Success, warning, danger, and info colors keep their workflow meaning and must not become decorative accents.",
+        "section": "colors"
+      },
+      {
+        "name": "The Split Font Rule",
+        "body": "Space Grotesk may lead public/display moments; IBM Plex Sans owns product UI and body text.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Light Reset Rule",
+        "body": "Typography changes must not be used to make authenticated workflows feel like a separate light enterprise product.",
+        "section": "typography"
+      },
+      {
+        "name": "The Frost Is Structure Rule",
+        "body": "Blur and translucency mark shell depth, overlays, and proof surfaces; they are not decoration for ordinary content.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Flat Work Panel Rule",
+        "body": "Daily operational panels stay border-led and shadowless unless they are actually stacked above the page.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do start every web surface from `frosted-system.css` and the landing-page `source-*` world.",
+      "Do use Space Grotesk for public/display moments and IBM Plex Sans for product UI/body.",
+      "Do keep organization, role, permission, read-only, report, return, and subscription context visible when it changes available actions.",
+      "Do preserve keyboard focus, skip links, semantic controls, touch targets, responsive reflow, and reduced-motion behavior.",
+      "Do represent loading, empty, error, success, warning, disabled, destructive, signed, returned, and read-only states explicitly.",
+      "Do verify dark surfaces at desktop and narrow web widths before shipping UI changes."
+    ],
+    "donts": [
+      "Don't reintroduce light enterprise pages, pale blue shells, or mismatched login/register themes.",
+      "Don't use amber as decoration; it must communicate action, focus, route state, progress, proof, or semantic warning.",
+      "Don't invent customer proof, testimonials, logos, activity feeds, metrics, records, or capabilities.",
+      "Don't turn ordinary work panels into floating novelty dashboards when borders and panel tones already establish structure.",
+      "Don't use semantic colors for non-semantic decoration.",
+      "Don't hide permissions, tenant context, validation, report immutability, or workflow constraints to simplify a composition."
+    ]
+  }
+}

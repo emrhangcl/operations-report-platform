@@ -20,6 +20,9 @@ const pdfMakeRoot = [
 const fontRoot = join(pdfMakeRoot, "fonts", "Roboto");
 let pdfMakeReady = false;
 let defaultLogoDataUrl: string | null | undefined;
+const PRINT_RULE_COLOR = "#7f8993";
+const PRINT_RULE_WIDTH = 0.75;
+const PRINT_BORDER_WIDTH = 1;
 
 export type PdfReportRow = Record<string, unknown> & {
   id: string;
@@ -256,7 +259,7 @@ function header(report: PdfReportRow, logoDataUrl?: string | null): Content {
 
 function divider(): Content {
   return {
-    canvas: [{ type: "line", x1: 0, y1: 0, x2: 794, y2: 0, lineColor: "#d8dde2", lineWidth: 0.8 }],
+    canvas: [{ type: "line", x1: 0, y1: 0, x2: 794, y2: 0, lineColor: PRINT_RULE_COLOR, lineWidth: 1.1 }],
     margin: [0, 0, 0, 5]
   };
 }
@@ -275,8 +278,8 @@ function compactSection(title: string, rows: Array<[string, string]>): Column {
           ])
         },
         layout: {
-          hLineColor: () => "#eef1f3",
-          hLineWidth: () => 0.35,
+          hLineColor: () => PRINT_RULE_COLOR,
+          hLineWidth: () => PRINT_RULE_WIDTH,
           paddingBottom: () => 1,
           paddingLeft: () => 2,
           paddingRight: () => 2,
@@ -304,8 +307,8 @@ function pairedCompactSection(title: string, rows: Array<[string, string, string
           ])
         },
         layout: {
-          hLineColor: () => "#eef1f3",
-          hLineWidth: () => 0.35,
+          hLineColor: () => PRINT_RULE_COLOR,
+          hLineWidth: () => PRINT_RULE_WIDTH,
           paddingBottom: () => 1.2,
           paddingLeft: () => 2,
           paddingRight: () => 2,
@@ -342,14 +345,14 @@ function workItemsTable(items: ReportWorkItem[]): Content {
     },
     layout: {
       fillColor: (rowIndex) => rowIndex === 0 ? "#f8f9fa" : null,
-      hLineColor: () => "#d8dde2",
-      hLineWidth: () => 0.45,
+      hLineColor: () => PRINT_RULE_COLOR,
+      hLineWidth: () => PRINT_RULE_WIDTH,
       paddingBottom: () => 1.6,
       paddingLeft: () => 3,
       paddingRight: () => 3,
       paddingTop: () => 1.6,
-      vLineColor: () => "#eef1f3",
-      vLineWidth: () => 0.35
+      vLineColor: () => PRINT_RULE_COLOR,
+      vLineWidth: () => PRINT_RULE_WIDTH
     }
   };
 }
@@ -369,10 +372,10 @@ function personnelRecordBox(name?: string): Column {
       }]]
     },
     layout: {
-      hLineColor: () => "#d8dde2",
-      hLineWidth: () => 0.6,
-      vLineColor: () => "#d8dde2",
-      vLineWidth: () => 0.6
+      hLineColor: () => PRINT_RULE_COLOR,
+      hLineWidth: () => PRINT_BORDER_WIDTH,
+      vLineColor: () => PRINT_RULE_COLOR,
+      vLineWidth: () => PRINT_BORDER_WIDTH
     }
   };
 }
@@ -428,18 +431,14 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
                       { text: dateTime(signedAt), style: "tableValue" }
                     ],
                     [
-                      { text: "Dönüş", style: "tableLabel" },
-                      { text: "KM ve giriş saati sonradan tamamlanır.", style: "muted" }
-                    ],
-                    [
                       { text: "Onay metni", style: "tableLabel" },
                       { text: CUSTOMER_SIGNATURE_CONSENT, style: "muted" }
                     ]
                   ]
                 },
                 layout: {
-                  hLineColor: () => "#eef1f3",
-                  hLineWidth: () => 0.35,
+                  hLineColor: () => PRINT_RULE_COLOR,
+                  hLineWidth: () => PRINT_RULE_WIDTH,
                   paddingBottom: () => 0.8,
                   paddingLeft: () => 2,
                   paddingRight: () => 2,
@@ -460,10 +459,10 @@ function customerSignatureBox(value: unknown, signedAt: unknown): Column {
 
 function signatureBoxLayout() {
   return {
-    hLineColor: () => "#d8dde2",
-    hLineWidth: () => 0.6,
-    vLineColor: () => "#d8dde2",
-    vLineWidth: () => 0.6
+    hLineColor: () => PRINT_RULE_COLOR,
+    hLineWidth: () => PRINT_BORDER_WIDTH,
+    vLineColor: () => PRINT_RULE_COLOR,
+    vLineWidth: () => PRINT_BORDER_WIDTH
   };
 }
 
@@ -472,12 +471,12 @@ function signatureCanvas(signature: CustomerSignature) {
   const padding = 4;
 
   return [
-    { type: "rect", x: 0, y: 0, w: 600 * scale + padding * 2, h: 240 * scale + padding * 2, lineColor: "#d8dde2", lineWidth: 0.6, color: "#fbfcfd" },
+    { type: "rect", x: 0, y: 0, w: 600 * scale + padding * 2, h: 240 * scale + padding * 2, lineColor: PRINT_RULE_COLOR, lineWidth: PRINT_BORDER_WIDTH, color: "#fbfcfd" },
     ...signature.strokes.map((stroke) => ({
       type: "polyline",
       points: stroke.map(([x, y]) => ({ x: x * scale + padding, y: y * scale + padding })),
-      lineColor: "#25282c",
-      lineWidth: 1
+      lineColor: "#171a1f",
+      lineWidth: 1.3
     }))
   ];
 }

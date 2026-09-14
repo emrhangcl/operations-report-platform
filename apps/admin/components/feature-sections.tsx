@@ -45,16 +45,15 @@ export function FeaturesSection({ heading = "Saha operasyonu için gereken temel
     <section className="public-band" id="ozellikler">
       <div className="public-container">
         <div className="public-section-heading">
-          <span>Tek merkez, net süreç</span>
           <h2>{heading}</h2>
           <p>Ekiplerin günlük işini hızlandıran, yöneticilere görünürlük sağlayan ve müşteri teslimini standartlaştıran bir operasyon altyapısı.</p>
         </div>
-        <div className="feature-grid">
+        <div className="capability-ledger">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <article className={`feature-item tone-${(index % 3) + 1}`} key={feature.title}>
-                <Icon aria-hidden size={23} />
+              <article key={feature.title}>
+                <span className={`capability-icon tone-${(index % 3) + 1}`}><Icon aria-hidden size={20} /></span>
                 <h3>{feature.title}</h3>
                 <p>{feature.text}</p>
               </article>
@@ -77,7 +76,6 @@ export function WorkflowSection() {
     <section className="public-band public-band-soft">
       <div className="public-container workflow-layout">
         <div className="public-section-heading">
-          <span>İş akışı</span>
           <h2>Her iş aynı net adımlarla ilerler.</h2>
           <p>Bilgi nerede, son durum ne, rapor hazır mı soruları için ayrı mesaj trafiğine gerek kalmaz.</p>
         </div>

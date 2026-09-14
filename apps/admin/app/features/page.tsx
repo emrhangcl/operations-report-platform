@@ -6,7 +6,6 @@ export default function FeaturesPage() {
     <MarketingShell>
       <section className="public-band">
         <div className="public-container public-section-heading">
-          <span>Özellikler</span>
           <h1>Montaj ve rapor sürecini tek yerde yönetin</h1>
           <p>Atama, saha girişi, kontrol ve çıktı alma adımlarını aynı kurumsal çalışma alanında tutun.</p>
         </div>

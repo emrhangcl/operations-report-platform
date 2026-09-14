@@ -85,6 +85,9 @@ const publicEnv = Object.fromEntries(
 );
 
 const isProduction = process.env.NODE_ENV === "production";
+// Dev-only allowance so Impeccable Live Mode can load.
+const __impeccableLiveDev =
+  process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
 const vercelObservabilityEnabled =
   process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true" || Boolean(process.env.VERCEL);
 const vercelScriptSource = vercelObservabilityEnabled ? " https://va.vercel-scripts.com" : "";
@@ -93,11 +96,11 @@ const vercelConnectSources = vercelObservabilityEnabled
   : "";
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}${vercelScriptSource}`,
+  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}${vercelScriptSource}${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https://*.supabase.co${supabaseImageSource}`,
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabaseConnectSources}${vercelConnectSources}`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabaseConnectSources}${vercelConnectSources}${__impeccableLiveDev}`,
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
