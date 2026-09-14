@@ -63,6 +63,27 @@ Database, RLS, storage, trigger, and function changes must be delivered as new S
 
 ## Pre-Deployment Checks
 
+### Organization management release (2026-09-14)
+
+Apply `20260914073235_platform_organization_reopen_and_delete.sql` before deploying the
+organization detail API, which reads `organizations.deletion_started_at`. The four
+organization status/deletion RPCs are callable only by `service_role` and independently
+validate the platform administrator actor. No new environment variables are needed.
+
+The platform detail page can reopen a closed organization without changing its
+subscription. Permanent deletion requires the exact organization slug and explicit
+consent. It freezes tenant access and persists the account/file manifest, purges report
+parents and tenant data transactionally, then uses Storage and Auth admin APIs, and
+finally removes the organization. A failed external cleanup keeps the organization
+closed and its audit trail available; the same action resumes cleanup. Own/platform
+accounts and accounts linked to another tenant block deletion before it starts.
+
+Run `supabase/tests/platform_organization_management.test.sql` against the migrated
+database. Its fixtures roll back, including its simulated Auth/Storage cleanup. Do not
+test a real organization DELETE as a production smoke check. Roll back application
+code if needed while keeping the additive migration and pending deletion manifests;
+never clear a deletion marker or reopen a partially purged tenant.
+
 Before deployment-related handoff:
 
 1. Run `pnpm install` if dependencies changed.

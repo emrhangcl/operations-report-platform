@@ -1,4 +1,5 @@
 import { z } from "zod";
+export { organizationDeletionSchema } from "./organization-management";
 export { customerSignatureSchema, CUSTOMER_SIGNATURE_CONSENT, type CustomerSignature } from "./customer-signature";
 
 export const productTypes = [

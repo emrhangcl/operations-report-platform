@@ -100,6 +100,9 @@ body {
   outline-color: var(--op-primary) !important;
 }
 
+.owner-delete-confirmation { display: grid; gap: 8px; margin-top: 16px; color: var(--op-text); }
+.owner-delete-confirmation code { overflow-wrap: anywhere; }
+
 /* Shared controls and work surfaces */
 .button,
 .owner-button:not(.owner-button-secondary):not(.owner-button-ghost):not(.owner-button-danger),

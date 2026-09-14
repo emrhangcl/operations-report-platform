@@ -148,6 +148,7 @@ export interface OrganizationDetail {
     timezone: string;
     updated_at: string;
     logo_url: string | null;
+    deletion_started_at: string | null;
   };
   members: OrganizationMember[];
   subscriptions: OrganizationSubscriptionHistory[];

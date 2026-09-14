@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui";
 import { platformRequest, PlatformRequestError, usePlatformDashboard } from "../../_components/platform-client";
@@ -28,10 +28,12 @@ type DetailTab = "users" | "payments" | "exports" | "logs";
 type PendingConfirmation =
   | { action: OrganizationAction; kind: "organization-action"; message: string }
   | { kind: "export"; message: string }
-  | { kind: "remove-logo"; message: string };
+  | { kind: "remove-logo"; message: string }
+  | { kind: "delete-organization"; message: string };
 
 export default function PlatformOrganizationDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { data: dashboard, reload: reloadDashboard } = usePlatformDashboard();
   const [detail, setDetail] = useState<OrganizationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,7 @@ export default function PlatformOrganizationDetailPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoInputKey, setLogoInputKey] = useState(0);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
+  const [deletionConfirmation, setDeletionConfirmation] = useState("");
 
   const loadDetail = useCallback(async () => {
     setError("");
@@ -150,14 +153,36 @@ export default function PlatformOrganizationDetailPage() {
   function confirmPendingAction() {
     const pending = pendingConfirmation;
     if (!pending) return;
+    if (pending.kind === "delete-organization" && deletionConfirmation.trim() !== detail?.organization.slug) return;
 
     setPendingConfirmation(null);
     if (pending.kind === "organization-action") {
       void runAction(pending.action);
     } else if (pending.kind === "export") {
       void requestExport();
+    } else if (pending.kind === "delete-organization") {
+      void deleteOrganization();
     } else {
       void removeLogo();
+    }
+  }
+
+  async function deleteOrganization() {
+    setBusy("delete");
+    setError("");
+    setNotice("");
+    try {
+      await platformRequest(`/api/platform/organizations/${params.id}`, {
+        method: "DELETE",
+        body: JSON.stringify({ confirmationSlug: deletionConfirmation.trim(), confirmDeletion: true })
+      });
+      await reloadDashboard();
+      router.replace("/platform/organizations");
+    } catch (deleteError) {
+      await loadDetail();
+      setError(deleteError instanceof Error ? deleteError.message : "Firma silinemedi. Tekrar deneyin.");
+    } finally {
+      setBusy("");
     }
   }
 
@@ -165,6 +190,7 @@ export default function PlatformOrganizationDetailPage() {
   if (!detail) return <div className="owner-page"><OwnerPageHeader description="Firma kaydı açılamadı." eyebrow="Müşteri yönetimi" title="Firma bulunamadı" />{error ? <div className="owner-message error">{error}</div> : null}</div>;
 
   const organization = detail.organization;
+  const deletionPending = Boolean(organization.deletion_started_at);
 
   return (
     <div className="owner-page">
@@ -194,11 +220,11 @@ export default function PlatformOrganizationDetailPage() {
           <div className="owner-action-row">
             {organization.status === "active" ? (
               <button className="owner-button owner-button-secondary" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "suspend" }, kind: "organization-action", message: "Bu firma askıya alınsın mı?" })} type="button"><PauseCircle aria-hidden size={17} /> Askıya al</button>
-            ) : organization.status === "suspended" ? (
-              <button className="owner-button owner-button-secondary" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "activate" }, kind: "organization-action", message: "Bu firma yeniden aktifleştirilsin mi?" })} type="button"><PlayCircle aria-hidden size={17} /> Aktifleştir</button>
+            ) : !deletionPending ? (
+              <button className="owner-button owner-button-secondary" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "activate" }, kind: "organization-action", message: "Bu firma yeniden açılsın mı? Mevcut aboneliği korunur; erişim abonelik durumuna göre belirlenir." })} type="button"><PlayCircle aria-hidden size={17} /> {organization.status === "closed" ? "Firmayı yeniden aç" : "Aktifleştir"}</button>
             ) : null}
             {currentSubscription?.status === "lifetime" ? (
-              <button className="owner-button owner-button-secondary" disabled={Boolean(busy) || !planId} onClick={() => setPendingConfirmation({ action: { action: "remove_lifetime", planId, billingInterval }, kind: "organization-action", message: "Ömür boyu erişim kaldırılıp seçili paket ödeme bekliyor durumuna alınsın mı?" })} type="button">Ömür boyu erişimi kaldır</button>
+              <button className="owner-button owner-button-secondary" disabled={Boolean(busy) || !planId || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "remove_lifetime", planId, billingInterval }, kind: "organization-action", message: "Ömür boyu erişim kaldırılıp seçili paket ödeme bekliyor durumuna alınsın mı?" })} type="button">Ömür boyu erişimi kaldır</button>
             ) : (
               <button className="owner-button" disabled={Boolean(busy) || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "grant_lifetime" }, kind: "organization-action", message: "Bu firmaya ömür boyu erişim verilsin mi?" })} type="button"><ShieldCheck aria-hidden size={17} /> Ömür boyu erişim ver</button>
             )}
@@ -209,9 +235,14 @@ export default function PlatformOrganizationDetailPage() {
             <button className="owner-button owner-button-secondary" disabled={Boolean(busy) || !planId || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "change_plan", planId, billingInterval }, kind: "organization-action", message: "Firmanın paketi değiştirilsin ve ödeme bekliyor durumuna alınsın mı?" })} type="button">Paketi değiştir</button>
           </div>
           <div className="owner-danger-zone">
-            <button className="owner-button owner-button-ghost" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ kind: "export", message: "Bu firma için veri dışa aktarma talebi oluşturulsun mu?" })} type="button"><Download aria-hidden size={17} /> Verileri dışa aktar</button>
+            <button className="owner-button owner-button-ghost" disabled={Boolean(busy) || deletionPending} onClick={() => setPendingConfirmation({ kind: "export", message: "Bu firma için veri dışa aktarma talebi oluşturulsun mu?" })} type="button"><Download aria-hidden size={17} /> Verileri dışa aktar</button>
             {organization.status !== "closed" ? <button className="owner-button owner-button-danger" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "start_closure" }, kind: "organization-action", message: "Kapatma süreci başlatılsın mı? Firma verileri silinmez." })} type="button"><XCircle aria-hidden size={17} /> Kapatma sürecini başlat</button> : null}
+            <button className="owner-button owner-button-danger" disabled={Boolean(busy)} onClick={() => {
+              setDeletionConfirmation("");
+              setPendingConfirmation({ kind: "delete-organization", message: "Firma, ona bağlı yönetici ve personel giriş hesapları, raporlar, fotoğraflar ve abonelik kayıtları kalıcı olarak silinir. Bu işlem geri alınamaz. Platform yöneticisi ve başka firmaya bağlı hesaplar korunur." });
+            }} type="button"><Trash2 aria-hidden size={17} /> {busy === "delete" ? "Firma ve hesaplar siliniyor…" : deletionPending ? "Silme işlemini tamamla" : "Firma ve hesaplarını sil"}</button>
           </div>
+          {deletionPending ? <p role="status">Kalıcı silme işlemi başladı. Firma erişimi kapalıdır. İşlem yarıda kaldıysa “Silme işlemini tamamla” ile tekrar deneyin.</p> : null}
         </OwnerPanel>
       </div>
 
@@ -230,6 +261,7 @@ export default function PlatformOrganizationDetailPage() {
               <input
                 accept="image/png,image/jpeg,image/webp"
                 key={logoInputKey}
+                disabled={Boolean(busy) || deletionPending}
                 onChange={(event) => {
                   const nextFile = event.target.files?.[0] ?? null;
                   if (nextFile && nextFile.size > 2 * 1024 * 1024) {
@@ -245,11 +277,11 @@ export default function PlatformOrganizationDetailPage() {
             </label>
             <small>PNG, JPG veya WebP. En fazla 2 MB.</small>
             <div className="owner-action-row">
-              <button className="owner-button" disabled={Boolean(busy) || !logoFile} type="submit">
+              <button className="owner-button" disabled={Boolean(busy) || deletionPending || !logoFile} type="submit">
                 {busy === "logo" ? <LoaderCircle aria-hidden className="spin" size={17} /> : <Upload aria-hidden size={17} />}
                 Logoyu kaydet
               </button>
-              {organization.logo_url ? <button className="owner-button owner-button-danger" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ kind: "remove-logo", message: "Bu firmanın logosu kaldırılsın mı?" })} type="button"><Trash2 aria-hidden size={17} /> Logoyu kaldır</button> : null}
+              {organization.logo_url ? <button className="owner-button owner-button-danger" disabled={Boolean(busy) || deletionPending} onClick={() => setPendingConfirmation({ kind: "remove-logo", message: "Bu firmanın logosu kaldırılsın mı?" })} type="button"><Trash2 aria-hidden size={17} /> Logoyu kaldır</button> : null}
             </div>
           </form>
         </div>
@@ -281,11 +313,13 @@ export default function PlatformOrganizationDetailPage() {
         ) : null}
       </OwnerPanel>
       <ConfirmDialog
-        description={pendingConfirmation?.message}
+        confirmDisabled={pendingConfirmation?.kind === "delete-organization" && deletionConfirmation.trim() !== organization.slug}
+        confirmLabel={pendingConfirmation?.kind === "delete-organization" ? "Kalıcı olarak sil" : "Onayla"}
+        description={<>{pendingConfirmation?.message}{pendingConfirmation?.kind === "delete-organization" ? <label className="owner-delete-confirmation"><span>Onay için firma kodunu yazın: <code>{organization.slug}</code></span><input autoComplete="off" onChange={(event) => setDeletionConfirmation(event.target.value)} spellCheck={false} value={deletionConfirmation} /></label> : null}</>}
         onCancel={() => setPendingConfirmation(null)}
         onConfirm={confirmPendingAction}
         open={Boolean(pendingConfirmation)}
-        title="İşlem onayı"
+        title={pendingConfirmation?.kind === "delete-organization" ? "Firma ve hesaplarını kalıcı olarak sil" : "İşlem onayı"}
       />
     </div>
   );

@@ -36,10 +36,13 @@ export async function platformRequest<T>(path: string, init?: RequestInit): Prom
 
   const method = (init?.method ?? "GET").toUpperCase();
   if (method !== "GET" || init?.body) {
-    const result = await executePlatformRequest<T>(path, init, token);
-    getCache.clear();
-    getRequests.clear();
-    return result;
+    try {
+      return await executePlatformRequest<T>(path, init, token);
+    } finally {
+      // A failed deletion can still have closed the tenant or removed accounts.
+      getCache.clear();
+      getRequests.clear();
+    }
   }
 
   const key = `${token}:${path}`;

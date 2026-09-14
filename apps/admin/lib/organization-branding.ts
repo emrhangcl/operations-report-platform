@@ -142,7 +142,7 @@ export async function uploadOrganizationLogo(
 
   const { data: organization, error: organizationError } = await service
     .from("organizations")
-    .select("name,logo_path")
+    .select("name,logo_path,deletion_started_at")
     .eq("id", organizationId)
     .maybeSingle();
 
@@ -151,6 +151,9 @@ export async function uploadOrganizationLogo(
   }
 
   const nextPath = `${organizationId}/${randomUUID()}.${detected.extension}`;
+  if (organization.deletion_started_at) {
+    throw new OrganizationBrandingError("Kalıcı silme işlemi başlayan firmanın logosu değiştirilemez.", 409);
+  }
   const uploadResult = await service.storage.from(ORGANIZATION_LOGO_BUCKET).upload(nextPath, buffer, {
     cacheControl: "3600",
     contentType: detected.mimeType,
@@ -164,9 +167,12 @@ export async function uploadOrganizationLogo(
   const updateResult = await service
     .from("organizations")
     .update({ logo_path: nextPath })
-    .eq("id", organizationId);
+    .eq("id", organizationId)
+    .is("deletion_started_at", null)
+    .select("id")
+    .maybeSingle();
 
-  if (updateResult.error) {
+  if (updateResult.error || !updateResult.data) {
     await service.storage.from(ORGANIZATION_LOGO_BUCKET).remove([nextPath]);
     throw new OrganizationBrandingError("Logo firma hesabına kaydedilemedi.", 500);
   }
@@ -191,20 +197,26 @@ export async function removeOrganizationLogo(
 ): Promise<OrganizationBrandingPayload> {
   const { data: organization, error: organizationError } = await service
     .from("organizations")
-    .select("name,logo_path")
+    .select("name,logo_path,deletion_started_at")
     .eq("id", organizationId)
     .maybeSingle();
 
   if (organizationError || !organization) {
     throw new OrganizationBrandingError("Firma bulunamadı.", 404);
   }
+  if (organization.deletion_started_at) {
+    throw new OrganizationBrandingError("Kalıcı silme işlemi başlayan firmanın logosu değiştirilemez.", 409);
+  }
 
   const updateResult = await service
     .from("organizations")
     .update({ logo_path: null })
-    .eq("id", organizationId);
+    .eq("id", organizationId)
+    .is("deletion_started_at", null)
+    .select("id")
+    .maybeSingle();
 
-  if (updateResult.error) {
+  if (updateResult.error || !updateResult.data) {
     throw new OrganizationBrandingError("Logo kaldırılamadı.", 500);
   }
 

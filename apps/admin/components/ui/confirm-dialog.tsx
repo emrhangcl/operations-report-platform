@@ -7,6 +7,7 @@ import { Button } from "./button";
 type ConfirmDialogProps = {
   cancelLabel?: string;
   confirmLabel?: string;
+  confirmDisabled?: boolean;
   description?: ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
@@ -17,6 +18,7 @@ type ConfirmDialogProps = {
 export function ConfirmDialog({
   cancelLabel = "Vazgeç",
   confirmLabel = "Onayla",
+  confirmDisabled = false,
   description,
   onCancel,
   onConfirm,
@@ -54,7 +56,7 @@ export function ConfirmDialog({
 
     const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
       "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
-    ) ?? []);
+    ) ?? []).filter((element) => !element.matches(":disabled"));
     if (!focusable || focusable.length === 0) return;
 
     const first = focusable.at(0);
@@ -90,7 +92,7 @@ export function ConfirmDialog({
           <Button onClick={onCancel} ref={cancelRef} variant="subtle">
             {cancelLabel}
           </Button>
-          <Button onClick={onConfirm} variant="danger">
+          <Button disabled={confirmDisabled} onClick={onConfirm} variant="danger">
             {confirmLabel}
           </Button>
         </div>

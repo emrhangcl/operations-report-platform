@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { organizationDeletionSchema } from "@operations/validation";
+import { deletePlatformOrganization, OrganizationDeletionError, organizationMutationError } from "../../../../../lib/organization-deletion";
 import { NextResponse } from "next/server";
 import { createOrganizationLogoUrl } from "../../../../../lib/organization-branding";
 import { requirePlatformAdmin } from "../../../../../lib/supabase-server";
@@ -6,6 +8,7 @@ import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../../lib/request-body";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const actionSchema = z.object({
   action: z.enum(["suspend", "activate", "start_closure", "grant_lifetime", "remove_lifetime", "change_plan"]),
@@ -36,7 +39,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const organizationResult = await auth.service
     .from("organizations")
-    .select("id,name,slug,status,legal_name,tax_identifier,billing_email,timezone,created_at,updated_at,closed_at,logo_path")
+    .select("id,name,slug,status,legal_name,tax_identifier,billing_email,timezone,created_at,updated_at,closed_at,deletion_started_at,logo_path")
     .eq("id", id)
     .maybeSingle();
 
@@ -168,8 +171,32 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   if (result.error) {
+    if (result.error.message === "organization_deletion_pending") {
+      const error = organizationMutationError(result.error);
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     return NextResponse.json({ message: "Platform işlemi uygulanamadı." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, result: result.data });
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimited = enforceRateLimit(request, "platform-organization-delete");
+  if (rateLimited) return rateLimited;
+  const auth = await requirePlatformAdmin(request);
+  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: 403 });
+  const id = await getOrganizationId(params);
+  if (!id) return NextResponse.json({ message: "Firma kimliği geçersiz." }, { status: 400 });
+  const body = await readJsonBody(request, 8 * 1024);
+  if (!body.ok) return NextResponse.json({ message: "Geçerli bir silme onayı gönderin." }, { status: body.status });
+  const parsed = organizationDeletionSchema.safeParse(body.value);
+  if (!parsed.success) return NextResponse.json({ message: "Silme onayı eksik veya geçersiz." }, { status: 400 });
+  try {
+    const result = await deletePlatformOrganization(auth.service, id, parsed.data.confirmationSlug, auth.userId);
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    if (error instanceof OrganizationDeletionError) return NextResponse.json({ message: error.message }, { status: error.status });
+    return NextResponse.json({ message: "Firma silinemedi. Silme işlemini tekrar deneyin." }, { status: 503 });
+  }
 }
