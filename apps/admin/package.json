@@ -7,31 +7,34 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3",
+    "@operations/data-client": "workspace:*",
     "@operations/payments": "workspace:*",
     "@operations/shared": "workspace:*",
     "@operations/types": "workspace:*",
     "@operations/validation": "workspace:*",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
     "exceljs": "^4.4.0",
     "lucide-react": "^0.468.0",
     "next": "^15.5.23",
     "pdfmake": "^0.3.11",
+    "pg": "^8.23.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "server-only": "^0.0.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@types/pdfmake": "^0.3.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.6"
   }
 }

@@ -32,7 +32,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import { getBrowserClient } from "../../lib/browser-client";
 
 type AssignmentForm = {
   title: string;
@@ -156,16 +156,16 @@ export default function AssignmentsPage() {
     [belts]
   );
   async function loadLookups() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
 
     const [companyRows, beltRows, lineRows, vehicleRows, equipmentRows, personnelRows] = await Promise.all([
-      supabase.from("companies").select("*").eq("is_active", true).order("name"),
-      supabase.from("belts").select("*").eq("is_active", true).order("code"),
-      supabase.from("company_lines").select("*").order("name"),
-      supabase.from("vehicles").select("*").order("plate"),
-      supabase.from("equipment").select("*").eq("is_active", true).order("name"),
-      supabase
+      db.from("companies").select("*").eq("is_active", true).order("name"),
+      db.from("belts").select("*").eq("is_active", true).order("code"),
+      db.from("company_lines").select("*").order("name"),
+      db.from("vehicles").select("*").order("plate"),
+      db.from("equipment").select("*").eq("is_active", true).order("name"),
+      db
         .from("profiles")
         .select("*")
         .eq("role", "PERSONNEL")
@@ -182,10 +182,10 @@ export default function AssignmentsPage() {
   }
 
   async function loadAssignments() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("installation_assignments")
       .select("*")
       .order("created_at", { ascending: false })
@@ -339,8 +339,8 @@ export default function AssignmentsPage() {
 
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
 
       const primaryWorkItem = compactWorkItems(form.work_items)[0] ?? emptyWorkItem();
       const payload = {
@@ -355,8 +355,8 @@ export default function AssignmentsPage() {
       };
 
       const request = editingId
-        ? supabase.from("installation_assignments").update(payload).eq("id", editingId)
-        : supabase.from("installation_assignments").insert(payload);
+        ? db.from("installation_assignments").update(payload).eq("id", editingId)
+        : db.from("installation_assignments").insert(payload);
 
       const { error } = await request;
 
@@ -390,10 +390,10 @@ export default function AssignmentsPage() {
     setLoading(true);
     setMessage("");
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
 
-      const { error } = await supabase
+      const { error } = await db
         .from("installation_assignments")
         .update({ status })
         .eq("id", assignment.id);
@@ -415,10 +415,10 @@ export default function AssignmentsPage() {
     setLoading(true);
     setMessage("");
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
 
-      const { error } = await supabase
+      const { error } = await db
         .from("installation_assignments")
         .delete()
         .eq("id", assignment.id);

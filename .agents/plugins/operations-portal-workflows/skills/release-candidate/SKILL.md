@@ -20,7 +20,7 @@ Always read:
 Read additional sources when relevant:
 
 - `docs/SECURITY.md` and `../security-review/SKILL.md` for security-sensitive changes
-- `docs/DATABASE.md` and `../database-migration/SKILL.md` for Supabase, schema, RLS, storage, migration, or database access changes
+- `docs/DATABASE.md` and `../database-migration/SKILL.md` for schema, RLS, storage, migration, or database access changes
 - `../performance-review/SKILL.md` for changed performance-sensitive areas
 
 ## Orchestration Rules
@@ -39,7 +39,7 @@ Read additional sources when relevant:
 1. Repository state: inspect git status, final diff or relevant commit range, uncommitted files, untracked files, and unrelated changes.
 2. Code review: apply code-review principles with focus on correctness, regressions, error handling, deleted safeguards, changed callers, incomplete work, and test coverage.
 3. Security: apply security-review principles where relevant, especially authn, authz, tenant isolation, RLS, server-only secrets, API exposure, storage, exports, and sensitive data.
-4. Database and deployment: inspect new Supabase migrations, RLS changes, schema compatibility, migration ordering, environment variable changes, backwards compatibility, rollout ordering, and rollback or mitigation concerns.
+4. Database and deployment: inspect new database migrations, RLS changes, schema compatibility, migration ordering, environment variable changes, backwards compatibility, rollout ordering, and rollback or mitigation concerns.
 5. Performance: apply performance-review only to changed performance-sensitive areas. Do not report speculative micro-optimizations.
 6. Verification gate: use `docs/TESTING.md` and `docs/DEPLOYMENT.md` to run appropriate typecheck, lint, tests, production build, migration checks, and targeted smoke checks.
 7. Failure classification: differentiate failures caused by current changes, pre-existing failures, and unverified areas. Do not hide existing failures.

@@ -5,7 +5,7 @@ import { Building2, CalendarDays, Car, ClipboardCheck, FileClock, FileText, GitB
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Alert, LoadingState, PageHeaderShell } from "../../components/ui";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import { getBrowserClient } from "../../lib/browser-client";
 
 interface DashboardCounts {
   totalReports: number;
@@ -35,12 +35,12 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) {
+    const db = getBrowserClient();
+    if (!db) {
       setIsLoading(false);
       return;
     }
-    const client = supabase;
+    const client = db;
 
     async function load() {
       const today = new Date();

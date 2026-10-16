@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
+import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type PersonnelForm = {
   first_name: string;
@@ -51,9 +51,9 @@ export default function PersonnelPage() {
   const [pendingDelete, setPendingDelete] = useState<Profile | null>(null);
 
   async function load() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    const { data, error } = await supabase
+    const db = getBrowserClient();
+    if (!db) return;
+    const { data, error } = await db
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
@@ -69,11 +69,7 @@ export default function PersonnelPage() {
   }, []);
 
   async function authHeaders() {
-    const supabase = getBrowserSupabase();
-    const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : undefined;
+    return scopeHeaders("admin");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -88,11 +84,11 @@ export default function PersonnelPage() {
 
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
 
       if (editingId) {
-        const { error } = await supabase
+        const { error } = await db
           .from("profiles")
           .update({
             first_name: parsed.data.first_name,
@@ -124,7 +120,7 @@ export default function PersonnelPage() {
         if (!response.ok) {
           setMessage("Personel hesabı oluşturulamadı.");
         } else {
-          clearSupabaseReadCache();
+          clearReadCache();
         }
       }
 
@@ -151,7 +147,7 @@ export default function PersonnelPage() {
         setMessage(body?.message ?? "Personel silinemedi.");
         return;
       }
-      clearSupabaseReadCache();
+      clearReadCache();
       await load();
       setMessage("Personel silindi.");
     } finally {
@@ -170,10 +166,11 @@ export default function PersonnelPage() {
       },
       body: JSON.stringify({ email: profile.email })
     });
+    const body = await response.json().catch(() => null) as { action_link?: string | null; message?: string } | null;
     setMessage(
-      response.ok
-        ? "Şifre sıfırlama bağlantısı üretildi. Supabase e-posta ayarlarınızı kontrol edin."
-        : "Şifre sıfırlama işlemi başlatılamadı."
+      response.ok && body?.action_link
+        ? `Şifre sıfırlama bağlantısı üretildi (60 dakika geçerli). Personelle güvenli bir kanaldan paylaşın: ${body.action_link}`
+        : body?.message ?? "Şifre sıfırlama işlemi başlatılamadı."
     );
     setLoading(false);
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createReportsWorkbook, type ExportReportRow } from "@operations/shared";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
-import { requireAdmin } from "../../../../../lib/supabase-server";
+import { requireAdmin } from "../../../../../lib/server/guards";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const admin = await requireAdmin(request, "read");
   if (!admin.ok) {
-    return NextResponse.json({ message: admin.message }, { status: 403 });
+    return NextResponse.json({ message: admin.message }, { status: admin.status });
   }
 
   const url = new URL(request.url);

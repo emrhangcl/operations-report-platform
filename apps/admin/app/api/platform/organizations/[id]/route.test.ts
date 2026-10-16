@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ requirePlatformAdmin: vi.fn(), deletePlatformOrganization: vi.fn() }));
 vi.mock("server-only", () => ({}));
-vi.mock("../../../../../lib/supabase-server", () => ({ requirePlatformAdmin: mocks.requirePlatformAdmin }));
+vi.mock("../../../../../lib/server/guards", () => ({ requirePlatformAdmin: mocks.requirePlatformAdmin }));
 vi.mock("../../../../../lib/rate-limit", () => ({ enforceRateLimit: () => null }));
 vi.mock("../../../../../lib/organization-branding", () => ({ createOrganizationLogoUrl: vi.fn() }));
 vi.mock("../../../../../lib/organization-deletion", async () => ({ ...await vi.importActual<object>("../../../../../lib/organization-deletion"), deletePlatformOrganization: mocks.deletePlatformOrganization }));
@@ -15,7 +15,7 @@ const params = { params: Promise.resolve({ id }) };
 describe("organization platform administration", () => {
   beforeEach(() => { vi.clearAllMocks(); mocks.requirePlatformAdmin.mockResolvedValue({ ok: true, userId: "actor", service: { rpc } }); mocks.deletePlatformOrganization.mockResolvedValue({ deletedAccounts: 2 }); });
   it("rejects an ordinary tenant user before deletion", async () => {
-    mocks.requirePlatformAdmin.mockResolvedValue({ ok: false, message: "Platform yöneticisi yetkisi gerekli." });
+    mocks.requirePlatformAdmin.mockResolvedValue({ ok: false, message: "Platform yöneticisi yetkisi gerekli.", status: 403 });
     expect((await DELETE(request({ confirmationSlug: "company", confirmDeletion: true }), params)).status).toBe(403);
     expect(mocks.deletePlatformOrganization).not.toHaveBeenCalled();
   });

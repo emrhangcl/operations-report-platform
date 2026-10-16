@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-vi.mock("../../../lib/supabase-browser", () => ({ getBrowserSupabase: () => ({ auth: { getSession: async () => ({ data: { session: { access_token: "test-session" } } }) } }) }));
+vi.mock("../../../lib/browser-client", () => ({ scopeHeaders: () => ({ "X-Auth-Scope": "admin" }) }));
 import { platformRequest } from "./platform-client";
 afterEach(() => vi.unstubAllGlobals());
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrganizationBranding, OrganizationBrandingError } from "../../../../lib/organization-branding";
 import { enforceRateLimit } from "../../../../lib/rate-limit";
-import { requireActiveProfile } from "../../../../lib/supabase-server";
+import { requireActiveProfile } from "../../../../lib/server/guards";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const auth = await requireActiveProfile(request, "read");
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   try {

@@ -3,104 +3,43 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const publicEnvKeys = new Set([
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS"
-]);
 
-function loadProjectEnv() {
+// Yerel kurulum tek bir kok .env kullanir; burada yalnizca guvenlik basliklarini etkileyen
+// APP_URL okunur. Sirlar istemci paketine hic tasinmaz.
+function readProjectEnv(name) {
+  if (process.env[name] !== undefined) return process.env[name];
   const envPath = resolve(projectRoot, ".env");
+  if (!existsSync(envPath)) return undefined;
 
-  if (!existsSync(envPath)) {
-    return;
-  }
-
-  const envFile = readFileSync(envPath, "utf8");
-
-  for (const rawLine of envFile.split(/\r?\n/)) {
+  for (const rawLine of readFileSync(envPath, "utf8").split(/\r?\n/)) {
     const line = rawLine.trim();
-
-    if (!line || line.startsWith("#")) {
-      continue;
-    }
-
+    if (!line || line.startsWith("#")) continue;
     const entry = line.startsWith("export ") ? line.slice("export ".length).trimStart() : line;
     const separatorIndex = entry.indexOf("=");
-
-    if (separatorIndex <= 0) {
-      continue;
-    }
-
-    const key = entry.slice(0, separatorIndex).trim();
-
-    if (
-      !publicEnvKeys.has(key) ||
-      !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ||
-      process.env[key] !== undefined
-    ) {
-      continue;
-    }
-
+    if (separatorIndex <= 0 || entry.slice(0, separatorIndex).trim() !== name) continue;
     let value = entry.slice(separatorIndex + 1).trim();
-
-    if (
-      (value.startsWith("\"") && value.endsWith("\"")) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-
-    process.env[key] = value;
+    return value;
   }
+  return undefined;
 }
 
-loadProjectEnv();
-
-const supabaseEndpoint = (() => {
-  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!rawUrl) {
-    return undefined;
-  }
-
-  try {
-    return new URL(rawUrl);
-  } catch {
-    return undefined;
-  }
-})();
-
-const supabaseConnectSources = supabaseEndpoint
-  ? ` ${supabaseEndpoint.origin} ${supabaseEndpoint.protocol === "https:" ? "wss:" : "ws:"}//${supabaseEndpoint.host}`
-  : "";
-const supabaseImageSource = supabaseEndpoint ? ` ${supabaseEndpoint.origin}` : "";
-
-const publicEnv = Object.fromEntries(
-  Object.entries({
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS
-  }).filter((entry) => entry[1] !== undefined)
-);
-
 const isProduction = process.env.NODE_ENV === "production";
+const servedOverHttps = (readProjectEnv("APP_URL") ?? "").startsWith("https://");
 // Dev-only allowance so Impeccable Live Mode can load.
 const __impeccableLiveDev =
   process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
-const vercelObservabilityEnabled =
-  process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === "true" || Boolean(process.env.VERCEL);
-const vercelScriptSource = vercelObservabilityEnabled ? " https://va.vercel-scripts.com" : "";
-const vercelConnectSources = vercelObservabilityEnabled
-  ? " https://vitals.vercel-insights.com https://*.vercel-insights.com https://va.vercel-scripts.com"
-  : "";
+
+// Uygulama ucuncu taraf servise baglanmaz: veri, dosya ve kimlik dogrulama ayni kaynaktan sunulur.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}${vercelScriptSource}${__impeccableLiveDev}`,
+  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}${__impeccableLiveDev}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://*.supabase.co${supabaseImageSource}`,
+  "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabaseConnectSources}${vercelConnectSources}${__impeccableLiveDev}`,
+  `connect-src 'self'${__impeccableLiveDev}`,
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -108,12 +47,11 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "upgrade-insecure-requests"
+  ...(servedOverHttps ? ["upgrade-insecure-requests"] : [])
 ].join("; ");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: publicEnv,
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   async headers() {
@@ -163,22 +101,10 @@ const nextConfig = {
       "./public/operations-app-icon.png"
     ]
   },
-  ...(supabaseEndpoint
-    ? {
-        images: {
-          remotePatterns: [
-            {
-              protocol: supabaseEndpoint.protocol.slice(0, -1),
-              hostname: supabaseEndpoint.hostname,
-              port: supabaseEndpoint.port,
-              pathname: "/storage/v1/object/sign/**"
-            }
-          ]
-        }
-      }
-    : {}),
+  // pg yerel modul yuklemelerini dinamik yaptigi icin server paketine dahil edilmez.
+  serverExternalPackages: ["pg"],
   outputFileTracingRoot: projectRoot,
-  transpilePackages: ["@operations/shared", "@operations/types", "@operations/validation"],
+  transpilePackages: ["@operations/data-client", "@operations/shared", "@operations/types", "@operations/validation"],
   ...(process.env.NEXT_STANDALONE === "true" ? { output: "standalone" } : {})
 };
 

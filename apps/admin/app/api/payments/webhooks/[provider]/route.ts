@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 import { apiError, withRequestId } from "../../../../../lib/api-response";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { readTextBody } from "../../../../../lib/request-body";
-import { getServiceSupabase } from "../../../../../lib/supabase-server";
+import { createServiceClient } from "../../../../../lib/server/service-client";
 
 export const runtime = "nodejs";
 
@@ -64,7 +64,7 @@ export async function POST(
   const payloadHash = createHash("sha256").update(rawBody, "utf8").digest("hex");
   let service;
   try {
-    service = getServiceSupabase();
+    service = createServiceClient();
   } catch {
     return apiError(request, 503, "Ödeme hizmeti yapılandırılmamış.", "payment_webhook_service_unconfigured");
   }

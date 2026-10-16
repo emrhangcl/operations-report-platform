@@ -26,7 +26,7 @@ import {
   loadAccountContext,
   type AccountContextPayload
 } from "../lib/account-context-client";
-import { getBrowserSupabase } from "../lib/supabase-browser";
+import { getBrowserClient } from "../lib/browser-client";
 import { ProductBrand } from "./logo";
 import { OrganizationBrand } from "./organization-brand";
 
@@ -99,9 +99,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   useEffect(() => setMenuOpen(false), [pathname]);
 
   async function signOut() {
-    const supabase = getBrowserSupabase();
+    const db = getBrowserClient();
     clearAccountContextCache("admin");
-    await supabase?.auth.signOut();
+    await db?.auth.signOut();
     router.replace("/login");
   }
 

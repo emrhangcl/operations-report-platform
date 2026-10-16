@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../lib/request-body";
-import { requirePlatformAdmin } from "../../../../lib/supabase-server";
+import { requirePlatformAdmin } from "../../../../lib/server/guards";
 import { planRow, planSchema } from "./schema";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const rateLimited = enforceRateLimit(request, "platform-plans-read");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
-  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: 403 });
+  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
 
   const result = await auth.service
     .from("plans")
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const rateLimited = enforceRateLimit(request, "platform-plans-create");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
-  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: 403 });
+  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
 
   const body = await readJsonBody(request, 16 * 1024);
   if (!body.ok) return NextResponse.json({ message: "Geçerli paket bilgileri gönderin." }, { status: body.status });

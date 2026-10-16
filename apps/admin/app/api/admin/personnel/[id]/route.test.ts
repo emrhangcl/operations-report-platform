@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ requireAdmin: vi.fn() }));
 
-vi.mock("../../../../../lib/supabase-server", () => ({ requireAdmin: mocks.requireAdmin }));
+vi.mock("../../../../../lib/server/guards", () => ({ requireAdmin: mocks.requireAdmin }));
 vi.mock("../../../../../lib/rate-limit", () => ({ enforceRateLimit: () => null }));
 
 import { DELETE } from "./route";

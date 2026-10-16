@@ -1,6 +1,6 @@
 "use client";
 
-import { getBrowserSupabase } from "./supabase-browser";
+import { scopeHeaders } from "./browser-client";
 
 type ReportPdfMode = "download" | "share";
 type ReportPdfScope = "admin" | "personnel";
@@ -16,19 +16,15 @@ export async function downloadOrShareReportPdf({
   reportNumber?: string | null;
   scope?: ReportPdfScope;
 }) {
-  const supabase = getBrowserSupabase(scope);
-  const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-  const token = data.session?.access_token;
+  const response = await fetch(`/api/reports/${reportId}/pdf`, {
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: scopeHeaders(scope)
+  });
 
-  if (!token) {
+  if (response.status === 401) {
     return { ok: false as const, message: "PDF için oturum doğrulanamadı." };
   }
-
-  const response = await fetch(`/api/reports/${reportId}/pdf`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
 
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string } | null;

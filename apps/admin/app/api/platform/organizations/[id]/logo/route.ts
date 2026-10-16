@@ -6,7 +6,7 @@ import {
   uploadOrganizationLogo
 } from "../../../../../../lib/organization-branding";
 import { enforceRateLimit } from "../../../../../../lib/rate-limit";
-import { requirePlatformAdmin } from "../../../../../../lib/supabase-server";
+import { requirePlatformAdmin } from "../../../../../../lib/server/guards";
 
 export const runtime = "nodejs";
 
@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const id = await organizationId(params);
@@ -66,7 +66,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const id = await organizationId(params);

@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ServiceClient } from "./server/service-client";
 
 const manifestSchema = z.object({
   organization_id: z.string().uuid(),
@@ -22,7 +22,7 @@ export function organizationMutationError(error: { code?: string; message?: stri
   return new OrganizationDeletionError("Silme işlemi tamamlanamadı. Firma ayrıntısından tekrar deneyerek işlemi tamamlayın.");
 }
 
-export async function deletePlatformOrganization(service: SupabaseClient, organizationId: string, confirmationSlug: string, actorId: string) {
+export async function deletePlatformOrganization(service: ServiceClient, organizationId: string, confirmationSlug: string, actorId: string) {
   const prepared = await service.rpc("platform_prepare_organization_deletion", {
     target_organization_id: organizationId, confirmation_slug: confirmationSlug, actor_user_id: actorId
   });

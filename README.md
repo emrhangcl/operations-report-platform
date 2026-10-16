@@ -1,134 +1,81 @@
 # Operasyon Portalı
 
-Montaj atamalarını, saha operasyonlarını ve kurumsal raporları yöneten çok kiracılı web platformudur. Geçici ürün adı yalnızca açıklayıcıdır; müşteri markasına bağlı değildir. Uygulama demo kayıt, seed veri veya sahte dashboard verisi oluşturmaz.
+Montaj atamalarını, saha operasyonlarını ve kurumsal raporları yöneten çok kiracılı web platformudur. Uygulama tamamen yerelde çalışır: Vercel, Supabase veya başka bir bulut servisine bağımlılığı yoktur. Demo kayıt veya sahte veri oluşturmaz.
 
 ## Yapı
 
 ```text
-apps/admin      Next.js yönetim paneli
-apps/mobile     Expo SDK 54 React Native mobil uygulama (yerel test/opsiyonel)
-packages/types  Ortak TypeScript tipleri
-packages/validation  Ortak Zod doğrulama kuralları
-packages/shared Ortak tarih, izin, Excel ve rapor numarası yardımcıları
-supabase/migrations PostgreSQL schema, trigger ve RLS
+apps/admin            Next.js web uygulaması (tanıtım, firma paneli, personel ekranı, platform paneli, API)
+apps/admin/lib/server Sunucu katmanı: PostgreSQL bağlantısı, oturum/kimlik, veri geçidi, dosya deposu
+apps/mobile           Expo mobil uygulama (opsiyonel; Bearer belirteç ile aynı API'yi kullanır)
+packages/data-client  Tarayıcı, mobil ve sunucunun ortak sorgu oluşturucusu
+packages/*            Ortak tipler, doğrulama, yardımcılar, ödeme sağlayıcıları
+db/migrations         PostgreSQL şeması (0001 temel, 0002 uygulama şeması, sonrakiler değişiklikler)
+db/tests              pgTAP veritabanı güvenlik testleri
+scripts/local         Yerel PostgreSQL kurulumu ve yönetimi
+scripts/db            Migration ve veritabanı test çalıştırıcıları
+scripts/e2e           Çalışan uygulamaya karşı uçtan uca test
 ```
 
-Web ve mobil uygulamalar nötr ürün kimliği kullanır. Müşteri logoları ürün arayüzüne veya dağıtım paketlerine gömülmez.
+## Güvenlik katmanları
 
-## Web Kullanımı
+1. **Ağ:** PostgreSQL yalnızca `127.0.0.1` dinler, tüm bağlantılar scram-sha-256 ister.
+2. **HTTP:** CSP, `X-Frame-Options`, `nosniff` vb. başlıklar; istek boyutu ve hız sınırları.
+3. **Oturum:** Rastgele 256-bit belirteç, veritabanında yalnızca SHA-256 özeti; httpOnly + SameSite=Strict çerez; boşta kalma ve mutlak süre; çıkışta sunucu tarafında iptal; başarısız girişlerde hesap kilidi; güvenlik olay günlüğü (`auth.security_events`).
+4. **CSRF:** Çerezli yazma istekleri `X-Auth-Scope` başlığı ve kaynak (Origin) kontrolü gerektirir.
+5. **Veri geçidi (`/api/data`):** Şema doğrulaması, tablo/işlem izin listesi, katalogdan doğrulanan tanımlayıcılar, yalnızca parametreli SQL, filtresiz toplu güncelleme/silme yasağı, satır sınırı.
+6. **Veritabanı rolleri:** Uygulama `ops_app` ile bağlanır (NOINHERIT, kendi yetkisi yok); her istek `authenticated`/`anon` rolüne geçer, RLS uygulanır. `service_role` yalnızca doğrulanmış sunucu işlemlerinde kullanılır.
+7. **RLS ve tetikleyiciler:** Kiracı izolasyonu, abonelik erişim modu, imzalı rapor değişmezliği.
+8. **Dosyalar:** Yetki `storage.objects` RLS'i ile; içerik türü dosya imzasıyla doğrulanır; yol geçişi engellenir; indirme kısa ömürlü HMAC imzalı bağlantıyla.
 
-Vercel'e dağıtılan Next.js uygulaması tanıtım sitesi, firma paneli, personel ekranı ve platform sahibi alanını birlikte taşır:
+## Yerel kurulum (Windows)
 
-- Tanıtım sitesi: `/`
-- Giriş ekranı: `/login`
-- Firma yönetim paneli: `/app`
-- Personel rapor ekranı: `/personel`
-- Platform sahibi paneli: `/platform`
-
-Personel tarafı mobil web/PWA olarak kullanılabilir. iPhone ve Android kullanıcıları `/personel` adresini tarayıcıdan açıp ana ekrana ekleyerek uygulama gibi kullanabilir. Expo Go aktif dağıtım akışı için gerekli değildir.
-
-## Kurulum
-
-1. Node.js 22 veya üzerini kurun.
-
-2. Paket yöneticisini ve bağımlılıkları hazırlayın:
+Gereksinimler: Node.js 22+, pnpm 10 (`npm i -g pnpm@10`), PostgreSQL 18 ikili dosyaları
+(`%LOCALAPPDATA%\Programs\PostgreSQL\18` altına açılmış resmi EDB "binaries" zip'i veya `PG_BIN_DIR`).
 
 ```bash
-corepack enable
 pnpm install
+pnpm setup:local
+pnpm create-admin --platform
+pnpm dev:admin
 ```
 
-3. Supabase üzerinde yeni bir proje oluşturun.
+`setup:local`; `.env` dosyasını oluşturur (rastgele `AUTH_SECRET` dahil), PostgreSQL kümesini
+`%USERPROFILE%\OperationsPortal\postgres` altında kurup başlatır, rolleri ve iki veritabanını
+(`operations_portal`, `operations_portal_test`) oluşturur ve migration'ları uygular. Tekrar çalıştırmak güvenlidir.
 
-4. `.env.example` dosyasını `.env` olarak kopyalayın ve değerleri doldurun:
+Uygulama `http://localhost:3000` adresinde açılır. Platform sahibi `/login` ile girip `/platform` panelinden paket oluşturur ve firmaları etkinleştirir; firmalar `/register` ile kaydolur, personel `/personel` ekranını kullanır.
+
+Veri klasörü (`%USERPROFILE%\OperationsPortal`): `postgres/` veritabanı, `storage/` yüklenen dosyalar, `mail-outbox/` e-postalar (yerelde gönderilmez, `.eml` olarak yazılır), `secrets/` PostgreSQL süper kullanıcı parolası.
+
+## Veritabanı komutları
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+pnpm db:status
+pnpm db:start
+pnpm db:stop
+pnpm db:migrate
+pnpm db:psql
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` yalnızca server tarafında ve `create-admin` scriptinde kullanılır. Mobil veya web client bundle içine koymayın.
+Şema değişiklikleri her zaman `db/migrations` altına yeni numaralı dosya olarak eklenir; uygulanmış migration'lar değiştirilemez (checksum koruması).
 
-5. Migration çalıştırın:
+Bilgisayar yeniden başladığında veritabanını `pnpm db:start` ile başlatın.
+
+## Testler
 
 ```bash
-supabase db push
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm db:test
+pnpm test:e2e
 ```
 
-Supabase CLI kullanmıyorsanız `supabase/migrations/202608190001_initial_schema.sql` dosyasını SQL editor üzerinden çalıştırabilirsiniz.
+- `pnpm test`: birim testleri (sorgu derleyici, oturum/CSRF, parola, dosya doğrulama, yetki koruyucuları, paketler).
+- `pnpm db:test`: test veritabanını sıfırlar ve pgTAP güvenlik testlerini çalıştırır (kiracı izolasyonu, abonelik erişimi, imzalar, platform yönetimi).
+- `pnpm test:e2e`: çalışan uygulamaya (`pnpm dev:admin`) HTTP üzerinden iş akışlarını ve saldırı senaryolarını dener. `.env` içindeki `E2E_*` test hesaplarını kullanır.
 
-6. Private storage bucket:
+## Mobil uygulama
 
-Migration `report-photos` bucket'ını private olarak oluşturur. Supabase panelinde bucket'ın public olmadığını kontrol edin.
-
-7. İlk admin hesabını manuel oluşturun:
-
-```bash
-pnpm run create-admin
-```
-
-Komut ad, soyad, e-posta ve şifre sorar. Veritabanına otomatik demo admin eklenmez.
-
-8. Web uygulamasını başlatın:
-
-```bash
-pnpm run dev:admin
-```
-
-Admin panel varsayılan olarak `http://localhost:3000`, personel ekranı `http://localhost:3000/personel` adresinde açılır.
-
-9. Expo mobil uygulamayı yerel test için başlatmak isterseniz:
-
-```bash
-pnpm run dev:mobile
-```
-
-10. iPhone'da Expo ile test:
-
-Expo Go uygulamasını açın ve terminaldeki QR kodu kamera ile okutun.
-
-11. Android'de Expo ile test:
-
-Expo Go uygulamasını açın ve terminaldeki QR kodu okutun.
-
-12. Excel export testi:
-
-Admin panelde `Raporlar` sayfasına gidin, rapor seçin veya filtre uygulayın, `Excel'e Aktar` ya da `Filtre Sonucunu Aktar` butonunu kullanın.
-
-## İlk Çalıştırma Beklentisi
-
-Boş veritabanında admin dashboard kartları `0` gösterir. Firma, bant, personel, rapor ve fotoğraf otomatik oluşturulmaz.
-
-Önerilen manuel akış:
-
-1. Firma ekle.
-2. Bant ekle.
-3. Personel hesabı oluştur.
-4. `/personel` ekranında personel ile giriş yap.
-5. Rapor oluştur, fotoğraf ekle ve gönder.
-6. Admin panelden raporu kontrol et.
-7. Excel'e aktar.
-
-## Güvenlik Notları
-
-Raporu oluşturan kullanıcı frontend'den gelen bir değere göre değil, Supabase auth session üzerinden DB trigger ile `created_by_user_id` alanına yazılır. Personel sadece kendi raporlarını okuyabilir ve sadece kendi taslaklarını güncelleyebilir. Admin tüm raporları görebilir.
-
-Rapor numarası yalnızca `SUBMITTED` durumda transaction-safe PostgreSQL trigger ile üretilir:
-
-```text
-RPR-2026-000001
-```
-
-`project`, imza, kaşe veya onay workflow alanları eklenmedi.
-
-## Kontrol Komutları
-
-```bash
-pnpm run typecheck
-pnpm run lint
-pnpm run test
-pnpm run build
-```
+`apps/mobile/.env` içine `EXPO_PUBLIC_API_URL=http://<bilgisayarın-ağ-adresi>:3000` yazın ve `pnpm dev:mobile` çalıştırın. Oturum belirteci cihazın şifreli anahtar deposunda (expo-secure-store) tutulur.

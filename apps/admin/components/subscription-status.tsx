@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getBrowserSupabase } from "../lib/supabase-browser";
+import { getBrowserClient } from "../lib/browser-client";
 
 type Subscription = {
   status: "pending" | "active" | "past_due" | "grace_period" | "read_only" | "canceled" | "lifetime";
@@ -33,20 +33,20 @@ export function SubscriptionStatus() {
 
   useEffect(() => {
     async function load() {
-      const supabase = getBrowserSupabase();
-      if (!supabase) {
+      const db = getBrowserClient();
+      if (!db) {
         setMessage("Abonelik hizmeti yapılandırılmamış.");
         setLoading(false);
         return;
       }
 
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       if (!userData.user) {
         router.replace("/login");
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await db
         .from("profiles")
         .select("organization_id")
         .eq("id", userData.user.id)
@@ -59,8 +59,8 @@ export function SubscriptionStatus() {
       }
 
       const [organizationResult, subscriptionResult] = await Promise.all([
-        supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
-        supabase
+        db.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
+        db
           .from("subscriptions")
           .select("status,billing_interval,current_period_ends_at,grace_period_ends_at,updated_at,plans(name)")
           .eq("organization_id", profile.organization_id)

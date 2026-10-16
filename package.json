@@ -14,16 +14,28 @@
     "design:check": "node scripts/impeccable-design-check.mjs",
     "test": "pnpm -r --if-present test",
     "build": "pnpm --filter @operations/admin build && pnpm --filter @operations/mobile typecheck",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "create-admin": "tsx --conditions=react-server scripts/create-admin.ts",
+    "db:init": "node scripts/local/postgres.mjs init && tsx scripts/db/migrate.ts && tsx scripts/db/migrate.ts --test",
+    "db:start": "node scripts/local/postgres.mjs start",
+    "db:stop": "node scripts/local/postgres.mjs stop",
+    "db:restart": "node scripts/local/postgres.mjs restart",
+    "db:status": "node scripts/local/postgres.mjs status",
+    "db:psql": "node scripts/local/postgres.mjs psql",
+    "db:migrate": "tsx scripts/db/migrate.ts",
+    "db:reset": "tsx scripts/db/migrate.ts --reset",
+    "setup:local": "node scripts/local/setup.mjs",
+    "db:test": "tsx scripts/db/test.ts",
+    "test:e2e": "tsx scripts/e2e/local-stack.ts"
   },
   "devDependencies": {
+    "@operations/data-client": "workspace:*",
     "@types/node": "^22.10.5",
-    "supabase": "2.116.0",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^3.2.6"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3"
+    "pg": "^8.23.1"
   }
 }

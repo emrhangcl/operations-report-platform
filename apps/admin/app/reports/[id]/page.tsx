@@ -22,7 +22,7 @@ import {
 } from "../../../components/ui";
 import { CustomerSignatureView } from "../../../components/customer-signature";
 import { downloadOrShareReportPdf } from "../../../lib/report-pdf-client";
-import { clearSupabaseReadCache, getBrowserSupabase } from "../../../lib/supabase-browser";
+import { clearReadCache, getBrowserClient, scopeHeaders } from "../../../lib/browser-client";
 
 type ReportDetail = Record<string, unknown> & {
   report_number: string | null;
@@ -79,16 +79,16 @@ export default function ReportDetailPage() {
     let cancelled = false;
 
     async function load() {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
 
       const [reportResult, equipmentResult] = await Promise.all([
-        supabase
+        db
           .from("reports")
           .select("*, report_personnel(profile_id,name_snapshot), report_photos(id,category,caption,storage_path,created_at)")
           .eq("id", params.id)
           .maybeSingle(),
-        supabase.from("equipment").select("*").eq("is_active", true).order("name")
+        db.from("equipment").select("*").eq("is_active", true).order("name")
       ]);
 
       if (cancelled) return;
@@ -110,7 +110,7 @@ export default function ReportDetailPage() {
           .filter((photo) => photo.storage_path)
           .map(async (photo) => {
             const path = String(photo.storage_path);
-            const signed = await supabase.storage.from("report-photos").createSignedUrl(path, 60 * 30);
+            const signed = await db.storage.from("report-photos").createSignedUrl(path, 60 * 30);
             return [path, signed.data?.signedUrl ?? ""] as const;
           })
       );
@@ -144,11 +144,7 @@ export default function ReportDetailPage() {
   }, [activePhoto]);
 
   async function authHeaders() {
-    const supabase = getBrowserSupabase();
-    const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : undefined;
+    return scopeHeaders("admin");
   }
 
   async function deleteReport() {
@@ -172,7 +168,7 @@ export default function ReportDetailPage() {
       return;
     }
 
-    clearSupabaseReadCache();
+    clearReadCache();
     router.replace("/reports");
   }
 
@@ -280,17 +276,12 @@ export default function ReportDetailPage() {
       return;
     }
 
-    const supabase = getBrowserSupabase();
-    if (!supabase) {
-      setMessageTone("error");
-      setMessage("Supabase bilgileri girilmedi.");
-      return;
-    }
+    const db = getBrowserClient();
 
     setSaving(true);
     setMessage("");
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("reports")
         .update(reportUpdatePayload(editValues))
         .eq("id", params.id)
@@ -304,7 +295,7 @@ export default function ReportDetailPage() {
       }
 
       const nextReport = data as ReportDetail;
-      clearSupabaseReadCache();
+      clearReadCache();
       setReport(nextReport);
       setEditValues(reportToEditValues(nextReport, equipment));
       setEditing(false);

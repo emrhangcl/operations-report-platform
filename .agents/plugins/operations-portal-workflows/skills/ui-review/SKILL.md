@@ -23,7 +23,7 @@ Inspect responsive layout, desktop/mobile behavior, loading states, disabled sta
 ## Workflow
 
 1. Identify the reviewed UI scope, affected routes/screens/components, roles, permissions, and data sources.
-2. Inspect changed UI code plus nearby state, validation, navigation, API, and Supabase interactions needed to understand behavior.
+2. Inspect changed UI code plus nearby state, validation, navigation, API, and data-access interactions needed to understand behavior.
 3. Exercise or reason through responsive desktop and mobile behavior, including loading, disabled, empty, error, and permission-specific states.
 4. Check accessibility, keyboard usability, labels, form validation, navigation feedback, browser console errors, and network errors where practical.
 5. Check for visual regressions that affect usability or comprehension, not personal style preferences.

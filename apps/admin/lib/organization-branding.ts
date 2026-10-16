@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ServiceClient } from "./server/service-client";
 
 export const ORGANIZATION_LOGO_BUCKET = "organization-logos";
 export const ORGANIZATION_LOGO_MAX_BYTES = 2 * 1024 * 1024;
@@ -60,7 +60,7 @@ function belongsToOrganization(path: string, organizationId: string) {
 }
 
 export async function createOrganizationLogoUrl(
-  service: SupabaseClient,
+  service: ServiceClient,
   organizationId: string,
   logoPath: string | null
 ) {
@@ -80,7 +80,7 @@ export async function createOrganizationLogoUrl(
 }
 
 export async function createOrganizationLogoPdfDataUrl(
-  service: SupabaseClient,
+  service: ServiceClient,
   organizationId: string,
   logoPath: string | null
 ) {
@@ -105,7 +105,7 @@ export async function createOrganizationLogoPdfDataUrl(
 }
 
 export async function getOrganizationBranding(
-  service: SupabaseClient,
+  service: ServiceClient,
   organizationId: string
 ): Promise<OrganizationBrandingPayload> {
   const { data, error } = await service
@@ -125,7 +125,7 @@ export async function getOrganizationBranding(
 }
 
 export async function uploadOrganizationLogo(
-  service: SupabaseClient,
+  service: ServiceClient,
   organizationId: string,
   file: File
 ): Promise<OrganizationBrandingPayload> {
@@ -192,7 +192,7 @@ export async function uploadOrganizationLogo(
 }
 
 export async function removeOrganizationLogo(
-  service: SupabaseClient,
+  service: ServiceClient,
   organizationId: string
 ): Promise<OrganizationBrandingPayload> {
   const { data: organization, error: organizationError } = await service

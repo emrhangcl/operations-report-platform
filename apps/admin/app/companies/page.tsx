@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
+import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type CompanyForm = {
   name: string;
@@ -47,9 +47,9 @@ export default function CompaniesPage() {
   const [pendingDelete, setPendingDelete] = useState<Company | null>(null);
 
   async function load() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    const { data, error } = await supabase
+    const db = getBrowserClient();
+    if (!db) return;
+    const { data, error } = await db
       .from("companies")
       .select("*")
       .order("created_at", { ascending: false });
@@ -65,11 +65,7 @@ export default function CompaniesPage() {
   }, []);
 
   async function authHeaders() {
-    const supabase = getBrowserSupabase();
-    const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : undefined;
+    return scopeHeaders("admin");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -83,8 +79,8 @@ export default function CompaniesPage() {
 
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
       const payload = {
         ...parsed.data,
         address: parsed.data.address || null,
@@ -92,8 +88,8 @@ export default function CompaniesPage() {
         contact_phone: parsed.data.contact_phone || null
       };
       const request = editingId
-        ? supabase.from("companies").update(payload).eq("id", editingId)
-        : supabase.from("companies").insert(payload);
+        ? db.from("companies").update(payload).eq("id", editingId)
+        : db.from("companies").insert(payload);
       const { error } = await request;
       if (error) {
         setMessage("Firma kaydedilemedi. Bilgileri kontrol edip tekrar deneyin.");
@@ -122,7 +118,7 @@ export default function CompaniesPage() {
         setMessage(body?.message ?? "Firma silinemedi.");
         return;
       }
-      clearSupabaseReadCache();
+      clearReadCache();
       await load();
       setMessage("Firma silindi.");
     } finally {

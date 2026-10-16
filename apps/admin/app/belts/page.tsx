@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
+import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type BeltForm = {
   code: string;
@@ -45,9 +45,9 @@ export default function BeltsPage() {
   const [pendingDelete, setPendingDelete] = useState<Belt | null>(null);
 
   async function load() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    const { data, error } = await supabase
+    const db = getBrowserClient();
+    if (!db) return;
+    const { data, error } = await db
       .from("belts")
       .select("*")
       .order("code", { ascending: true });
@@ -63,11 +63,7 @@ export default function BeltsPage() {
   }, []);
 
   async function authHeaders() {
-    const supabase = getBrowserSupabase();
-    const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : undefined;
+    return scopeHeaders("admin");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -80,16 +76,16 @@ export default function BeltsPage() {
     }
 
     setLoading(true);
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
     const payload = {
       ...parsed.data,
       name: parsed.data.name || null,
       description: parsed.data.description || null
     };
     const request = editingId
-      ? supabase.from("belts").update(payload).eq("id", editingId)
-      : supabase.from("belts").insert(payload);
+      ? db.from("belts").update(payload).eq("id", editingId)
+      : db.from("belts").insert(payload);
     const { error } = await request;
     if (error) setMessage("Bant kaydedilemedi. Bilgileri kontrol edip tekrar deneyin.");
     else {
@@ -115,7 +111,7 @@ export default function BeltsPage() {
         setMessage(body?.message ?? "Bant silinemedi.");
         return;
       }
-      clearSupabaseReadCache();
+      clearReadCache();
       await load();
       setMessage("Bant silindi.");
     } finally {

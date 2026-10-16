@@ -14,7 +14,7 @@ Use these documents as the project source of truth where relevant.
 
 ## Workflow Routing
 
-`AGENTS.md` and `docs/*` remain the authoritative source of truth for this repository. Repository-specific architecture, security, database, testing, deployment, tenant-isolation, Supabase RLS, permissions, and business rules take precedence over generic workflow guidance.
+`AGENTS.md` and `docs/*` remain the authoritative source of truth for this repository. Repository-specific architecture, security, database, testing, deployment, tenant-isolation, PostgreSQL RLS, permissions, and business rules take precedence over generic workflow guidance.
 
 oh-my-codex is the general orchestration layer. Use available OMX workflows when requirements clarification, deep analysis, research, planning, architecture discussion, durable checkpoints, complex multi-stage work, specialist coordination, long-running execution, verification, or QA materially improve the result. Relevant detected OMX invocations include `$oh-my-codex:deep-interview`, `$oh-my-codex:plan`, `$oh-my-codex:ralplan`, `$oh-my-codex:analyze`, `$oh-my-codex:ultragoal`, `$oh-my-codex:ultraqa`, `$oh-my-codex:autopilot`, and `$oh-my-codex:code-review`.
 
@@ -26,7 +26,7 @@ Select only workflows relevant to the actual change. Feature work may use `$oper
 
 When both plugins expose the same skill name, use the exact namespaced invocation. The detected collision is `code-review`: use `$operations-portal-workflows:code-review` for repository-specific rules and `$oh-my-codex:code-review` for general orchestration or an independent second opinion. Avoid duplicate planning, duplicate reviews, irrelevant specialist passes, and loading skills merely because they are available.
 
-Repository-specific security requirements always override workflow convenience. Never weaken Supabase RLS, authorization, tenant isolation, permission checks, service-role credential handling, secret boundaries, or cross-company data protections to satisfy a test, workflow, agent, or completion condition.
+Repository-specific security requirements always override workflow convenience. Never weaken PostgreSQL RLS, authorization, tenant isolation, permission checks, service-role credential handling, secret boundaries, or cross-company data protections to satisfy a test, workflow, agent, or completion condition.
 
 Do not mark a task complete while blocking findings, change-caused verification failures, required migration or security checks, or unexplained unrelated diff remain. Final reports should state what changed, which workflows or reviews were used, which verification commands ran, remaining risks, and manual checks still required.
 
@@ -54,13 +54,13 @@ Impeccable is the repository's primary visual-design and frontend-UX system for 
 
 Impeccable owns visual-design guidance. `$operations-portal-workflows:ui-review` remains responsible for repository-specific UI validation, workflow correctness, and project conventions. OMX remains the orchestration layer for large or cross-cutting work. Do not run competing generic frontend-design skills alongside Impeccable or introduce conflicting design vocabularies.
 
-Repository architecture, security, product truth, and business rules always take priority over aesthetic changes. No visual work may weaken authentication, authorization, tenant isolation, Supabase RLS, permission handling, form validation, data integrity, API contracts, report or export workflows, or role-specific behavior.
+Repository architecture, security, product truth, and business rules always take priority over aesthetic changes. No visual work may weaken authentication, authorization, tenant isolation, PostgreSQL RLS, permission handling, form validation, data integrity, API contracts, report or export workflows, or role-specific behavior.
 
 Use a proportional Impeccable flow. For an existing page, critique or audit only when needed, then make a targeted refinement, polish, and run detector verification. For a new or substantially redesigned surface, shape the work, implement it, critique or audit it, polish it, and run detector verification. Use focused commands such as `layout`, `typeset`, `colorize`, `distill`, `bolder`, `quieter`, `harden`, `adapt`, `clarify`, `animate`, or `delight` only when materially relevant; do not run every design command automatically.
 
 ## Project Structure & Ownership
 
-This repository is the private pnpm workspace `operations-portal`, with workspace packages declared as `apps/*` and `packages/*`. `apps/admin` is the Next.js web portal for owner, admin, manager, and personnel workflows. `apps/mobile` is the Expo / React Native app. Shared code lives in `packages/types`, `packages/validation`, `packages/shared`, and `packages/payments`; prefer these packages over duplicating business logic. Supabase configuration, migrations, fixtures, snippets, and database tests live in `supabase/`. Operational scripts live in `scripts/`, currently including `scripts/create-admin.ts`.
+This repository is the private pnpm workspace `operations-portal`, with workspace packages declared as `apps/*` and `packages/*`. `apps/admin` is the Next.js web portal for owner, admin, manager, and personnel workflows. `apps/mobile` is the Expo / React Native app. Shared code lives in `packages/types`, `packages/validation`, `packages/shared`, and `packages/payments`; prefer these packages over duplicating business logic. Database migrations live in `db/migrations` and pgTAP database tests in `db/tests`; local PostgreSQL tooling lives in `scripts/local` and `scripts/db`. Operational scripts live in `scripts/`, currently including `scripts/create-admin.ts`.
 
 ## Development Commands
 
@@ -90,11 +90,11 @@ Vitest tests currently exist as `*.test.ts` in `packages/validation/src`, `packa
 
 ## Security & Configuration
 
-Never commit `.env`, `.env.local`, service-role keys, API tokens, or production secrets. `SUPABASE_SERVICE_ROLE_KEY` is server-only and must not be exposed to browser or mobile code. Client code may only use explicitly public-safe environment variables. Do not expose cross-company data through client queries, API responses, logs, exports, PDFs, or storage URLs. Enforce authorization server-side and/or through Supabase RLS, not only in the client.
+Never commit `.env`, `.env.local`, service-role keys, API tokens, or production secrets. `DATABASE_URL`, `DATABASE_MIGRATION_URL` and `AUTH_SECRET` are server-only and must never be exposed to browser or mobile code; the `service_role` database role is used only by verified server code. Client code may only use explicitly public-safe environment variables. Do not expose cross-company data through client queries, API responses, logs, exports, PDFs, or storage URLs. Enforce authorization server-side and/or through PostgreSQL RLS, not only in the client.
 
 ## Database & Migration Safety
 
-Schema, RLS, storage, and tenant-isolation changes must be implemented through new files in `supabase/migrations`. Do not modify already-applied production migrations. Do not delete or rewrite production data unless explicitly requested. For database access changes, verify RLS, tenant filtering, foreign-key behavior, deletion behavior, and compatibility with existing queries.
+Schema, RLS, storage, and tenant-isolation changes must be implemented through new files in `db/migrations`. Do not modify already-applied production migrations. Do not delete or rewrite production data unless explicitly requested. For database access changes, verify RLS, tenant filtering, foreign-key behavior, deletion behavior, and compatibility with existing queries.
 
 ## Git & Change Safety
 
@@ -102,7 +102,7 @@ Commit history uses concise prefixes such as `feat:`, `fix:`, `style:`, `chore:`
 
 ## Pull Requests
 
-Pull requests should include a short scope summary, important implementation notes, verification commands run, screenshots for visual UI changes, Supabase migration notes when applicable, environment variable changes when applicable, and known limitations or follow-up work when relevant.
+Pull requests should include a short scope summary, important implementation notes, verification commands run, screenshots for visual UI changes, database migration notes when applicable, environment variable changes when applicable, and known limitations or follow-up work when relevant.
 
 ## Agent Workflow
 

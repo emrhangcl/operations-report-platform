@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
+import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type Filters = {
   start: string;
@@ -57,12 +57,12 @@ export default function ReportsPage() {
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
 
   async function loadLookups() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
     const [companyRows, beltRows, personnelRows] = await Promise.all([
-      supabase.from("companies").select("*").order("name"),
-      supabase.from("belts").select("*").order("code"),
-      supabase.from("profiles").select("*").eq("role", "PERSONNEL").order("first_name")
+      db.from("companies").select("*").order("name"),
+      db.from("belts").select("*").order("code"),
+      db.from("profiles").select("*").eq("role", "PERSONNEL").order("first_name")
     ]);
     setCompanies((companyRows.data ?? []) as Company[]);
     setBelts((beltRows.data ?? []) as Belt[]);
@@ -70,11 +70,11 @@ export default function ReportsPage() {
   }
 
   async function loadReports(nextFilters = filters) {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
     setLoading(true);
     setMessage("");
-    let query = supabase
+    let query = db
       .from("reports")
       .select("*, report_personnel(name_snapshot)")
       .order("created_at", { ascending: false })
@@ -131,11 +131,7 @@ export default function ReportsPage() {
   }
 
   async function authHeaders() {
-    const supabase = getBrowserSupabase();
-    const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : undefined;
+    return scopeHeaders("admin");
   }
 
   async function exportReports(mode: "selected" | "filtered") {
@@ -205,7 +201,7 @@ export default function ReportsPage() {
           return;
         }
       }
-      clearSupabaseReadCache();
+      clearReadCache();
       await loadReports();
       setMessage(ids.length === 1 ? "Rapor silindi." : "Seçili raporlar silindi.");
     } finally {

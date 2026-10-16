@@ -29,7 +29,7 @@ export default function PlatformSystemPage() {
             <OwnerPanel description="Platform yönetiminde uygulanan temel güvenlik sınırları" title="Erişim korumaları">
               <div className="owner-safeguard-list">
                 <div><span><KeyRound aria-hidden size={18} /></span><div><strong>Owner yetkisi</strong><p>Bu alan normal firma yöneticilerinden ayrı platform yetkisiyle korunur.</p></div></div>
-                <div><span><LockKeyhole aria-hidden size={18} /></span><div><strong>Sunucu tarafı anahtar kullanımı</strong><p>Yüksek yetkili Supabase anahtarı tarayıcı koduna gönderilmez.</p></div></div>
+                <div><span><LockKeyhole aria-hidden size={18} /></span><div><strong>Sunucu tarafı yetki sınırı</strong><p>Veritabanı servis rolü ve oturum belirteçleri tarayıcı koduna gönderilmez.</p></div></div>
                 <div><span><ShieldCheck aria-hidden size={18} /></span><div><strong>İşlem kaydı</strong><p>Kritik firma, abonelik ve paket hareketleri denetim izine yazılır.</p></div></div>
               </div>
             </OwnerPanel>
