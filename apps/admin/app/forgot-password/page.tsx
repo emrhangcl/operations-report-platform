@@ -5,7 +5,6 @@ import { KeyRound, Loader2, Mail } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { AuthField } from "../../components/auth-field";
 import { AuthShell } from "../../components/auth-shell";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -15,18 +14,16 @@ export default function ForgotPasswordPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = getBrowserSupabase();
-    if (!supabase) {
-      setMessage("Parola hizmeti yapılandırılmamış.");
-      return;
-    }
     setLoading(true);
     setMessage("");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
-    });
+    const response = await fetch("/api/auth/password/forgot", {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }).catch(() => null);
     setLoading(false);
-    if (error) setMessage("İstek işlenemedi. Lütfen daha sonra tekrar deneyin.");
+    if (!response?.ok) setMessage("İstek işlenemedi. Lütfen daha sonra tekrar deneyin.");
     else setSent(true);
   }
 

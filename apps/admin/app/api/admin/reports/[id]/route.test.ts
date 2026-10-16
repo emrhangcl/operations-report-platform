@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ requireAdmin: vi.fn() }));
-vi.mock("../../../../../lib/supabase-server", () => ({ requireAdmin: mocks.requireAdmin }));
+vi.mock("../../../../../lib/server/guards", () => ({ requireAdmin: mocks.requireAdmin }));
 vi.mock("../../../../../lib/rate-limit", () => ({ enforceRateLimit: () => null }));
 import { DELETE } from "./route";
 
@@ -50,7 +50,7 @@ describe("report deletion preserves signed evidence until parent deletion", () =
     expect(calls).toEqual(["reports:select"]);
   });
   it("requires admin authorization before any data access", async () => {
-    mocks.requireAdmin.mockResolvedValue({ ok: false, message: "Yetkisiz" });
+    mocks.requireAdmin.mockResolvedValue({ ok: false, message: "Yetkisiz", status: 403 });
     expect((await invoke()).status).toBe(403);
   });
 });

@@ -19,12 +19,12 @@ Read:
 
 ## Review Focus
 
-Inspect authentication, authorization, organization/company isolation, Supabase RLS, storage and signed URLs, server-only secrets, request validation, sensitive output, logging, exports, PDFs, privilege boundaries, and cross-tenant data exposure.
+Inspect authentication, authorization, organization/company isolation, PostgreSQL RLS, storage and signed URLs, server-only secrets, request validation, sensitive output, logging, exports, PDFs, privilege boundaries, and cross-tenant data exposure.
 
 ## Workflow
 
 1. Identify the review scope and map target flows, actors, trust boundaries, and protected data before making judgments.
-2. Inspect server routes, Supabase helpers, migrations, RLS policies, client queries, storage paths, shared permission logic, exports, PDFs, and logs.
+2. Inspect server routes, server auth/data helpers (`apps/admin/lib/server`), migrations, RLS policies, client queries, storage paths, shared permission logic, exports, PDFs, and logs.
 3. Trace untrusted inputs and privileged data paths through authn, authz, organization filtering, company filtering, storage access, validation, and output generation.
 4. Report findings first, ordered by severity. Include severity, affected file/location, evidence, concrete attack or data path, impact, and a practical remediation.
 5. Do not report theoretical issues unless there is an actual path to unauthorized access, tenant leakage, secret exposure, unsafe mutation, sensitive output, or privilege escalation.

@@ -4,7 +4,19 @@ import { FixedWindowRateLimiter } from "@operations/shared";
 import { NextResponse } from "next/server";
 import { getRequestId } from "./observability";
 
-const limiter = new FixedWindowRateLimiter(30, 60_000);
+const DEFAULT_LIMIT = 30;
+const DEFAULT_WINDOW_MS = 60_000;
+const limiters = new Map<string, FixedWindowRateLimiter>();
+
+function getLimiter(limit: number, windowMs: number) {
+  const key = `${limit}:${windowMs}`;
+  let limiter = limiters.get(key);
+  if (!limiter) {
+    limiter = new FixedWindowRateLimiter(limit, windowMs);
+    limiters.set(key, limiter);
+  }
+  return limiter;
+}
 
 function clientIdentity(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -12,8 +24,16 @@ function clientIdentity(request: Request) {
   return (forwarded || realIp || "unknown").slice(0, 120);
 }
 
-export function enforceRateLimit(request: Request, scope: string) {
-  const decision = limiter.check(`${scope}:${clientIdentity(request)}`);
+export interface RateLimitOptions {
+  limit?: number;
+  windowMs?: number;
+  /** Kimligi dogrulanmis isteklerde IP yerine kullanici bazli sayac kullanilir. */
+  identity?: string;
+}
+
+export function enforceRateLimit(request: Request, scope: string, options: RateLimitOptions = {}) {
+  const limiter = getLimiter(options.limit ?? DEFAULT_LIMIT, options.windowMs ?? DEFAULT_WINDOW_MS);
+  const decision = limiter.check(`${scope}:${options.identity ?? clientIdentity(request)}`);
   if (decision.allowed) return null;
 
   const requestId = getRequestId(request);

@@ -16,7 +16,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ProductBrand } from "../../../components/logo";
-import { getBrowserSupabase } from "../../../lib/supabase-browser";
+import { getBrowserClient } from "../../../lib/browser-client";
 
 const navigation = [
   { href: "/platform", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
@@ -35,7 +35,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   useEffect(() => setMenuOpen(false), [pathname]);
 
   async function signOut() {
-    await getBrowserSupabase()?.auth.signOut();
+    await getBrowserClient()?.auth.signOut();
     router.replace("/login");
   }
 

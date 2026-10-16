@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import { getBrowserClient } from "../../lib/browser-client";
 
 type VehicleForm = {
   plate: string;
@@ -43,9 +43,9 @@ export default function VehiclesPage() {
   const [pendingDelete, setPendingDelete] = useState<Vehicle | null>(null);
 
   async function load() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    const { data, error } = await supabase
+    const db = getBrowserClient();
+    if (!db) return;
+    const { data, error } = await db
       .from("vehicles")
       .select("*")
       .order("created_at", { ascending: false });
@@ -75,15 +75,15 @@ export default function VehiclesPage() {
 
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
       const payload = {
         ...parsed.data,
         description: parsed.data.description || null
       };
       const request = editingId
-        ? supabase.from("vehicles").update(payload).eq("id", editingId)
-        : supabase.from("vehicles").insert(payload);
+        ? db.from("vehicles").update(payload).eq("id", editingId)
+        : db.from("vehicles").insert(payload);
       const { error } = await request;
       if (error) {
         setMessage("Araç kaydedilemedi. Aynı plaka zaten kayıtlı olabilir.");
@@ -102,9 +102,9 @@ export default function VehiclesPage() {
     setMessage("");
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
-      const { error } = await supabase.from("vehicles").delete().eq("id", vehicle.id);
+      const db = getBrowserClient();
+      if (!db) return;
+      const { error } = await db.from("vehicles").delete().eq("id", vehicle.id);
       if (error) {
         setMessage("Araç silinemedi.");
         return;

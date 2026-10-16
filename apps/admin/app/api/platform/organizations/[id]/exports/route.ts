@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { requirePlatformAdmin } from "../../../../../../lib/supabase-server";
+import { requirePlatformAdmin } from "../../../../../../lib/server/guards";
 import { enforceRateLimit } from "../../../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../../../lib/request-body";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const { id } = await params;

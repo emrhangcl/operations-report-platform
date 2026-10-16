@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "../../../../lib/rate-limit";
-import { requirePlatformAdmin } from "../../../../lib/supabase-server";
+import { requirePlatformAdmin } from "../../../../lib/server/guards";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const [metricsResult, organizationsResult, plansResult, eventsResult, auditResult] = await Promise.all([

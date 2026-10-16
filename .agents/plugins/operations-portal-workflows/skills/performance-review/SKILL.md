@@ -13,13 +13,13 @@ Read relevant sections from:
 
 - `AGENTS.md`
 - `docs/ARCHITECTURE.md`
-- `docs/DATABASE.md` when Supabase queries, indexes, RLS, migrations, or data volume are involved
+- `docs/DATABASE.md` when database queries, indexes, RLS, migrations, or data volume are involved
 - `docs/TESTING.md` for verification context
 - `docs/DEPLOYMENT.md` when build, bundle, runtime, or release behavior may be affected
 
 ## Review Focus
 
-Inspect React rendering, Next.js routes, API handlers, Supabase queries, database access, exports, PDF generation, shared packages, large loops, repeated network calls, repeated queries, N+1 patterns, large payloads, blocking operations, unnecessary client-side work, caching opportunities, and bundle or dependency impact.
+Inspect React rendering, Next.js routes, API handlers, database queries, database access, exports, PDF generation, shared packages, large loops, repeated network calls, repeated queries, N+1 patterns, large payloads, blocking operations, unnecessary client-side work, caching opportunities, and bundle or dependency impact.
 
 ## Workflow
 

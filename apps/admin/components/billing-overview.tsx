@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getBrowserSupabase } from "../lib/supabase-browser";
+import { getBrowserClient } from "../lib/browser-client";
 import {
   Alert,
   DataTable,
@@ -41,26 +41,26 @@ export function BillingOverview() {
 
   useEffect(() => {
     async function load() {
-      const supabase = getBrowserSupabase();
-      if (!supabase) {
+      const db = getBrowserClient();
+      if (!db) {
         setMessage("Faturalandırma hizmeti yapılandırılmamış.");
         setLoading(false);
         return;
       }
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await db.auth.getUser();
       if (!userData.user) {
         router.replace("/login");
         return;
       }
-      const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", userData.user.id).maybeSingle();
+      const { data: profile } = await db.from("profiles").select("organization_id").eq("id", userData.user.id).maybeSingle();
       if (!profile?.organization_id) {
         setMessage("Organizasyon üyeliği bulunamadı.");
         setLoading(false);
         return;
       }
       const [paymentResult, invoiceResult] = await Promise.all([
-        supabase.from("payments").select("id,status,amount_minor,currency,paid_at,created_at").eq("organization_id", profile.organization_id).order("created_at", { ascending: false }).limit(100),
-        supabase.from("invoices").select("id,invoice_number,status,total_minor,currency,issued_at,created_at").eq("organization_id", profile.organization_id).order("created_at", { ascending: false }).limit(100)
+        db.from("payments").select("id,status,amount_minor,currency,paid_at,created_at").eq("organization_id", profile.organization_id).order("created_at", { ascending: false }).limit(100),
+        db.from("invoices").select("id,invoice_number,status,total_minor,currency,issued_at,created_at").eq("organization_id", profile.organization_id).order("created_at", { ascending: false }).limit(100)
       ]);
       if (paymentResult.error || invoiceResult.error) setMessage("Faturalandırma kayıtları alınamadı.");
       else {

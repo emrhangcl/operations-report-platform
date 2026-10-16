@@ -37,7 +37,7 @@ Read specialist sources only when relevant:
 
 ## Workflow
 
-1. Architecture and impact: understand the request, define acceptance criteria, map affected `apps/admin`, `apps/mobile`, `packages/*`, APIs, Supabase/database, storage, external integrations, security impact, tenant isolation, migrations, and backwards-compatibility risk.
+1. Architecture and impact: understand the request, define acceptance criteria, map affected `apps/admin`, `apps/mobile`, `packages/*`, APIs, database, storage, external integrations, security impact, tenant isolation, migrations, and backwards-compatibility risk.
 2. Stop and report if the request is too ambiguous to implement safely or if a required product decision cannot be inferred from the repository.
 3. Implementation: produce a concise plan, implement incrementally, keep changes scoped, reuse shared packages, preserve existing behavior outside the feature, and add or update tests when behavior changes.
 4. Specialist review: apply only relevant security, database, UI, or performance phases. Do not run specialist reviews just because they exist.

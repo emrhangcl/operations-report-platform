@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { equipmentSchema } from "@operations/validation";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
-import { requireAdmin } from "../../../../../lib/supabase-server";
+import { requireAdmin } from "../../../../../lib/server/guards";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   const admin = await requireAdmin(request, "write");
   if (!admin.ok) {
-    return NextResponse.json({ message: admin.message }, { status: 403 });
+    return NextResponse.json({ message: admin.message }, { status: admin.status });
   }
 
   const parsed = equipmentSchema.safeParse(await request.json().catch(() => null));
@@ -54,7 +54,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
   const admin = await requireAdmin(request, "write");
   if (!admin.ok) {
-    return NextResponse.json({ message: admin.message }, { status: 403 });
+    return NextResponse.json({ message: admin.message }, { status: admin.status });
   }
 
   const { id } = await params;

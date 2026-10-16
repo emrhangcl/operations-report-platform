@@ -1,6 +1,6 @@
 "use client";
 
-import { getBrowserSupabase } from "./supabase-browser";
+import { getBrowserClient, scopeHeaders } from "./browser-client";
 
 export type AccountScope = "admin" | "personnel";
 
@@ -40,9 +40,9 @@ function getAccountContextState() {
 
 export async function loadAccountContext(scope: AccountScope, force = false) {
   const { cache, inFlight } = getAccountContextState();
-  const supabase = getBrowserSupabase(scope);
-  const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-  const token = data.session?.access_token;
+  const { data } = await getBrowserClient(scope).auth.getSession();
+  // Onbellek anahtari oturumdaki kullanicidir; belirtec httpOnly cerezde oldugu icin JS'e acik degildir.
+  const token = data.session?.user.id;
 
   if (!token) {
     throw new AccountContextError("Oturum bulunamadı.", 401);
@@ -60,7 +60,8 @@ export async function loadAccountContext(scope: AccountScope, force = false) {
 
   const request = fetch("/api/account/access", {
     cache: "no-store",
-    headers: { Authorization: `Bearer ${token}` }
+    credentials: "same-origin",
+    headers: scopeHeaders(scope)
   }).then(async (response) => {
     const body = await response.json().catch(() => ({})) as AccountContextPayload & { message?: string };
     if (!response.ok) {

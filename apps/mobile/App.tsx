@@ -1,9 +1,6 @@
-import "react-native-url-polyfill/auto";
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import NetInfo from "@react-native-community/netinfo";
-import { createClient, type Session } from "@supabase/supabase-js";
 import * as Crypto from "expo-crypto";
 import * as ImagePicker from "expo-image-picker";
 import { Children, isValidElement, useEffect, useMemo, useState } from "react";
@@ -28,20 +25,12 @@ import {
   productTypes,
   reportFormSchema
 } from "@operations/validation";
+import { createMobileClient, type MobileSession } from "./src/api-client";
 import type { PhotoDraft } from "./src/types";
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false
-      }
-    })
-  : null;
+// Operasyon Portali sunucusunun adresi; telefon ayni agdaki bilgisayara bu adresle ulasir.
+const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
+const api = apiUrl ? createMobileClient(apiUrl) : null;
 
 const draftKey = "operations.offlineDrafts";
 const defaultPhotoCategory = "Genel";
@@ -96,7 +85,7 @@ type SubmittedReportDetailRow = Record<string, unknown> & {
 };
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<MobileSession | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
   const [email, setEmail] = useState("");
@@ -117,10 +106,10 @@ export default function App() {
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!api) return;
 
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    api.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = api.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
     });
 
@@ -139,32 +128,32 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!session || !supabase) return;
+    if (!session || !api) return;
     loadBootstrapData().catch(() => setMessage("Veriler alınamadı. Bağlantınızı kontrol edin."));
   }, [session]);
 
   useEffect(() => {
-    if (screen !== "submitted" || !session || !supabase) return;
+    if (screen !== "submitted" || !session || !api) return;
     loadBootstrapData().catch(() => setMessage("Gönderilen raporlar yenilenemedi."));
   }, [screen, session]);
 
   async function loadBootstrapData() {
-    if (!supabase || !session?.user.id) return;
+    if (!api || !session?.user.id) return;
 
     const [profileResult, companyResult, beltResult, lineResult, vehicleResult, personnelResult, reportResult] =
       await Promise.all([
-        supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle(),
-        supabase.from("companies").select("*").eq("is_active", true).order("name"),
-        supabase.from("belts").select("*").eq("is_active", true).order("name"),
-        supabase.from("company_lines").select("*").order("name"),
-        supabase.from("vehicles").select("*").order("plate"),
-        supabase
+        api.from("profiles").select("*").eq("id", session.user.id).maybeSingle(),
+        api.from("companies").select("*").eq("is_active", true).order("name"),
+        api.from("belts").select("*").eq("is_active", true).order("name"),
+        api.from("company_lines").select("*").order("name"),
+        api.from("vehicles").select("*").order("plate"),
+        api
           .from("profiles")
           .select("*")
           .eq("role", "PERSONNEL")
           .eq("is_active", true)
           .order("first_name"),
-        supabase
+        api
           .from("reports")
           .select("id,report_number,report_date,company_name_snapshot,status")
           .eq("status", "SUBMITTED")
@@ -192,19 +181,19 @@ export default function App() {
   }
 
   async function signIn() {
-    if (!supabase) {
-      setMessage("Supabase bilgileri girilmedi. .env dosyasını doldurun.");
+    if (!api) {
+      setMessage("Sunucu adresi tanımlı değil. .env dosyasında EXPO_PUBLIC_API_URL değerini girin.");
       return;
     }
     setLoading(true);
     setMessage("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await api.auth.signInWithPassword({ email, password });
     if (error) setMessage("Giriş yapılamadı. E-posta ve şifrenizi kontrol edin.");
     setLoading(false);
   }
 
   async function signOut() {
-    await supabase?.auth.signOut();
+    await api?.auth.signOut();
     setProfile(null);
   }
 
@@ -265,7 +254,7 @@ export default function App() {
   }
 
   async function submitReport(status: "DRAFT" | "SUBMITTED") {
-    if (!supabase) return;
+    if (!api) return;
     setMessage("");
 
     const parsed = reportFormSchema.safeParse(values);
@@ -282,7 +271,7 @@ export default function App() {
     setLoading(true);
     try {
       const payload = reportPayload(prepareReportValues(parsed.data, belts), status);
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from("reports")
         .upsert(payload, { onConflict: "client_request_id" })
         .select("id,report_number")
@@ -310,8 +299,8 @@ export default function App() {
   }
 
   async function replaceReportPersonnel(reportId: string) {
-    if (!supabase || !profile) return;
-    await supabase.from("report_personnel").delete().eq("report_id", reportId);
+    if (!api || !profile) return;
+    await api.from("report_personnel").delete().eq("report_id", reportId);
 
     const selectedProfiles = [
       profile,
@@ -320,7 +309,7 @@ export default function App() {
 
     if (selectedProfiles.length === 0) return;
 
-    await supabase.from("report_personnel").insert(
+    await api.from("report_personnel").insert(
       selectedProfiles.map((item) => ({
         report_id: reportId,
         profile_id: item.id,
@@ -330,18 +319,18 @@ export default function App() {
   }
 
   async function uploadPhotos(reportId: string) {
-    if (!supabase || !session || !profile?.organization_id) return;
+    if (!api || !session || !profile?.organization_id) return;
     for (const photo of photos) {
       const extension = photo.uri.split(".").pop() ?? "jpg";
       const storagePath = `${profile.organization_id}/${reportId}/${photo.localId}.${extension}`;
       const response = await fetch(photo.uri);
       const blob = await response.blob();
-      const upload = await supabase.storage.from("report-photos").upload(storagePath, blob, {
+      const upload = await api.storage.from("report-photos").upload(storagePath, blob, {
         upsert: false,
         contentType: blob.type || "image/jpeg"
       });
       if (upload.error) continue;
-      await supabase.from("report_photos").insert({
+      await api.from("report_photos").insert({
         report_id: reportId,
         storage_path: storagePath,
         category: photo.category,
@@ -913,13 +902,13 @@ function SubmittedReportDetail({
     let cancelled = false;
 
     async function load() {
-      if (!supabase) {
-        setMessage("Supabase bilgileri girilmedi.");
+      if (!api) {
+        setMessage("Sunucu adresi tanımlı değil.");
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from("reports")
         .select("*, report_personnel(name_snapshot), report_photos(category,caption,storage_path,created_at)")
         .eq("id", reportId)

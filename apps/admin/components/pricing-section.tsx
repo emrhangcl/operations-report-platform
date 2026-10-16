@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getBrowserSupabase } from "../lib/supabase-browser";
+import { getBrowserClient } from "../lib/browser-client";
 
 type PublicPlan = {
   id: string;
@@ -29,14 +29,14 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) {
+    const db = getBrowserClient();
+    if (!db) {
       setMessage("Paket bilgileri şu anda alınamıyor.");
       setLoading(false);
       return;
     }
 
-    supabase
+    db
       .from("plans")
       .select("id,code,name,description,currency,monthly_price_minor,yearly_price_minor")
       .eq("is_active", true)

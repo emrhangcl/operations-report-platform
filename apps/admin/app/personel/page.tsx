@@ -47,7 +47,7 @@ import { OrganizationBrand } from "../../components/organization-brand";
 import { Button, EmptyState } from "../../components/ui";
 import { clearAccountContextCache, loadAccountContext } from "../../lib/account-context-client";
 import { downloadOrShareReportPdf } from "../../lib/report-pdf-client";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import { getBrowserClient } from "../../lib/browser-client";
 
 type Screen = "home" | "form" | "drafts" | "submitted" | "assignments" | "detail";
 
@@ -93,8 +93,8 @@ const replacementReasonOptions = [
   "Diğer"
 ];
 
-function getPersonnelSupabase() {
-  return getBrowserSupabase("personnel");
+function getPersonnelClient() {
+  return getBrowserClient("personnel");
 }
 
 export default function PersonnelWebPage() {
@@ -125,17 +125,13 @@ export default function PersonnelWebPage() {
   const submitting = useRef(false);
 
   useEffect(() => {
-    const supabase = getPersonnelSupabase();
-    if (!supabase) {
-      setAccessMessage("Supabase bilgileri girilmedi.");
-      return;
-    }
+    const db = getPersonnelClient();
 
-    supabase.auth.getSession().then(({ data }) => {
+    db.auth.getSession().then(({ data }) => {
       setSessionUserId(data.session?.user.id ?? null);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = db.auth.onAuthStateChange((_event, session) => {
       setSessionUserId(session?.user.id ?? null);
       if (!session?.user) {
         setProfile(null);
@@ -160,8 +156,8 @@ export default function PersonnelWebPage() {
   }
 
   async function loadBootstrapData() {
-    const supabase = getPersonnelSupabase();
-    if (!supabase || !sessionUserId) return;
+    const db = getPersonnelClient();
+    if (!db || !sessionUserId) return;
 
     let accessBody;
     try {
@@ -192,31 +188,31 @@ export default function PersonnelWebPage() {
       submittedResult,
       assignmentResult
     ] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", sessionUserId).maybeSingle(),
-      supabase.from("companies").select("*").eq("is_active", true).order("name"),
-      supabase.from("belts").select("*").eq("is_active", true).order("code"),
-      supabase.from("company_lines").select("*").order("name"),
-      supabase.from("vehicles").select("*").order("plate"),
-      supabase.from("equipment").select("*").eq("is_active", true).order("name"),
-      supabase
+      db.from("profiles").select("*").eq("id", sessionUserId).maybeSingle(),
+      db.from("companies").select("*").eq("is_active", true).order("name"),
+      db.from("belts").select("*").eq("is_active", true).order("code"),
+      db.from("company_lines").select("*").order("name"),
+      db.from("vehicles").select("*").order("plate"),
+      db.from("equipment").select("*").eq("is_active", true).order("name"),
+      db
         .from("profiles")
         .select("*")
         .eq("role", "PERSONNEL")
         .eq("is_active", true)
         .order("first_name"),
-      supabase
+      db
         .from("reports")
         .select("*, report_personnel(profile_id,name_snapshot)")
         .eq("status", "DRAFT")
         .order("updated_at", { ascending: false })
         .limit(50),
-      supabase
+      db
         .from("reports")
         .select("id,client_request_id,report_number,report_date,company_name_snapshot,status,created_at,submitted_at")
         .eq("status", "SUBMITTED")
         .order("submitted_at", { ascending: false })
         .limit(100),
-      supabase
+      db
         .from("installation_assignments")
         .select("*")
         .in("status", ["ASSIGNED", "IN_PROGRESS"])
@@ -253,18 +249,17 @@ export default function PersonnelWebPage() {
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = getPersonnelSupabase();
-    if (!supabase) {
-      showMessage("Supabase bilgileri girilmedi.", "error");
-      return;
-    }
+    const db = getPersonnelClient();
 
     setLoading(true);
     setMessage("");
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        showMessage("Giriş yapılamadı. E-posta ve şifrenizi kontrol edin.", "error");
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error || !data) {
+        showMessage(error?.message ?? "Giriş yapılamadı. E-posta ve şifrenizi kontrol edin.", "error");
+      } else if (data.scope !== "personnel") {
+        // Yonetici hesabi ile giris yapildi; sunucunun belirledigi alana gec.
+        window.location.assign(data.redirectTo);
       }
     } finally {
       setLoading(false);
@@ -274,7 +269,7 @@ export default function PersonnelWebPage() {
   async function signOut() {
     if (submitting.current || loading) return;
     clearAccountContextCache("personnel");
-    await getPersonnelSupabase()?.auth.signOut();
+    await getPersonnelClient()?.auth.signOut();
     setProfile(null);
     setSessionUserId(null);
     setReadOnlyMode(false);
@@ -370,10 +365,10 @@ export default function PersonnelWebPage() {
 
     if (assignment.status !== "ASSIGNED" || readOnlyMode) return;
 
-    const supabase = getPersonnelSupabase();
-    if (!supabase) return;
+    const db = getPersonnelClient();
+    if (!db) return;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("installation_assignments")
       .update({ status: "IN_PROGRESS" })
       .eq("id", assignment.id);
@@ -411,12 +406,12 @@ export default function PersonnelWebPage() {
   }
 
   async function loadSavedPhotos(reportId: string) {
-    const supabase = getPersonnelSupabase();
-    if (!supabase) throw new Error("Oturum bulunamadı.");
-    const result = await supabase.from("report_photos").select("id,storage_path,caption").eq("report_id", reportId).order("created_at");
+    const db = getPersonnelClient();
+    if (!db) throw new Error("Oturum bulunamadı.");
+    const result = await db.from("report_photos").select("id,storage_path,caption").eq("report_id", reportId).order("created_at");
     if (result.error) throw result.error;
     const resolved = await Promise.all((result.data ?? []).map(async (photo) => {
-      const signed = await supabase.storage.from("report-photos").createSignedUrl(photo.storage_path, 60 * 60);
+      const signed = await db.storage.from("report-photos").createSignedUrl(photo.storage_path, 60 * 60);
       if (signed.error || !signed.data?.signedUrl) throw new Error("Fotoğraf görüntülenemiyor.");
       return { ...photo, url: signed.data.signedUrl } as SavedPhoto;
     }));
@@ -424,21 +419,21 @@ export default function PersonnelWebPage() {
   }
 
   async function removeSavedPhoto(photo: SavedPhoto) {
-    const supabase = getPersonnelSupabase();
-    if (!supabase || loading) return;
+    const db = getPersonnelClient();
+    if (!db || loading) return;
     setLoading(true);
     try {
-      const removed = await supabase.from("report_photos").delete().eq("id", photo.id).select("id");
+      const removed = await db.from("report_photos").delete().eq("id", photo.id).select("id");
       if (removed.error || !removed.data?.length) throw new Error("Fotoğraf silinemedi. Rapor gönderilmiş olabilir.");
       setSavedPhotos((current) => current.filter((item) => item.id !== photo.id));
-      await supabase.storage.from("report-photos").remove([photo.storage_path]);
+      await db.storage.from("report-photos").remove([photo.storage_path]);
     } catch (error) { showMessage(error instanceof Error ? error.message : "Fotoğraf silinemedi.", "error"); }
     finally { setLoading(false); }
   }
 
   async function submitReport(status: ReportStatus, signature?: CustomerSignature) {
-    const supabase = getPersonnelSupabase();
-    if (!supabase || !profile || submitting.current) return;
+    const db = getPersonnelClient();
+    if (!db || !profile || submitting.current) return;
     if (readOnlyMode) {
       showMessage("Aboneliğiniz salt okunur durumda. Rapor kaydedilemez.", "error");
       return;
@@ -460,7 +455,7 @@ export default function PersonnelWebPage() {
     setLoading(true);
     try {
       // A lost final response must not cause another report or overwrite signed evidence.
-      const existing = await supabase.from("reports").select("*")
+      const existing = await db.from("reports").select("*")
         .eq("client_request_id", preparedValues.client_request_id).maybeSingle();
       if (existing.error) throw new Error("Rapor durumu doğrulanamadı. Bağlantınızı kontrol edip tekrar deneyin.");
       if (existing.data?.status === "SUBMITTED") {
@@ -476,7 +471,7 @@ export default function PersonnelWebPage() {
       }
       let saved = existing.data?.status === "SUBMITTED" ? existing.data : null;
       if (!saved) {
-        const draft = await supabase.from("reports")
+        const draft = await db.from("reports")
           .upsert(reportPayload(preparedValues, "DRAFT"), { onConflict: "client_request_id" })
           .select("id,report_number,status,updated_at").single();
         if (draft.error || !draft.data) throw new Error("Rapor taslağı kaydedilemedi. Bilgileriniz korunuyor; tekrar deneyin.");
@@ -484,7 +479,7 @@ export default function PersonnelWebPage() {
         if (photos.length > 0) await uploadPhotos(draft.data.id);
         if (status === "SUBMITTED") {
           // The report remains a draft until all attachments exist. Signature and status commit together.
-          const finalized = await supabase.from("reports")
+          const finalized = await db.from("reports")
             .update({ status: "SUBMITTED", customer_signature: signature })
             .eq("id", draft.data.id).eq("status", "DRAFT")
             .eq("updated_at", draft.data.updated_at)
@@ -494,7 +489,7 @@ export default function PersonnelWebPage() {
         } else saved = draft.data;
       }
       if (activeAssignment) {
-        const result = await supabase.from("installation_assignments")
+        const result = await db.from("installation_assignments")
           .update({ report_id: saved.id, status: saved.status === "SUBMITTED" ? "COMPLETED" : "IN_PROGRESS" })
           .eq("id", activeAssignment.id);
         if (result.error) throw new Error("İmzalı rapor kaydedildi ancak montaj ataması güncellenemedi. Tekrar göndererek atamayı tamamlayabilirsiniz; ikinci bir rapor oluşturulmaz.");
@@ -514,10 +509,10 @@ export default function PersonnelWebPage() {
   }
 
   async function loadAssignmentDraftValues(reportId: string) {
-    const supabase = getPersonnelSupabase();
-    if (!supabase) return null;
+    const db = getPersonnelClient();
+    if (!db) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("reports")
       .select("*, report_personnel(profile_id,name_snapshot)")
       .eq("id", reportId)
@@ -532,10 +527,10 @@ export default function PersonnelWebPage() {
   }
 
   async function replaceReportPersonnel(reportId: string) {
-    const supabase = getPersonnelSupabase();
-    if (!supabase || !profile) return;
+    const db = getPersonnelClient();
+    if (!db || !profile) return;
 
-    const removed = await supabase.from("report_personnel").delete().eq("report_id", reportId);
+    const removed = await db.from("report_personnel").delete().eq("report_id", reportId);
     if (removed.error) throw new Error("Rapor personeli kaydedilemedi. Tekrar deneyin.");
 
     const selectedProfiles = [
@@ -545,7 +540,7 @@ export default function PersonnelWebPage() {
 
     if (selectedProfiles.length === 0) return;
 
-    const inserted = await supabase.from("report_personnel").insert(
+    const inserted = await db.from("report_personnel").insert(
       selectedProfiles.map((item) => ({
         report_id: reportId,
         profile_id: item.id,
@@ -556,33 +551,33 @@ export default function PersonnelWebPage() {
   }
 
   async function uploadPhotos(reportId: string) {
-    const supabase = getPersonnelSupabase();
-    if (!supabase || !sessionUserId || !profile?.organization_id) throw new Error("Fotoğraflar için oturum doğrulanamadı. Rapor gönderilmedi.");
+    const db = getPersonnelClient();
+    if (!db || !sessionUserId || !profile?.organization_id) throw new Error("Fotoğraflar için oturum doğrulanamadı. Rapor gönderilmedi.");
 
     for (const photo of photos) {
       const extension = safeExtension(photo.file.name, photo.file.type);
       const storagePath = `${profile.organization_id}/${reportId}/${photo.localId}.${extension}`;
-      const existingPhoto = await supabase.from("report_photos").select("id,caption").eq("report_id", reportId).eq("storage_path", storagePath).maybeSingle();
+      const existingPhoto = await db.from("report_photos").select("id,caption").eq("report_id", reportId).eq("storage_path", storagePath).maybeSingle();
       if (existingPhoto.error) throw new Error("Fotoğraf durumu doğrulanamadı. Tekrar deneyin.");
       if (existingPhoto.data) {
-        const updated = await supabase.from("report_photos").update({ caption: photo.caption.trim() || null }).eq("id", existingPhoto.data.id);
+        const updated = await db.from("report_photos").update({ caption: photo.caption.trim() || null }).eq("id", existingPhoto.data.id);
         if (updated.error) throw new Error("Fotoğraf açıklaması kaydedilemedi. Tekrar deneyin.");
         await loadSavedPhotos(reportId);
         setPhotos((current) => current.filter((item) => item.localId !== photo.localId));
         continue;
       }
-      const upload = await supabase.storage.from("report-photos").upload(storagePath, photo.file, {
+      const upload = await db.storage.from("report-photos").upload(storagePath, photo.file, {
         contentType: photo.file.type || "image/jpeg",
         upsert: false
       });
 
       if (upload.error) {
         // A prior upload can succeed before its response reaches the device.
-        const stored = await supabase.storage.from("report-photos").download(storagePath);
+        const stored = await db.storage.from("report-photos").download(storagePath);
         if (stored.error) throw new Error("Fotoğraf yüklenemedi. Rapor taslak olarak korundu; tekrar deneyin.");
       }
 
-      const insertedPhoto = await supabase.from("report_photos").insert({
+      const insertedPhoto = await db.from("report_photos").insert({
         report_id: reportId,
         storage_path: storagePath,
         category: defaultPhotoCategory,
@@ -966,13 +961,9 @@ function ReportDetailView({ reportId, readOnly, onBack }: { reportId: string; re
     let cancelled = false;
 
     async function load() {
-      const supabase = getPersonnelSupabase();
-      if (!supabase) {
-        setMessage("Supabase bilgileri girilmedi.");
-        return;
-      }
+      const db = getPersonnelClient();
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("reports")
         .select("*, report_personnel(name_snapshot), report_photos(id,category,caption,storage_path,created_at)")
         .eq("id", reportId)
@@ -996,7 +987,7 @@ function ReportDetailView({ reportId, readOnly, onBack }: { reportId: string; re
           .filter((photo) => photo.storage_path)
           .map(async (photo) => {
             const path = String(photo.storage_path);
-            const signed = await supabase.storage.from("report-photos").createSignedUrl(path, 60 * 30);
+            const signed = await db.storage.from("report-photos").createSignedUrl(path, 60 * 30);
             return [path, signed.data?.signedUrl ?? ""] as const;
           })
       );
@@ -1054,17 +1045,12 @@ function ReportDetailView({ reportId, readOnly, onBack }: { reportId: string; re
       return;
     }
 
-    const supabase = getPersonnelSupabase();
-    if (!supabase) {
-      setMessageTone("error");
-      setMessage("Supabase bilgileri girilmedi.");
-      return;
-    }
+    const db = getPersonnelClient();
 
     setCloseoutSaving(true);
     setMessage("");
     try {
-      const result = await supabase
+      const result = await db
         .from("reports")
         .update({
           factory_return_at: parsed.data.factory_return_at,

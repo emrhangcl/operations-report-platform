@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { clearSupabaseReadCache, getBrowserSupabase } from "../../lib/supabase-browser";
+import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type EquipmentForm = {
   name: string;
@@ -43,10 +43,10 @@ export default function EquipmentPage() {
   const [pendingDelete, setPendingDelete] = useState<Equipment | null>(null);
 
   async function load() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("equipment")
       .select("*")
       .order("name", { ascending: true });
@@ -64,11 +64,7 @@ export default function EquipmentPage() {
   }, []);
 
   async function authHeaders() {
-    const supabase = getBrowserSupabase();
-    const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : undefined;
+    return scopeHeaders("admin");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -101,7 +97,7 @@ export default function EquipmentPage() {
         return;
       }
 
-      clearSupabaseReadCache();
+      clearReadCache();
       setForm(emptyForm);
       setEditingId(null);
       await load();
@@ -127,7 +123,7 @@ export default function EquipmentPage() {
         return;
       }
 
-      clearSupabaseReadCache();
+      clearReadCache();
       await load();
       setMessage("Ekipman silindi.");
     } finally {

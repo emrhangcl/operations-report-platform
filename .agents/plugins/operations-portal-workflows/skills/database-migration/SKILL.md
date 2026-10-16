@@ -1,11 +1,11 @@
 ---
 name: database-migration
-description: Use for Supabase schema, RLS, storage policy, trigger, function, foreign-key, or tenant-isolation changes in this repository.
+description: Use for PostgreSQL schema, RLS, storage policy, trigger, function, foreign-key, or tenant-isolation changes in this repository.
 ---
 
 # Database Migration
 
-Use this workflow for changes under `supabase/migrations` or application changes that require database updates.
+Use this workflow for changes under `db/migrations` or application changes that require database updates.
 
 ## Project References
 
@@ -28,7 +28,7 @@ Read:
 6. Check indexes, foreign-key behavior, deletion behavior, null/cascade semantics, and compatibility with existing API/client queries.
 7. Consider deployment ordering and backward compatibility between old application code, new application code, and the migrated schema.
 8. Update shared types or validation only if the schema change requires it.
-9. Run relevant TypeScript checks, package tests, and available Supabase database tests when tooling is available.
+9. Run relevant TypeScript checks, package tests, and the pgTAP database tests (`pnpm db:test`).
 10. Review the final diff and report migration impact, rollback/mitigation path, deployment ordering, skipped checks, and unknown risks.
 
 Do not delete or rewrite production data unless the user explicitly approves that exact operation.

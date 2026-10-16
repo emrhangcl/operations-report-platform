@@ -4,7 +4,6 @@
 .env.*
 .next
 **/.next
-.vercel
 .expo
 .playwright-cli
 node_modules

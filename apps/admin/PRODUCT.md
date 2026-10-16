@@ -26,13 +26,13 @@ The implemented product centers the assignment-to-report workflow in the same te
 - Work is organization-scoped and role-sensitive. Admin, personnel, and platform-owner routes expose different controls and data.
 - Field and office workflows cover assignments, report creation and submission, signed delivery approval, restricted return closeout, report detail, PDF generation, and Excel export.
 - The interface and product copy are primarily Turkish and are used in the Europe/Istanbul operating context.
-- Supabase provides authentication, Postgres data, row-level security, and private storage; Vercel hosts the web application and optional analytics.
+- A locally installed PostgreSQL 18 provides data and row-level security; the Next.js server provides authentication (httpOnly session cookies), a validated data gateway, and private file storage. No third-party hosting or backend-as-a-service is required.
 
 ## Capabilities and Constraints
 
 - Manage organizations, users, companies, lines, vehicles, belts, equipment, assignments, reports, branding, subscriptions, plans, and payment records through authorized surfaces.
 - Generate organization-aware report PDFs and Excel exports from real stored data.
-- Preserve authentication, server-side authorization, organization isolation, Supabase RLS, permission checks, subscription access modes, validation, API contracts, auditability, and private-file boundaries.
+- Preserve authentication, server-side authorization, organization isolation, PostgreSQL RLS, permission checks, subscription access modes, validation, API contracts, auditability, and private-file boundaries.
 - Keep service-role credentials server-only and never expose cross-organization data through pages, APIs, exports, PDFs, logs, or storage URLs.
 - `apps/mobile` is a separate Expo application and does not define the visual platform or design context for this web product.
 - Do not fabricate customers, testimonials, metrics, logos, activity, records, product claims, or capabilities.

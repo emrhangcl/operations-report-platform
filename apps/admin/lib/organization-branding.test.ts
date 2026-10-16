@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ServiceClient } from "./server/service-client";
 vi.mock("server-only", () => ({}));
 import { removeOrganizationLogo, uploadOrganizationLogo } from "./organization-branding";
 
@@ -18,7 +18,7 @@ function setup(pending: boolean, changedDuringUpload = false) {
       ? changedDuringUpload ? null : { id: organizationId }
       : { name: "Company", logo_path: `${organizationId}/old.png`, deletion_started_at: pending ? "2026-09-14" : null } }))
   };
-  const service = { from: () => query, storage: { from: () => ({ upload, remove }) } } as unknown as SupabaseClient;
+  const service = { from: () => query, storage: { from: () => ({ upload, remove }) } } as unknown as ServiceClient;
   return { service, upload, remove, update, query };
 }
 

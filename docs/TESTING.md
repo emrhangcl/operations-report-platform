@@ -1,79 +1,90 @@
 # Testing
 
-## Existing Test Framework
+Three automated layers cover the system. Run them from the repository root.
 
-The repository uses Vitest for package-level unit tests. The root `package.json` exposes `pnpm run test`, which runs workspace test scripts when present.
+| Command | What it runs | Needs |
+| --- | --- | --- |
+| `pnpm run test` | Vitest unit tests in every workspace package that has a `test` script | Nothing running |
+| `pnpm db:test` | pgTAP security tests in `db/tests` against a freshly reset `operations_portal_test` database | Local PostgreSQL (`pnpm db:start`) |
+| `pnpm test:e2e` | HTTP end-to-end flows and attack scenarios against the running app (`scripts/e2e/local-stack.ts`) | `pnpm dev:admin` running, `E2E_*` accounts in `.env` |
 
-Verified package test scripts:
-
-- `@operations/validation`: `vitest run`
-- `@operations/shared`: `vitest run`
-- `@operations/payments`: `vitest run`
-
-`@operations/types`, `@operations/admin`, and `@operations/mobile` currently expose typecheck/build/lint scripts but no package-level test script.
-
-## Current Test Locations
-
-Verified test files:
-
-- `packages/validation/src/index.test.ts`
-- `packages/shared/src/subscription.test.ts`
-- `packages/shared/src/report-number.test.ts`
-- `packages/shared/src/rate-limit.test.ts`
-- `packages/shared/src/permissions.test.ts`
-- `packages/shared/src/excel.test.ts`
-- `packages/payments/src/index.test.ts`
-
-Supabase database tests are stored under `supabase/tests/`. Exact test file coverage is Not yet documented here.
-
-## Commands
-
-Run from the repository root:
+Supporting checks:
 
 ```bash
 pnpm run typecheck
 pnpm run lint
-pnpm run test
 pnpm run build
 ```
 
-`pnpm run typecheck` runs TypeScript checks across workspaces with typecheck scripts. `pnpm run lint` runs available lint scripts, including admin ESLint. `pnpm run test` runs available Vitest package tests. `pnpm run build` builds the admin app and typechecks the mobile app.
+`pnpm run typecheck` runs TypeScript checks in every workspace. `pnpm run lint` runs the admin ESLint configuration with zero allowed warnings. `pnpm run build` builds the admin app and typechecks the mobile app.
+
+## Unit Tests (`pnpm run test`)
+
+Packages with a `test` script: `@operations/admin`, `@operations/data-client`, `@operations/payments`, `@operations/shared`, `@operations/validation`. `@operations/types` and `@operations/mobile` have typechecks only.
+
+Admin tests run with `apps/admin/vitest.config.ts`, which maps `server-only` to an empty module so server code can be imported outside Next.js.
+
+Test files:
+
+- Server security layer:
+  - `apps/admin/lib/server/query/compiler.test.ts`: parameter binding, typed casts, relation embedding, unknown table/column and injection rejection, unfiltered update/delete refusal, row cap.
+  - `apps/admin/lib/server/query/gateway-policy.test.ts`: table/action allowlist, anonymous access, request schema limits.
+  - `apps/admin/lib/server/auth/http.test.ts`: origin checks, scope-bound cookies, CSRF rejection, mobile-only bearer tokens.
+  - `apps/admin/lib/server/auth/password.test.ts`: scrypt format, verification, NFKC handling, malformed hashes, rehash detection.
+  - `apps/admin/lib/server/storage.test.ts`: path traversal, bucket names, image signature detection, signed link verification.
+  - `apps/admin/lib/server/guards.test.ts`: `401`/`403` status for every guard failure, read-only versus write access, personnel versus admin, platform admin grant.
+- API routes and helpers: `apps/admin/app/api/admin/personnel/[id]/route.test.ts`, `apps/admin/app/api/admin/reports/[id]/route.test.ts`, `apps/admin/app/api/platform/organizations/[id]/route.test.ts`, `apps/admin/app/platform/_components/platform-client.test.ts`, `apps/admin/lib/organization-branding.test.ts`, `apps/admin/lib/organization-deletion.test.ts`.
+- Packages: `packages/data-client/src/builder.test.ts`, `packages/payments/src/index.test.ts`, `packages/shared/src/*.test.ts` (excel, permissions, rate limit, report number, subscription), `packages/validation/src/*.test.ts` (forms, customer signature, organization management).
+
+## Database Tests (`pnpm db:test`)
+
+`scripts/db/test.ts` resets the test database, applies all migrations, installs pgTAP into the `extensions` schema, and runs each `db/tests/*.test.sql` file in its own transaction that is rolled back. Pass a name fragment to run a subset, for example `pnpm db:test tenant`.
+
+Suites:
+
+- `tenant_isolation.test.sql`: cross-tenant reads and writes on every tenant table.
+- `subscription_access.test.sql`: read/write/blocked access modes and restrictive policies.
+- `customer_report_signatures.test.sql`: signature validation, signed report immutability, storage object protection, history-preserving profile deletion.
+- `platform_admin.test.sql`: platform administrator checks and platform RPCs.
+- `platform_organization_management.test.sql`: organization reopen and deletion manifests.
+- `payment_events.test.sql`: verified payment event processing.
+
+Tests switch users with `set local role authenticated` and `select set_config('app.user_id', '<uuid>', true)`, the same context the server sets. They run as `ops_owner`, which may switch into the request roles without inheriting their privileges. pgTAP must be present in the PostgreSQL `share/extension` directory (`pgtap.control` and `pgtap--1.3.4.sql`).
+
+## End-to-End Tests (`pnpm test:e2e`)
+
+`scripts/e2e/local-stack.ts` uses the same endpoints, cookies, and `@operations/data-client` builder as the browser. Each run creates a new throwaway tenant B and test records for the tenant of `E2E_ADMIN_EMAIL`. Sections:
+
+- authentication and session: anonymous access, platform owner login, cookie attributes, wrong password, cross-origin login;
+- platform management: dashboard, registration of tenant B, lifetime access and activation;
+- organization admin: access mode, companies, lines, belts, vehicles, equipment, personnel account;
+- field report: personnel login, RLS on company inserts, draft upsert, report personnel, photo upload, forged image and foreign-path rejection, signed and tampered links, signed submission and report number, immutability after signing;
+- admin review: embedded relations, PDF, Excel export;
+- tenant isolation between A and B, including PDFs and signed links;
+- gateway hardening: allowlist, schema, injection, unfiltered delete, row limit, cross-origin cookie writes, web token used as bearer;
+- mobile bearer login and logout, server-side revocation of an old cookie.
+
+Accounts: create the platform owner with `pnpm create-admin --platform`, register the organization admin through `/register` and activate it in `/platform`, and let the suite create the personnel account. The login rate limit (10 per minute per client) means the suite should not be run more than once per minute.
 
 ## What Requires Tests
 
 Add or update tests when changing:
 
-- shared validation schemas
-- permission or role logic
-- tenant/organization isolation helpers
-- rate limiting
-- report numbering
-- subscription access behavior
-- payment provider helpers
-- Excel export logic
-- deletion behavior and history preservation
+- shared validation schemas, permission or role logic, report numbering, subscription access, payment helpers, Excel export;
+- the data gateway, compiler, allowlist, session, cookie, CSRF, or storage code (`apps/admin/lib/server`);
+- migrations, RLS policies, grants, triggers, or deletion and history-preservation behavior (`db/tests`);
+- any new API route that reads or writes tenant data (unit test for the guard path plus an end-to-end check).
 
-For API, UI, PDF, and Supabase policy changes, add automated tests where the current structure supports them. If not, document manual verification clearly.
+## Manual Verification
 
-## Manual Verification Expectations
+Check affected flows in the browser with the console and network panel open: login and registration, platform panel, personnel account creation, reset, and deletion, master data management, assignments, report creation, submission, detail, deletion, PDF and Excel export, and organization branding.
 
-Manually verify affected flows:
-
-- login and registration
-- owner/platform access
-- personnel account creation, reset, and deletion
-- company, line, vehicle, belt, and equipment management
-- assignment creation and completion
-- report creation, submission, detail view, deletion, PDF, and Excel export
-- organization branding and file access when changed
-
-For UI work, check browser console and network errors.
-
-## Recommended Verification Order
+## Recommended Order
 
 1. `pnpm run typecheck`
-2. Relevant package tests or `pnpm run test`
+2. `pnpm run test`
 3. `pnpm run lint`
-4. `pnpm run build` for deployment-sensitive changes
-5. Manual browser/mobile verification for changed user flows
-6. Supabase database tests when migrations or RLS change
+4. `pnpm db:test` when migrations, policies, or triggers changed
+5. `pnpm test:e2e` with `pnpm dev:admin` running
+6. `pnpm run build` for release-sensitive changes
+7. Manual browser or mobile verification of changed flows

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ImagePlus, LoaderCircle, Trash2, Upload } from "lucide-react";
 import { loadAccountContext, updateAccountBrandingCache } from "../lib/account-context-client";
-import { getBrowserSupabase } from "../lib/supabase-browser";
+import { getBrowserClient, scopeHeaders } from "../lib/browser-client";
 import { Alert, Button, ConfirmDialog, EmptyState, FormActions, FormField, LoadingState } from "./ui";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -16,9 +16,8 @@ interface BrandingPayload {
 }
 
 async function authorizationHeader() {
-  const supabase = getBrowserSupabase();
-  const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-  return data.session?.access_token ? `Bearer ${data.session.access_token}` : null;
+  const { data } = await getBrowserClient().auth.getSession();
+  return data.session ? scopeHeaders("admin") : null;
 }
 
 export function OrganizationBrandingSettings() {
@@ -95,7 +94,7 @@ export function OrganizationBrandingSettings() {
       const response = await fetch("/api/admin/organization/logo", {
         method: "POST",
         body: formData,
-        headers: { Authorization: authorization }
+        headers: authorization
       });
       const body = await response.json().catch(() => ({})) as BrandingPayload & { message?: string };
       if (!response.ok) {
@@ -127,7 +126,7 @@ export function OrganizationBrandingSettings() {
     try {
       const response = await fetch("/api/admin/organization/logo", {
         method: "DELETE",
-        headers: { Authorization: authorization }
+        headers: authorization
       });
       const body = await response.json().catch(() => ({})) as BrandingPayload & { message?: string };
       if (!response.ok) {

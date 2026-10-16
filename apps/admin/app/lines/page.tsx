@@ -22,7 +22,7 @@ import {
   PageHeaderShell,
   StatusBadge
 } from "../../components/ui";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
+import { getBrowserClient } from "../../lib/browser-client";
 
 type LineForm = {
   company_id: string;
@@ -49,11 +49,11 @@ export default function LinesPage() {
   );
 
   async function load() {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    const db = getBrowserClient();
+    if (!db) return;
     const [companyRows, lineRows] = await Promise.all([
-      supabase.from("companies").select("*").order("name"),
-      supabase.from("company_lines").select("*").order("created_at", { ascending: false })
+      db.from("companies").select("*").order("name"),
+      db.from("company_lines").select("*").order("created_at", { ascending: false })
     ]);
     if (companyRows.error || lineRows.error) {
       setMessage("Hat listesi alınamadı.");
@@ -78,11 +78,11 @@ export default function LinesPage() {
 
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
+      const db = getBrowserClient();
+      if (!db) return;
       const request = editingId
-        ? supabase.from("company_lines").update(parsed.data).eq("id", editingId)
-        : supabase.from("company_lines").insert(parsed.data);
+        ? db.from("company_lines").update(parsed.data).eq("id", editingId)
+        : db.from("company_lines").insert(parsed.data);
       const { error } = await request;
       if (error) {
         setMessage("Hat kaydedilemedi. Aynı firmada aynı hat adı zaten olabilir.");
@@ -101,9 +101,9 @@ export default function LinesPage() {
     setMessage("");
     setLoading(true);
     try {
-      const supabase = getBrowserSupabase();
-      if (!supabase) return;
-      const { error } = await supabase.from("company_lines").delete().eq("id", line.id);
+      const db = getBrowserClient();
+      if (!db) return;
+      const { error } = await db.from("company_lines").delete().eq("id", line.id);
       if (error) {
         setMessage("Hat silinemedi.");
         return;

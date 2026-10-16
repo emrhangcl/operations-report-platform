@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ServiceClient } from "./server/service-client";
 vi.mock("server-only", () => ({}));
 import { deletePlatformOrganization } from "./organization-deletion";
 
@@ -19,7 +19,7 @@ function setup(options: { storageError?: boolean; authCode?: string; rpcError?: 
   });
   const remove = vi.fn(async () => { calls.push("storage.remove"); return { error: options.storageError ? { message: "unavailable" } : null }; });
   const deleteUser = vi.fn(async () => { calls.push("auth.deleteUser"); return { error: options.authCode ? { code: options.authCode } : null }; });
-  const service = { rpc, storage: { from: () => ({ remove }) }, auth: { admin: { deleteUser } } } as unknown as SupabaseClient;
+  const service = { rpc, storage: { from: () => ({ remove }) }, auth: { admin: { deleteUser } } } as unknown as ServiceClient;
   return { service, calls, rpc, remove, deleteUser };
 }
 

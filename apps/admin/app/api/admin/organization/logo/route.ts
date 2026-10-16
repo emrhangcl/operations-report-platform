@@ -6,7 +6,7 @@ import {
   uploadOrganizationLogo
 } from "../../../../../lib/organization-branding";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
-import { requireAdmin } from "../../../../../lib/supabase-server";
+import { requireAdmin } from "../../../../../lib/server/guards";
 
 export const runtime = "nodejs";
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   const auth = await requireAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const contentLength = Number(request.headers.get("content-length"));
@@ -62,7 +62,7 @@ export async function DELETE(request: Request) {
 
   const auth = await requireAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   try {

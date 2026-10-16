@@ -5,32 +5,36 @@ import { KeyRound, Loader2, Lock } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { AuthField, PasswordStrength } from "../../components/auth-field";
 import { AuthShell } from "../../components/auth-shell";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 export default function ResetPasswordPage() {
-  const [ready, setReady] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [message, setMessage] = useState("");
+  const ready = Boolean(token);
 
   useEffect(() => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setReady(Boolean(data.session)));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setReady(Boolean(session)));
-    return () => data.subscription.unsubscribe();
+    const value = new URLSearchParams(window.location.search).get("token");
+    setToken(value && /^[A-Za-z0-9_-]{43}$/.test(value) ? value : null);
+    // Belirteci tarayici gecmisinden ve Referer basligindan cikar.
+    if (value) window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
+    if (!token) return;
     setLoading(true);
     setMessage("");
-    const { error } = await supabase.auth.updateUser({ password });
+    const response = await fetch("/api/auth/password/reset", {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password })
+    }).catch(() => null);
+    const body = await response?.json().catch(() => null) as { message?: string } | null;
     setLoading(false);
-    if (error) setMessage("Parola güncellenemedi. Bağlantıyı yeniden isteyin.");
+    if (!response?.ok) setMessage(body?.message ?? "Parola güncellenemedi. Bağlantıyı yeniden isteyin.");
     else setUpdated(true);
   }
 

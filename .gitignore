@@ -2,7 +2,6 @@ node_modules
 .next
 .next-stale-*
 .expo
-.vercel
 dist
 coverage
 .env

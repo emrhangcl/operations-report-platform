@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "../../../../../lib/supabase-server";
+import { requireAdmin } from "../../../../../lib/server/guards";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const admin = await requireAdmin(request);
   if (!admin.ok) {
-    return NextResponse.json({ message: admin.message }, { status: 403 });
+    return NextResponse.json({ message: admin.message }, { status: admin.status });
   }
 
   const { id } = await params;

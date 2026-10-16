@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../../lib/request-body";
-import { requirePlatformAdmin } from "../../../../../lib/supabase-server";
+import { requirePlatformAdmin } from "../../../../../lib/server/guards";
 import { planRow, planSchema } from "../schema";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const rateLimited = enforceRateLimit(request, "platform-plans-update");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
-  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: 403 });
+  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
   const id = await planId(params);
   if (!id) return NextResponse.json({ message: "Paket kimliği geçersiz." }, { status: 400 });
 
@@ -45,7 +45,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const rateLimited = enforceRateLimit(request, "platform-plans-delete");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
-  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: 403 });
+  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
   const id = await planId(params);
   if (!id) return NextResponse.json({ message: "Paket kimliği geçersiz." }, { status: 400 });
 

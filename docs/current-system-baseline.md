@@ -1,5 +1,7 @@
 # Mevcut Sistem Baseline
 
+> **Tarihsel belge.** Bu belge, sistemin Supabase ve Vercel uzerinde calistigi 2026-08-29 tarihli durumu kaydeder. Sistem artik yerel PostgreSQL 18 ve kendi kimlik dogrulama, veri gecidi ve dosya depolama katmaniyla calisir; guncel durum icin `README.md`, `docs/ARCHITECTURE.md`, `docs/DATABASE.md` ve `docs/SECURITY.md` belgelerine bakin. Asagidaki icerik referans olarak degistirilmeden korunmustur.
+
 Bu belge, SaaS donusumu baslamadan once calisan sistemin geri donus ve regresyon referansidir.
 
 ## Baseline Kimligi

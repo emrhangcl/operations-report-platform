@@ -3,7 +3,7 @@ import { organizationDeletionSchema } from "@operations/validation";
 import { deletePlatformOrganization, OrganizationDeletionError, organizationMutationError } from "../../../../../lib/organization-deletion";
 import { NextResponse } from "next/server";
 import { createOrganizationLogoUrl } from "../../../../../lib/organization-branding";
-import { requirePlatformAdmin } from "../../../../../lib/supabase-server";
+import { requirePlatformAdmin } from "../../../../../lib/server/guards";
 import { enforceRateLimit } from "../../../../../lib/rate-limit";
 import { readJsonBody } from "../../../../../lib/request-body";
 
@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const id = await getOrganizationId(params);
@@ -120,7 +120,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) {
-    return NextResponse.json({ message: auth.message }, { status: 403 });
+    return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
   const id = await getOrganizationId(params);
@@ -185,7 +185,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const rateLimited = enforceRateLimit(request, "platform-organization-delete");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
-  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: 403 });
+  if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
   const id = await getOrganizationId(params);
   if (!id) return NextResponse.json({ message: "Firma kimliği geçersiz." }, { status: 400 });
   const body = await readJsonBody(request, 8 * 1024);

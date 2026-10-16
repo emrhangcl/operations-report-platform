@@ -3,21 +3,32 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AuthShell } from "../../components/auth-shell";
-import { getBrowserSupabase } from "../../lib/supabase-browser";
 
 export default function VerifyEmailPage() {
   const [email, setEmail] = useState("");
   const [verified, setVerified] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setEmail(new URLSearchParams(window.location.search).get("email") ?? "");
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setVerified(Boolean(data.session?.user.email_confirmed_at)));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setVerified(Boolean(session?.user.email_confirmed_at));
-    });
-    return () => data.subscription.unsubscribe();
+    const params = new URLSearchParams(window.location.search);
+    setEmail(params.get("email") ?? "");
+    const token = params.get("token");
+    if (!token) return;
+    // Belirteci tarayici gecmisinden ve Referer basligindan cikar.
+    window.history.replaceState(null, "", window.location.pathname);
+    fetch("/api/auth/verify-email", {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    }).then(async (response) => {
+      if (response.ok) {
+        setVerified(true);
+        return;
+      }
+      const body = await response.json().catch(() => null) as { message?: string } | null;
+      setError(body?.message ?? "Doğrulama bağlantısı geçersiz.");
+    }).catch(() => setError("Doğrulama şu anda tamamlanamıyor."));
   }, []);
 
   return (
@@ -27,6 +38,7 @@ export default function VerifyEmailPage() {
     >
       <div className="auth-status-block" role="status">
         {email ? <strong>{email}</strong> : null}
+        {error ? <div className="message error" role="alert">{error}</div> : null}
         <p>{verified ? "Abonelik adımına geçmek için giriş yapabilirsiniz." : "E-posta birkaç dakika içinde gelmezse gereksiz klasörünü kontrol edin."}</p>
         <Link className="button" href="/login">Giriş sayfasına git</Link>
       </div>
