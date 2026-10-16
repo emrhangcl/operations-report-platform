@@ -1,7 +1,7 @@
 import "server-only";
 
-import { isIP } from "node:net";
 import type { NextResponse } from "next/server";
+import { getClientIp } from "../client-ip";
 import { getServerConfig } from "../config";
 import { isSessionScope, resolveSession, type ActiveSession, type RequestMeta, type SessionScope } from "./sessions";
 
@@ -30,11 +30,8 @@ function readCookie(request: Request, name: string) {
 }
 
 export function getRequestMeta(request: Request): RequestMeta {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  const candidate = forwarded || realIp || null;
   return {
-    ip: candidate && isIP(candidate) ? candidate : null,
+    ip: getClientIp(request),
     userAgent: request.headers.get("user-agent")?.slice(0, 400) ?? null
   };
 }

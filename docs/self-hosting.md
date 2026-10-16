@@ -7,9 +7,12 @@ Uygulama tamamen kendi altyapinizda calisir: bir Next.js sunucu sureci ve bir Po
 ```text
 Tarayici / mobil -> (HTTPS reverse proxy) -> Next.js (127.0.0.1:3000) -> PostgreSQL 18 (127.0.0.1:5432)
                                                   |
-                                                  +-> OPS_DATA_DIR/storage     (yuklenen dosyalar)
+                                                  +-> OPS_DATA_DIR/storage     (yuklenen dosyalar, AES-256-GCM sifreli)
                                                   +-> OPS_DATA_DIR/mail-outbox (giden e-postalar)
+                                                  +-> OPS_DATA_DIR/backups     (sifreli gunluk yedekler)
 ```
+
+`pnpm dev:admin` ve `pnpm --filter @operations/admin start` uygulamayi `apps/admin/server.mjs` uzerinden calistirir. Bu sarmalayici istemci adresini soketten belirler ve istemcinin gonderdigi `X-Forwarded-For` basligini yok sayar (bkz. `docs/SECURITY.md`).
 
 Uygulama veritabanina yalnizca `ops_app` rolu ile baglanir; bu rolun kendi tablo yetkisi yoktur ve her istekte RLS'e tabi `authenticated`/`anon` rolune gecer. Ayrintilar: `docs/DATABASE.md`, `docs/SECURITY.md`.
 
@@ -25,7 +28,8 @@ pnpm dev:admin
 ```
 
 - PostgreSQL ikili dosyalari: `%LOCALAPPDATA%\Programs\PostgreSQL\18` (resmi EDB "binaries" zip'i; yonetici yetkisi gerekmez).
-- Veri: `%USERPROFILE%\OperationsPortal` (`postgres/`, `storage/`, `mail-outbox/`, `secrets/`).
+- Veri: `%USERPROFILE%\OperationsPortal` (`postgres/`, `storage/`, `mail-outbox/`, `secrets/`, `backups/`). Bu klasoru BitLocker ile sifreli bir diskte tutun; PostgreSQL veri dosyalari uygulama tarafindan sifrelenmez.
+- Gunluk sifreli yedek: `pnpm backup:schedule` (yonetici yetkisi gerekmez). Ilk kurulumdan sonra `pnpm backup` ve `pnpm backup:verify` ile bir kez deneyin.
 - Sunucu Windows'ta WMI uzerinden, cagiran terminalden bagimsiz baslatilir; terminal kapansa da calismaya devam eder. Bilgisayar yeniden basladiginda `pnpm db:start` ile baslatin.
 - PostgreSQL'i Windows servisi olarak kaydetmek isterseniz (otomatik baslatma) yonetici terminalinde: `pg_ctl register -N OperationsPortalPostgres -D "%USERPROFILE%\OperationsPortal\postgres\data"`. Servis, veri klasorune erisebilen bir hesapla calismalidir.
 
@@ -43,6 +47,12 @@ Gercek degerleri Git'e eklemeyin. Tum degiskenler `.env.example` icinde aciklanm
 | `AUTH_SECRET` | En az 32 karakter; imzali dosya baglantilari. |
 | `OPS_DATA_DIR` | Dosya deposu ve giden e-postalar; kalici ve yedekli olmalidir. |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | Production'da `true` onerilir. |
+| `STORAGE_ENCRYPTION_KEY` | Zorunlu. Yuklenen dosyalarin sifreleme anahtari (32 bayt, base64url). |
+| `BACKUP_ENCRYPTION_KEY` | Yedeklerin sifreleme anahtari; dosya anahtarindan farkli olmalidir. |
+| `TRUST_PROXY_IPS` | Ters proxy'nin adresi (or. `127.0.0.1`). Yalnizca bu adresten gelen `X-Forwarded-For` dikkate alinir. |
+| `BACKUP_DIR`, `BACKUP_RETENTION`, `BACKUP_COPY_DIR` | Yedek klasoru, saklanacak yedek sayisi, ikinci kopya konumu. |
+
+**Anahtarlari kaybetmeyin.** `STORAGE_ENCRYPTION_KEY` olmadan yuklenen dosyalar, `BACKUP_ENCRYPTION_KEY` olmadan yedekler okunamaz. Ikisini de `.env` ve yedeklerden ayri olarak bir parola yoneticisinde veya cevrimdisi bir kopyada saklayin.
 
 Hicbir sir `NEXT_PUBLIC_*` ile tarayiciya tasinmaz. Mobil uygulama yalnizca `EXPO_PUBLIC_API_URL` kullanir.
 
@@ -111,23 +121,33 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Ops-Client-Ip $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
 
-Hiz siniri istemci adresini `X-Forwarded-For` / `X-Real-IP` basliklarindan okur. Proxy bu basliklari istemciden gelen degerle birlestirmek yerine kendi gordugu adresle ezmelidir (yukaridaki gibi `$remote_addr`). Firewall'da yalnizca SSH, `80/tcp` ve `443/tcp` acik olmalidir; `3000` ve `5432` disariya acilmaz.
+Hiz siniri, IP engelleme ve guvenlik olaylari istemci adresini yalnizca `X-Ops-Client-Ip` basligindan okur:
+
+- Uygulama `server.mjs` ile calisiyorsa (`pnpm --filter @operations/admin start`) bu basligi kendisi uretir; gelen degeri her zaman siler. `.env` icinde `TRUST_PROXY_IPS=127.0.0.1` ayarlayin; boylece proxy'nin `X-Forwarded-For` degeri kabul edilir, dogrudan gelen istemcilerinki edilmez.
+- Uygulama standalone `server.js` ile (veya Docker imajinda) calisiyorsa `server.mjs` devrede degildir. Bu durumda proxy `X-Ops-Client-Ip` basligini yukaridaki gibi `$remote_addr` ile **ezmelidir**; aksi halde istemci bu basligi kendisi gonderebilir. Baslik hic gelmezse tum istekler tek bir `unverified` sayacini paylasir ve uygulama bir kez uyari loglar.
+
+Firewall'da yalnizca SSH, `80/tcp` ve `443/tcp` acik olmalidir; `3000` ve `5432` disariya acilmaz.
 
 ## Yedekleme
 
-Otomatik yedekleme isi henuz yoktur. Veritabani ve dosyalar birlikte yedeklenmelidir:
+Veritabani ve dosyalar birlikte, `BACKUP_ENCRYPTION_KEY` ile sifrelenerek yedeklenir:
 
 ```bash
-pg_dump --format=custom --file "$OPS_DATA_DIR/backups/operations-$(date +%F).dump" "$DATABASE_MIGRATION_URL"
-tar -czf "$OPS_DATA_DIR/backups/storage-$(date +%F).tgz" -C "$OPS_DATA_DIR" storage
+pnpm backup          # sifreli yedek seti olusturur
+pnpm backup:list     # yedekleri listeler
+pnpm backup:verify   # en yeni yedegi test veritabanina geri yukleyip dogrular
 ```
 
-Geri yukleme bos bir veritabanina `pg_restore` ve `storage` klasorunun geri acilmasiyla yapilir; duzenli geri yukleme tatbikati yapin.
+- Windows'ta `pnpm backup:schedule` gunluk bir Gorev Zamanlayici gorevi kurar (`OperationsPortal-Yedek`, varsayilan 02:00). Cikti `backups/backup.log` dosyasina yazilir; basarisiz calismalar `YEDEK BASARISIZ` satiriyla isaretlenir.
+- Linux'ta ayni komut esdeger cron satirini yazdirir.
+- `BACKUP_COPY_DIR` ile her yedegin ikinci bir kopyasi harici diske veya ag klasorune alinir. Yedekleri yalnizca ayni makinede tutmak disk arizasina karsi koruma saglamaz.
+- `pnpm backup:verify` ile en az haftada bir geri yukleme tatbikati yapin. Ayrintilar ve gelistirme veritabanina geri yukleme adimlari: `docs/DATABASE.md`.
 
 ## Guncelleme Akisi
 
@@ -152,7 +172,7 @@ Migration'dan once yedek alin. Uygulanmis migration dosyalari degistirilemez; ca
 ## Operasyon Notlari
 
 - Uygulama JSON log uretir; loglari merkezi bir sisteme veya boyut sinirli log rotasyonuna baglayin. Imzali baglanti, cerez, parola ve belirtecler loglanmaz.
-- `auth.security_events` tablosu giris, cikis, kilitlenme ve parola sifirlama olaylarini tutar; izleme icin buradan sorgulanabilir.
+- `auth.security_events` tablosu giris, cikis, kilitlenme, IP engelleme (`ip_blocked`, `login_blocked_ip`) ve parola sifirlama olaylarini tutar; izleme icin buradan sorgulanabilir.
 - Health endpoint yalnizca uygulama surecini kontrol eder; veritabani ayrintisi vermez.
-- Hiz sinirlari ve okuma onbellegi tek surec icindir. Birden fazla instance'a cikildiginda paylasilan bir hiz sinirlayici tasarlanmalidir.
+- Hiz sinirlari veritabaninda (`private.rate_limit_buckets`) tutulur; yeniden baslatmada sifirlanmaz ve tum uygulama surecleri ayni sayaclari paylasir. Okuma onbellegi tek surec icindir.
 - Production source map'leri kapali tutulur.

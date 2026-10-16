@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     return failure(401, "session_expired", "Oturumun süresi doldu. Lütfen tekrar giriş yapın.");
   }
 
-  const rateLimited = enforceRateLimit(request, "data-gateway", auth
+  const rateLimited = await enforceRateLimit(request, "data-gateway", auth
     ? { limit: 600, identity: auth.session.userId }
     : { limit: 60 });
   if (rateLimited) return rateLimited;

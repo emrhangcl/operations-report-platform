@@ -5,7 +5,7 @@ import { requirePlatformAdmin } from "../../../../lib/server/guards";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const rateLimited = enforceRateLimit(request, "platform-dashboard");
+  const rateLimited = await enforceRateLimit(request, "platform-dashboard");
   if (rateLimited) return rateLimited;
 
   const auth = await requirePlatformAdmin(request);

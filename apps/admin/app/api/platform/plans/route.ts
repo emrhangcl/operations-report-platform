@@ -7,7 +7,7 @@ import { planRow, planSchema } from "./schema";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const rateLimited = enforceRateLimit(request, "platform-plans-read");
+  const rateLimited = await enforceRateLimit(request, "platform-plans-read");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "platform-plans-create");
+  const rateLimited = await enforceRateLimit(request, "platform-plans-create");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });

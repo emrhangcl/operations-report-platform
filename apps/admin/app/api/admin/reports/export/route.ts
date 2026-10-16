@@ -6,7 +6,7 @@ import { requireAdmin } from "../../../../../lib/server/guards";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const rateLimited = enforceRateLimit(request, "admin-report-export");
+  const rateLimited = await enforceRateLimit(request, "admin-report-export");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request, "read");

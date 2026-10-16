@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 const schema = z.object({ email: z.string().trim().min(3).max(320) });
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "auth-password-forgot", { limit: 5 });
+  const rateLimited = await enforceRateLimit(request, "auth-password-forgot", { limit: 5 });
   if (rateLimited) return rateLimited;
 
   const body = await readJsonBody(request, 4 * 1024);

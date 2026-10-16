@@ -27,7 +27,7 @@ export async function POST(
     return apiError(request, 404, "Ödeme sağlayıcısı bulunamadı.", "payment_webhook_unknown_provider");
   }
 
-  const rateLimited = enforceRateLimit(request, `payment-webhook:${provider}`);
+  const rateLimited = await enforceRateLimit(request, `payment-webhook:${provider}`);
   if (rateLimited) return rateLimited;
 
   const body = await readTextBody(request, MAX_WEBHOOK_BYTES);

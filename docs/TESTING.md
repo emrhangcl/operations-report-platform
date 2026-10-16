@@ -4,7 +4,7 @@ Three automated layers cover the system. Run them from the repository root.
 
 | Command | What it runs | Needs |
 | --- | --- | --- |
-| `pnpm run test` | Vitest unit tests in every workspace package that has a `test` script | Nothing running |
+| `pnpm run test` | Vitest unit tests in every workspace package that has a `test` script, then `pnpm test:scripts` (tests under `scripts/`) | Nothing running |
 | `pnpm db:test` | pgTAP security tests in `db/tests` against a freshly reset `operations_portal_test` database | Local PostgreSQL (`pnpm db:start`) |
 | `pnpm test:e2e` | HTTP end-to-end flows and attack scenarios against the running app (`scripts/e2e/local-stack.ts`) | `pnpm dev:admin` running, `E2E_*` accounts in `.env` |
 
@@ -33,6 +33,9 @@ Test files:
   - `apps/admin/lib/server/auth/password.test.ts`: scrypt format, verification, NFKC handling, malformed hashes, rehash detection.
   - `apps/admin/lib/server/storage.test.ts`: path traversal, bucket names, image signature detection, signed link verification.
   - `apps/admin/lib/server/guards.test.ts`: `401`/`403` status for every guard failure, read-only versus write access, personnel versus admin, platform admin grant.
+  - `apps/admin/lib/server/encryption.test.ts`: storage encryption round trip, fresh IV per write, tamper detection, path binding, unknown keys, key rotation, legacy plaintext files.
+  - `apps/admin/lib/client-address.test.ts`: client address resolution; spoofed `X-Forwarded-For` ignored without a trusted proxy, right-most untrusted address behind one.
+- Scripts: `scripts/backup/crypto.test.ts`: streamed backup encryption round trip, single-byte tampering, files moved between backup sets, wrong key.
 - API routes and helpers: `apps/admin/app/api/admin/personnel/[id]/route.test.ts`, `apps/admin/app/api/admin/reports/[id]/route.test.ts`, `apps/admin/app/api/platform/organizations/[id]/route.test.ts`, `apps/admin/app/platform/_components/platform-client.test.ts`, `apps/admin/lib/organization-branding.test.ts`, `apps/admin/lib/organization-deletion.test.ts`.
 - Packages: `packages/data-client/src/builder.test.ts`, `packages/payments/src/index.test.ts`, `packages/shared/src/*.test.ts` (excel, permissions, rate limit, report number, subscription), `packages/validation/src/*.test.ts` (forms, customer signature, organization management).
 
@@ -48,6 +51,7 @@ Suites:
 - `platform_admin.test.sql`: platform administrator checks and platform RPCs.
 - `platform_organization_management.test.sql`: organization reopen and deletion manifests.
 - `payment_events.test.sql`: verified payment event processing.
+- `rate_limits.test.sql`: rate limit bucket privileges, allow/deny at the limit, window expiry, reset, and runtime denial for request roles.
 
 Tests switch users with `set local role authenticated` and `select set_config('app.user_id', '<uuid>', true)`, the same context the server sets. They run as `ops_owner`, which may switch into the request roles without inheriting their privileges. pgTAP must be present in the PostgreSQL `share/extension` directory (`pgtap.control` and `pgtap--1.3.4.sql`).
 
@@ -64,14 +68,19 @@ Tests switch users with `set local role authenticated` and `select set_config('a
 - gateway hardening: allowlist, schema, injection, unfiltered delete, row limit, cross-origin cookie writes, web token used as bearer;
 - mobile bearer login and logout, server-side revocation of an old cookie.
 
-Accounts: create the platform owner with `pnpm create-admin --platform`, register the organization admin through `/register` and activate it in `/platform`, and let the suite create the personnel account. The login rate limit (10 per minute per client) means the suite should not be run more than once per minute.
+Accounts: create the platform owner with `pnpm create-admin --platform`, register the organization admin through `/register` and activate it in `/platform`, and let the suite create the personnel account. The login rate limit (10 per minute per client) means the suite should not be run more than once per minute. Rate limit counters are stored in the database and survive restarts; if manual testing filled them, clear them with `pnpm db:psql -c "delete from private.rate_limit_buckets"`.
+
+## Backup Restore Drill
+
+`pnpm backup:verify` restores the newest encrypted backup into `operations_portal_test` and compares row counts and migrations with the backup manifest. Run it after `pnpm backup` and before migrations; afterwards `pnpm db:test` rebuilds the test database as usual.
 
 ## What Requires Tests
 
 Add or update tests when changing:
 
 - shared validation schemas, permission or role logic, report numbering, subscription access, payment helpers, Excel export;
-- the data gateway, compiler, allowlist, session, cookie, CSRF, or storage code (`apps/admin/lib/server`);
+- the data gateway, compiler, allowlist, session, cookie, CSRF, storage, encryption, or client address code (`apps/admin/lib/server`, `apps/admin/lib/client-address.mjs`);
+- backup format or encryption (`scripts/backup`);
 - migrations, RLS policies, grants, triggers, or deletion and history-preservation behavior (`db/tests`);
 - any new API route that reads or writes tenant data (unit test for the guard path plus an end-to-end check).
 

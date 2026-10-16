@@ -19,7 +19,7 @@ function errorResponse(error: unknown) {
 }
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "admin-organization-logo-upload");
+  const rateLimited = await enforceRateLimit(request, "admin-organization-logo-upload");
   if (rateLimited) return rateLimited;
 
   const auth = await requireAdmin(request);
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const rateLimited = enforceRateLimit(request, "admin-organization-logo-delete");
+  const rateLimited = await enforceRateLimit(request, "admin-organization-logo-delete");
   if (rateLimited) return rateLimited;
 
   const auth = await requireAdmin(request);

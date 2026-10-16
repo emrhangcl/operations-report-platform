@@ -14,7 +14,7 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "admin-personnel-reset-password");
+  const rateLimited = await enforceRateLimit(request, "admin-personnel-reset-password");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request);

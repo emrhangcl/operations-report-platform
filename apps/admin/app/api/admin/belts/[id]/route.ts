@@ -5,7 +5,7 @@ import { enforceRateLimit } from "../../../../../lib/rate-limit";
 export const runtime = "nodejs";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "admin-belt-delete");
+  const rateLimited = await enforceRateLimit(request, "admin-belt-delete");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request);

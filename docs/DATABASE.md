@@ -13,6 +13,7 @@ Two databases exist:
   - `0001_platform_foundation.sql`: `auth` schema (users, sessions, one-time tokens, security events, `auth.uid()`), `storage` schema (buckets, object metadata, `storage.foldername()`), and the `private` schema.
   - `0002_application_schema.sql`: the consolidated application schema (types, tables, functions, triggers, RLS policies, grants, storage policies, buckets). It is the exact final state of the 40 legacy migrations; a dump of both was compared line by line when it was created.
   - `0003_fix_trigger_record_field_access.sql`: fixes two multi-table trigger functions that referenced columns missing from some of their tables.
+  - `0004_persistent_rate_limits.sql`: `private.rate_limit_buckets` and the `SECURITY DEFINER` functions `consume_rate_limit`, `peek_rate_limit`, and `reset_rate_limit` (executable by `service_role` only) that back the HTTP rate limits and the login IP block.
 - `db/tests`: pgTAP security tests (see `docs/TESTING.md`).
 - `scripts/local/postgres.mjs`: cluster lifecycle (`pnpm db:start`, `db:stop`, `db:restart`, `db:status`, `db:psql`) and role/database bootstrap.
 - `scripts/db/migrate.ts`: migration runner (`pnpm db:migrate`, `pnpm db:reset --yes`, `--test` for the test database).
@@ -33,7 +34,7 @@ Every server transaction runs `SET LOCAL ROLE <role>` and `set_config('app.user_
 ## Migrations
 
 - Migrations are append-only. `migrations.applied` stores each file's version, name, SHA-256 checksum, duration, and applying role. The runner refuses to continue if an applied file was edited.
-- Add schema, policy, storage, trigger, function, or grant changes as a new file with the next number. Never edit `0001`–`0003` or any applied file.
+- Add schema, policy, storage, trigger, function, or grant changes as a new file with the next number. Never edit `0001`–`0004` or any applied file.
 - New tables get no default privileges: grant exactly what `authenticated`, `anon`, and `service_role` need, enable RLS, and add policies in the same migration.
 - The runner takes an advisory lock, applies each pending file in its own transaction, and records it. Line endings are normalized before hashing, so CRLF checkouts do not change checksums.
 
@@ -79,7 +80,26 @@ RLS is enabled on all 22 `public` tables and on the `auth` and `storage` tables.
 
 ## Backups
 
-No automated backup job exists yet. Until one is added, take manual dumps with the binaries in `PG_BIN_DIR`, for example `pg_dump --format=custom --file <OPS_DATA_DIR>/backups/<date>.dump "<DATABASE_MIGRATION_URL>"`, and copy `OPS_DATA_DIR/storage` alongside it; a restore needs both.
+Backups cover the database and the file store together, because a restore needs both. They are encrypted with `BACKUP_ENCRYPTION_KEY`; details of the format are in `docs/SECURITY.md`.
+
+```bash
+pnpm backup                    # create an encrypted set in BACKUP_DIR (default OPS_DATA_DIR/backups)
+pnpm backup:list               # list sets with size, report count, and file count
+pnpm backup:verify             # restore drill for the newest set into the test database
+pnpm backup:verify <set-name>  # restore drill for a specific set
+pnpm backup:schedule           # daily Windows scheduled task (BACKUP_TIME, default 02:00)
+pnpm backup:unschedule
+```
+
+Each set is a folder named after its UTC timestamp, holding `database.dump.enc`, `storage.tar.enc`, and `manifest.json`. The newest `BACKUP_RETENTION` sets (default 14) are kept, and `BACKUP_COPY_DIR` can receive a second copy, for example on an external disk.
+
+`backup:verify` only restores into `operations_portal_test`. To restore into the development database after data loss:
+
+1. Stop the app and run `pnpm backup:verify <set-name>` to confirm the set is intact.
+2. Decrypt the dump and storage archive with the helpers in `scripts/backup/crypto.ts` (`createDecryptStream`) and restore with `pg_restore --clean --if-exists --no-owner --dbname "<DATABASE_MIGRATION_URL>"`; extract the storage archive into `OPS_DATA_DIR`.
+3. Start the app and run `pnpm test:e2e`.
+
+There is no one-command restore into the development database on purpose, so a mistyped command cannot overwrite live data.
 
 ## Safe Migration Workflow
 

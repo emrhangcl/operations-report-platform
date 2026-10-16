@@ -3,25 +3,24 @@ import "server-only";
 import { FixedWindowRateLimiter } from "@operations/shared";
 import { NextResponse } from "next/server";
 import { getRequestId } from "./observability";
+import { getClientIp } from "./server/client-ip";
+import { consumeRateLimit } from "./server/rate-limit-store";
 
 const DEFAULT_LIMIT = 30;
 const DEFAULT_WINDOW_MS = 60_000;
-const limiters = new Map<string, FixedWindowRateLimiter>();
 
-function getLimiter(limit: number, windowMs: number) {
+// Veritabanina ulasilamazsa sinir kaldirilmaz; surec belleginde tutulan yedek sayac devreye girer.
+const fallbackLimiters = new Map<string, FixedWindowRateLimiter>();
+let warnedFallback = false;
+
+function getFallbackLimiter(limit: number, windowMs: number) {
   const key = `${limit}:${windowMs}`;
-  let limiter = limiters.get(key);
+  let limiter = fallbackLimiters.get(key);
   if (!limiter) {
     limiter = new FixedWindowRateLimiter(limit, windowMs);
-    limiters.set(key, limiter);
+    fallbackLimiters.set(key, limiter);
   }
   return limiter;
-}
-
-function clientIdentity(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  return (forwarded || realIp || "unknown").slice(0, 120);
 }
 
 export interface RateLimitOptions {
@@ -31,11 +30,7 @@ export interface RateLimitOptions {
   identity?: string;
 }
 
-export function enforceRateLimit(request: Request, scope: string, options: RateLimitOptions = {}) {
-  const limiter = getLimiter(options.limit ?? DEFAULT_LIMIT, options.windowMs ?? DEFAULT_WINDOW_MS);
-  const decision = limiter.check(`${scope}:${options.identity ?? clientIdentity(request)}`);
-  if (decision.allowed) return null;
-
+export function tooManyRequests(request: Request, retryAfterSeconds: number) {
   const requestId = getRequestId(request);
   return NextResponse.json(
     {
@@ -46,9 +41,37 @@ export function enforceRateLimit(request: Request, scope: string, options: RateL
       status: 429,
       headers: {
         "Cache-Control": "no-store",
-        "Retry-After": String(decision.retryAfterSeconds),
+        "Retry-After": String(retryAfterSeconds),
         "X-Request-ID": requestId
       }
     }
   );
+}
+
+export async function enforceRateLimit(request: Request, scope: string, options: RateLimitOptions = {}) {
+  const limit = options.limit ?? DEFAULT_LIMIT;
+  const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
+  const key = `${scope}:${options.identity ?? getClientIp(request) ?? "unverified"}`;
+
+  let allowed: boolean;
+  let retryAfterSeconds: number;
+  try {
+    const decision = await consumeRateLimit(key, limit, Math.ceil(windowMs / 1000));
+    allowed = decision.allowed;
+    retryAfterSeconds = decision.retryAfterSeconds;
+  } catch (error) {
+    if (!warnedFallback) {
+      warnedFallback = true;
+      console.error(JSON.stringify({
+        level: "error",
+        event: "rate_limit_store_unavailable",
+        message: error instanceof Error ? error.message : String(error)
+      }));
+    }
+    const decision = getFallbackLimiter(limit, windowMs).check(key);
+    allowed = decision.allowed;
+    retryAfterSeconds = decision.retryAfterSeconds;
+  }
+
+  return allowed ? null : tooManyRequests(request, retryAfterSeconds);
 }

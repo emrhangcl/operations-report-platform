@@ -10,7 +10,7 @@ const organizationIdSchema = z.string().uuid();
 const requestSchema = z.object({ scope: z.literal("organization").default("organization") }).strict();
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-organization-export");
+  const rateLimited = await enforceRateLimit(request, "platform-organization-export");
   if (rateLimited) return rateLimited;
 
   const auth = await requirePlatformAdmin(request);

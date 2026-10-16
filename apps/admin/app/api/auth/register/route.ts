@@ -37,7 +37,7 @@ function organizationSlug(name: string) {
 }
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "organization-register");
+  const rateLimited = await enforceRateLimit(request, "organization-register");
   if (rateLimited) return rateLimited;
 
   if (!isSameOriginRequest(request)) {

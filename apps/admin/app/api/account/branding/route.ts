@@ -6,7 +6,7 @@ import { requireActiveProfile } from "../../../../lib/server/guards";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const rateLimited = enforceRateLimit(request, "account-branding");
+  const rateLimited = await enforceRateLimit(request, "account-branding");
   if (rateLimited) return rateLimited;
 
   const auth = await requireActiveProfile(request, "read");

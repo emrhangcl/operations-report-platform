@@ -52,7 +52,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   const auth = await authenticateRequest(request);
   if (!auth) return NextResponse.json({ message: "Oturum bulunamadı." }, { status: 401 });
 
-  const rateLimited = enforceRateLimit(request, "storage-upload", { limit: 120, identity: auth.session.userId });
+  const rateLimited = await enforceRateLimit(request, "storage-upload", { limit: 120, identity: auth.session.userId });
   if (rateLimited) return rateLimited;
 
   const declaredLength = Number(request.headers.get("content-length"));

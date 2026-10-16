@@ -27,7 +27,11 @@ function ensureAppEnv() {
     APP_ENV: "development",
     APP_URL: "http://localhost:3000",
     AUTH_SECRET: randomBytes(48).toString("base64url"),
-    AUTH_REQUIRE_EMAIL_VERIFICATION: "false"
+    AUTH_REQUIRE_EMAIL_VERIFICATION: "false",
+    // Diskteki dosyalari sifreler. Kaybolursa sifreli dosyalar acilamaz; ayrica guvenli yerde saklayin.
+    STORAGE_ENCRYPTION_KEY: randomBytes(32).toString("base64url"),
+    // Yedek dosyalarini sifreler. Veri klasorunden ayri tutulmalidir.
+    BACKUP_ENCRYPTION_KEY: randomBytes(32).toString("base64url")
   };
   const missing = Object.entries(defaults).filter(([key]) => !existing.has(key));
   if (missing.length === 0) {

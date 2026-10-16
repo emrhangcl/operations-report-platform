@@ -5,6 +5,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
 import { getServerConfig } from "./config";
 import { withDbContext, type DbClient, type DbContext } from "./db";
+import { decryptBuffer, encryptBuffer, storageAssociatedData } from "./encryption";
 import { signValue, verifySignedValue } from "./auth/tokens";
 
 // Dosya icerigi yerel diskte, metadata storage.objects tablosunda tutulur. Kullanici baglamindaki
@@ -106,7 +107,13 @@ export async function readObjectForSignedUrl(bucket: string, name: string) {
     return result.rows[0]?.metadata ?? null;
   });
   if (!metadata) return null;
-  return { body: await readFile(path), contentType: metadata.mimetype ?? "application/octet-stream" };
+  return { body: await readStoredObject(path, bucket, name), contentType: metadata.mimetype ?? "application/octet-stream" };
+}
+
+/** Diskteki dosyayi okur ve cozer; icerik baska bir yola ait ya da degistirilmisse hata verir. */
+async function readStoredObject(path: string, bucket: string, name: string) {
+  const { plaintext } = decryptBuffer(await readFile(path), storageAssociatedData(bucket, name), getServerConfig().storageKeyring);
+  return plaintext;
 }
 
 export interface UploadOptions {
@@ -157,7 +164,8 @@ export function createStorageApi(context: DbContext) {
 
               await mkdir(dirname(target), { recursive: true });
               pending.tempPath = `${target}.${randomBytes(6).toString("hex")}.tmp`;
-              await writeFile(pending.tempPath, bytes, { mode: 0o600 });
+              const encrypted = encryptBuffer(bytes, storageAssociatedData(bucket, name), getServerConfig().storageKeyring);
+              await writeFile(pending.tempPath, encrypted, { mode: 0o600 });
             });
 
             // Dosya yalnizca metadata transaction'i basariyla commit edildikten sonra yerine tasinir.
@@ -182,8 +190,8 @@ export function createStorageApi(context: DbContext) {
               return result.rows[0]?.metadata ?? null;
             });
             if (!metadata) throw new StorageFailure("Dosya bulunamadi.", 404);
-            const bytes = await readFile(path);
-            return { data: new Blob([bytes], { type: metadata.mimetype ?? "application/octet-stream" }), error: null };
+            const bytes = await readStoredObject(path, bucket, name);
+            return { data: new Blob([new Uint8Array(bytes)], { type: metadata.mimetype ?? "application/octet-stream" }), error: null };
           } catch (error) {
             if ((error as { code?: string }).code === "ENOENT") return { data: null, error: { message: "Dosya bulunamadi.", statusCode: 404 } };
             return failure(error);

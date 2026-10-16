@@ -12,7 +12,7 @@ import { requireActiveProfile } from "../../../../../lib/server/guards";
 export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "report-pdf");
+  const rateLimited = await enforceRateLimit(request, "report-pdf");
   if (rateLimited) return rateLimited;
 
   const auth = await requireActiveProfile(request, "read");

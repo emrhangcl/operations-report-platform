@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 const schema = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{43}$/) });
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "auth-verify-email", { limit: 10 });
+  const rateLimited = await enforceRateLimit(request, "auth-verify-email", { limit: 10 });
   if (rateLimited) return rateLimited;
 
   const body = await readJsonBody(request, 2 * 1024);

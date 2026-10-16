@@ -14,7 +14,7 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "auth-password-reset", { limit: 10 });
+  const rateLimited = await enforceRateLimit(request, "auth-password-reset", { limit: 10 });
   if (rateLimited) return rateLimited;
 
   const body = await readJsonBody(request, 4 * 1024);

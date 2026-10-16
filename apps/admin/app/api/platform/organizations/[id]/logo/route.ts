@@ -24,7 +24,7 @@ function errorResponse(error: unknown) {
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-organization-logo-upload");
+  const rateLimited = await enforceRateLimit(request, "platform-organization-logo-upload");
   if (rateLimited) return rateLimited;
 
   const auth = await requirePlatformAdmin(request);
@@ -61,7 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-organization-logo-delete");
+  const rateLimited = await enforceRateLimit(request, "platform-organization-logo-delete");
   if (rateLimited) return rateLimited;
 
   const auth = await requirePlatformAdmin(request);

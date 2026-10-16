@@ -24,7 +24,7 @@ async function getOrganizationId(params: Promise<{ id: string }>) {
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-organization-detail");
+  const rateLimited = await enforceRateLimit(request, "platform-organization-detail");
   if (rateLimited) return rateLimited;
 
   const auth = await requirePlatformAdmin(request);
@@ -115,7 +115,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-organization-mutation");
+  const rateLimited = await enforceRateLimit(request, "platform-organization-mutation");
   if (rateLimited) return rateLimited;
 
   const auth = await requirePlatformAdmin(request);
@@ -182,7 +182,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-organization-delete");
+  const rateLimited = await enforceRateLimit(request, "platform-organization-delete");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });

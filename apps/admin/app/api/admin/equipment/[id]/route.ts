@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: RouteContext) {
-  const rateLimited = enforceRateLimit(request, "admin-equipment-update");
+  const rateLimited = await enforceRateLimit(request, "admin-equipment-update");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request, "write");
@@ -49,7 +49,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 }
 
 export async function DELETE(request: Request, { params }: RouteContext) {
-  const rateLimited = enforceRateLimit(request, "admin-equipment-delete");
+  const rateLimited = await enforceRateLimit(request, "admin-equipment-delete");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request, "write");

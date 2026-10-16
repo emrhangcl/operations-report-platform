@@ -6,7 +6,7 @@ import { requireAdmin } from "../../../../lib/server/guards";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "admin-equipment-create");
+  const rateLimited = await enforceRateLimit(request, "admin-equipment-create");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request, "write");

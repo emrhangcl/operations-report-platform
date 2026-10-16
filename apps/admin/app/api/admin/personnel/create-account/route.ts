@@ -10,7 +10,7 @@ import { readJsonBody } from "../../../../../lib/request-body";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const rateLimited = enforceRateLimit(request, "admin-personnel-create");
+  const rateLimited = await enforceRateLimit(request, "admin-personnel-create");
   if (rateLimited) return rateLimited;
 
   const admin = await requireAdmin(request);

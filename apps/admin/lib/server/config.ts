@@ -3,6 +3,7 @@ import "server-only";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import { createKeyring, type Keyring } from "./encryption";
 
 // Next.js yalnizca apps/admin altindaki .env dosyalarini okur; yerel kurulum ise tek bir kok .env
 // kullanir. Ortam degiskeni varsa her zaman o kazanir.
@@ -58,6 +59,7 @@ export interface ServerConfig {
   authSecret: string;
   dataDir: string;
   storageDir: string;
+  storageKeyring: Keyring;
   mailOutboxDir: string;
   requireEmailVerification: boolean;
   session: {
@@ -69,6 +71,8 @@ export interface ServerConfig {
   login: {
     maxFailedAttempts: number;
     lockMinutes: number;
+    maxFailuresPerIp: number;
+    ipBlockMinutes: number;
   };
   maxClientRows: number;
 }
@@ -93,6 +97,10 @@ export function getServerConfig(): ServerConfig {
   if (!databaseUrl) throw new ConfigurationError("DATABASE_URL tanimli degil.");
   if (!authSecret || authSecret.length < 32) throw new ConfigurationError("AUTH_SECRET en az 32 karakter olmalidir.");
   if (!rawAppUrl) throw new ConfigurationError("APP_URL production ortaminda zorunludur.");
+  const storageKey = getEnv("STORAGE_ENCRYPTION_KEY");
+  if (!storageKey) {
+    throw new ConfigurationError("STORAGE_ENCRYPTION_KEY tanimli degil. `pnpm setup:local` ile olusturun ve ayrica yedekleyin.");
+  }
 
   const appUrl = new URL(rawAppUrl);
   const dataDir = getEnv("OPS_DATA_DIR") ?? defaultDataDir();
@@ -106,6 +114,10 @@ export function getServerConfig(): ServerConfig {
     authSecret,
     dataDir,
     storageDir: getEnv("STORAGE_DIR") ?? join(dataDir, "storage"),
+    storageKeyring: createKeyring(
+      storageKey,
+      (getEnv("STORAGE_ENCRYPTION_PREVIOUS_KEYS") ?? "").split(",").map((value) => value.trim()).filter(Boolean)
+    ),
     mailOutboxDir: getEnv("MAIL_OUTBOX_DIR") ?? join(dataDir, "mail-outbox"),
     requireEmailVerification: getEnv("AUTH_REQUIRE_EMAIL_VERIFICATION") === "true",
     session: {
@@ -116,7 +128,9 @@ export function getServerConfig(): ServerConfig {
     },
     login: {
       maxFailedAttempts: getNumberEnv("AUTH_MAX_FAILED_LOGINS", 8),
-      lockMinutes: getNumberEnv("AUTH_LOCK_MINUTES", 15)
+      lockMinutes: getNumberEnv("AUTH_LOCK_MINUTES", 15),
+      maxFailuresPerIp: getNumberEnv("AUTH_IP_MAX_FAILURES", 20),
+      ipBlockMinutes: getNumberEnv("AUTH_IP_BLOCK_MINUTES", 15)
     },
     maxClientRows: getNumberEnv("DATA_MAX_ROWS", 1000)
   };

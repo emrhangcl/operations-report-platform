@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const auth = await authenticateRequest(request);
   if (!auth) return NextResponse.json({ message: "Oturum bulunamadı." }, { status: 401 });
 
-  const rateLimited = enforceRateLimit(request, "storage-sign", { limit: 300, identity: auth.session.userId });
+  const rateLimited = await enforceRateLimit(request, "storage-sign", { limit: 300, identity: auth.session.userId });
   if (rateLimited) return rateLimited;
 
   const body = await readJsonBody(request, 64 * 1024);

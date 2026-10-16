@@ -15,7 +15,7 @@ async function planId(params: Promise<{ id: string }>) {
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-plans-update");
+  const rateLimited = await enforceRateLimit(request, "platform-plans-update");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimited = enforceRateLimit(request, "platform-plans-delete");
+  const rateLimited = await enforceRateLimit(request, "platform-plans-delete");
   if (rateLimited) return rateLimited;
   const auth = await requirePlatformAdmin(request);
   if (!auth.ok) return NextResponse.json({ message: auth.message }, { status: auth.status });
