@@ -1,5 +1,7 @@
 # Güvenlik Denetimi
 
+> **Tarihsel belge.** Bu denetim, sistemin Supabase ve Vercel üzerinde çalıştığı 2026-08-29 tarihli durumu kapsar. Sistem artık yerel PostgreSQL 18, kendi oturum yönetimi, RLS'e tabi veri geçidi ve yerel dosya deposuyla çalışır. Güncel güvenlik katmanları ve bilinen sınırlamalar için `docs/SECURITY.md`, testler için `docs/TESTING.md` belgesine bakın. Aşağıdaki bulgular kayıt amacıyla değiştirilmeden korunmuştur.
+
 Tarih: 2026-08-29  
 Kapsam: `feat/saas-platform` dalındaki yerel kaynak kodu, yerel Supabase ve Docker image.  
 Üretim Vercel/Supabase ortamına saldırı testi veya değişiklik yapılmadı.
