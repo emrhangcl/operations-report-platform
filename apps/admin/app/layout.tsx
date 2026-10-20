@@ -6,6 +6,7 @@ import "./globals.css";
 import "./enterprise-system.css";
 import "./public-system.css";
 import "./frosted-system.css";
+import "./design-tokens.css";
 
 const displayFont = Space_Grotesk({ subsets: ["latin"], variable: "--source-font-display", weight: ["400", "500", "600", "700"] });
 const bodyFont = IBM_Plex_Sans({ subsets: ["latin"], variable: "--source-font-body", weight: ["400", "500", "600", "700"] });

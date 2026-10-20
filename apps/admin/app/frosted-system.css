@@ -425,12 +425,11 @@ body {
 
 .public-auth-panel,
 .login-panel {
-  background: oklch(0.246 0.018 259 / 0.82) !important;
+  background: var(--op-surface) !important;
   border-color: var(--op-border) !important;
   border-radius: 1rem !important;
   box-shadow: var(--op-shadow-2) !important;
   color: var(--op-text) !important;
-  backdrop-filter: blur(16px);
 }
 
 .public-auth-panel > header h1,

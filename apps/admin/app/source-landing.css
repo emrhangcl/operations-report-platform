@@ -1,14 +1,17 @@
 .source-landing {
-  --source-graphite: oklch(0.196 0.014 259);
-  --source-panel: oklch(0.246 0.018 259);
-  --source-line: oklch(0.332 0.021 258);
-  --source-mist: oklch(0.671 0.023 250);
-  --source-signal: oklch(0.775 0.152 71);
-  --source-signal-hover: oklch(0.83 0.145 76);
-  --source-ice: oklch(0.955 0.006 250);
-  --source-frost: oklch(0.246 0.018 259 / 0.55);
+  /* Yeni 2026 yönü: orta tonlu açık zemin, beyaz kartlar, mavi marka aksanı. */
+  --source-graphite: #e9eef6;   /* sayfa zemini (açık orta ton) */
+  --source-panel: #ffffff;      /* kart/panel yüzeyi */
+  --source-line: #d3dcea;       /* kenarlık */
+  --source-mist: #4b586e;       /* ikincil metin (7.3:1) */
+  --source-signal: #2a51d6;     /* mavi marka aksanı + CTA */
+  --source-signal-hover: #1b3bb0;
+  --source-ice: #101a2e;        /* birincil metin (koyu, 13:1+) */
+  --source-frost: rgba(255, 255, 255, 0.72); /* açık buzlu başlık/panel */
   min-height: 100vh;
-  background: var(--source-graphite);
+  background:
+    radial-gradient(1100px 520px at 82% -8%, #eef3fb 0%, transparent 60%),
+    var(--source-graphite);
   color: var(--source-ice);
   font-size: 1rem;
   line-height: 1.5;
@@ -156,3 +159,12 @@
 @media (max-width: 47.999rem) { .source-nav { display: none; } }
 @media (max-width: 39.999rem) { .source-login-link { display: none; } }
 @media (prefers-reduced-motion: reduce) { .source-landing *, .source-landing *::before, .source-landing *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+/* Açık tema uyarlaması: mavi/logo zemini üstündeki metinler beyaz, gölgeler hafifletildi. */
+.source-brand > span,
+.source-signal-button,
+.source-popular { color: #ffffff; }
+.source-product-shell { box-shadow: 0 22px 54px -34px rgba(16, 26, 46, 0.26); }
+.source-floating-note { box-shadow: 0 16px 40px -26px rgba(16, 26, 46, 0.3); }
+.source-product-card { background: #ffffff; }
+.source-job-box { background: var(--source-surface-subtle, #f4f7fc); }

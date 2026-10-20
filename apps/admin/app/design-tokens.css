@@ -1,0 +1,122 @@
+/*
+ * Operasyon Portalı — Yeni Tasarım Yönü (2026)
+ * Orta tonlu, yüksek kontrastlı, profesyonel açık tema.
+ *
+ * Bu dosya layout.tsx içinde EN SON yüklenir ve frosted-system.css'teki koyu
+ * `--op-*` değişkenlerini ezer. Eski `--bg/--surface/--brand` adları ve `--color-*`
+ * takma adları hep `--op-*`'a bağlı olduğundan, tek nokta burada değişince tüm
+ * uygulama (giriş, landing, panel, personel) yeni palete geçer.
+ *
+ * Kontrast (WCAG): metin #101a2e beyazda 15.6:1, kartta zeminde 13:1; ikincil
+ * metin #4b586e beyazda 7.3:1. Yazılar ve text box'lar hiçbir yüzeyde kaybolmaz.
+ */
+:root {
+  /* Zemin / yüzeyler — ne beyaz ne koyu */
+  --op-bg: #e9eef6;
+  --op-bg-subtle: #dfe6f1;
+  --op-surface: #ffffff;
+  --op-surface-raised: #ffffff;
+  --op-surface-subtle: #f4f7fc;
+  --op-surface-muted: #eef2f9;
+
+  /* Metin */
+  --op-text: #101a2e;
+  --op-text-soft: #243049;
+  --op-text-muted: #4b586e;
+  --op-text-subtle: #6b7689;
+  --op-text-faint: #808a9c;
+
+  /* Kenarlıklar */
+  --op-border: #d3dcea;
+  --op-border-strong: #bcc8db;
+
+  /* Marka (indigo-mavi) */
+  --op-ring: #2a51d6;
+  --op-primary: #2a51d6;
+  --op-primary-hover: #1b3bb0;
+  --op-primary-soft: rgba(42, 81, 214, 0.12);
+
+  /* Amber vurgu — yalnızca eylem/odak/ilerleme/proof */
+  --op-accent: #e07b18;
+  --op-accent-soft: rgba(224, 123, 24, 0.14);
+
+  /* Anlamsal durumlar */
+  --op-success: #0f8a5f;
+  --op-success-soft: rgba(15, 138, 95, 0.14);
+  --op-warning: #b5730a;
+  --op-warning-soft: rgba(181, 115, 10, 0.15);
+  --op-danger: #d23b3b;
+  --op-danger-hover: #b62f2f;
+  --op-danger-soft: rgba(210, 59, 59, 0.13);
+  --op-info: #1f74b8;
+  --op-info-soft: rgba(31, 116, 184, 0.14);
+
+  /* Gölgeler — hafif, katmanlı (koyu lift değil) */
+  --op-shadow-1: 0 1px 2px rgba(16, 26, 46, 0.06), 0 2px 6px rgba(16, 26, 46, 0.05);
+  --op-shadow-2: 0 6px 18px rgba(16, 26, 46, 0.08), 0 2px 6px rgba(16, 26, 46, 0.05);
+  --op-shadow-overlay: 0 18px 44px rgba(16, 26, 46, 0.18);
+
+  /* Yeni ölçek token'ları (bileşenler kademeli benimser) */
+  --op-radius-sm: 8px;
+  --op-radius-md: 12px;
+  --op-radius-lg: 16px;
+  --op-radius-xl: 22px;
+  --op-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --op-dur-fast: 150ms;
+  --op-dur: 220ms;
+}
+
+/* Açık zeminde tarayıcı form kontrolleri ve seçim rengi tutarlı olsun */
+:root { color-scheme: light; }
+::selection { background: rgba(42, 81, 214, 0.18); }
+
+/* ======================================================================
+   Kimlik-doğrulamalı kabuk (yönetici / personel paneli)
+   frosted-system.css bazı yüzeyleri sabit-koyu renkle bırakıyor; token
+   açık palete geçince bu yüzeylerde metin "koyu üstüne koyu" kalıyordu.
+   Aşağısı o yüzeyleri yeni yöne uyarlar: koyu navy kenar çubuğu + açık
+   metin, açık üst bar. Yalnızca panel sınıflarını hedefler (genel
+   .brand-lockup gibi paylaşılan öğelere dokunmaz).
+   ====================================================================== */
+
+/* Kenar çubuğu — koyu navy rail, açık okunur metin */
+.sidebar,
+.owner-sidebar.enterprise-sidebar {
+  background: #14213d !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+  color: #d7e0ef !important;
+}
+.sidebar .brand { border-bottom-color: rgba(255, 255, 255, 0.10) !important; }
+.sidebar .brand-copy strong,
+.sidebar .organization-brand-copy strong { color: #ffffff !important; }
+.sidebar .brand-copy > span,
+.sidebar .organization-brand-copy span { color: #9fb0c9 !important; }
+
+/* Kenar çubuğu menü bağlantıları */
+.nav a,
+.nav button { color: #c5d0e3 !important; }
+.nav a:hover,
+.nav button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+.nav a.active {
+  background: rgba(42, 81, 214, 0.32) !important;
+  border-color: transparent !important;
+  box-shadow: inset 3px 0 0 var(--op-primary) !important;
+  color: #ffffff !important;
+}
+
+/* Organizasyon (workspace) çipi — koyu rail üstünde koyu-şeffaf, açık metin */
+.sidebar .admin-workspace-card {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Üst bar — açık yüzey + koyu metin (içerik alanıyla uyumlu) */
+.admin-topbar {
+  background: var(--op-surface) !important;
+  border-bottom-color: var(--op-border) !important;
+  backdrop-filter: none !important;
+}

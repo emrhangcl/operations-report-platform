@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Operasyon Portalı — Yeni Tasarım Yönü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Orta tonlu zemin — ne beyaz ne koyu */
+  --bg:#e9eef6;            /* canvas (mid-tone) */
+  --bg-2:#dfe6f1;
+  --surface:#ffffff;       /* kartlar beyaz: zemine karşı net ayrışır */
+  --surface-2:#f4f7fc;     /* iç alanlar / input zemini */
+  --surface-3:#eef2f9;
+  --text:#101a2e;          /* 15:1+ kontrast */
+  --muted:#4b586e;         /* ~7.3:1 beyaz üstünde */
+  --faint:#6b7689;
+  --border:#d3dcea;
+  --border-strong:#bcc8db;
+  /* Marka */
+  --primary:#2a51d6;       /* güçlü indigo-mavi */
+  --primary-ink:#1b3bb0;   /* link / metin mavisi (~7:1) */
+  --primary-050:#eaf0ff;
+  --primary-100:#d9e3ff;
+  --accent:#e07b18;        /* amber — sadece vurgu/CTA ikincil */
+  --accent-050:#fdf0e1;
+  --success:#0f8a5f; --success-050:#e5f4ee;
+  --warning:#b5730a; --warning-050:#fbf1dd;
+  --danger:#d23b3b;  --danger-050:#fae8e8;
+  --info:#1f74b8;    --info-050:#e5f1fb;
+  /* Köşeler — yumuşak */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:22px; --r-pill:999px;
+  /* Gölgeler — hafif, katmanlı */
+  --sh-1:0 1px 2px rgba(16,26,46,.06), 0 2px 6px rgba(16,26,46,.05);
+  --sh-2:0 6px 18px rgba(16,26,46,.08), 0 2px 6px rgba(16,26,46,.05);
+  --sh-3:0 18px 42px rgba(16,26,46,.14);
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:
+  radial-gradient(1200px 600px at 80% -10%, #eef3fb 0%, transparent 60%),
+  var(--bg);
+  color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.5;
+  -webkit-font-smoothing:antialiased;padding:28px 18px 70px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:22px}
+h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0;color:var(--text);letter-spacing:-.01em}
+.display{font-size:clamp(28px,4vw,40px);font-weight:700;line-height:1.08}
+.kicker{font-family:"Space Grotesk";font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--primary-ink)}
+.sub{color:var(--muted);margin:8px 0 0;max-width:62ch}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-1);padding:20px}
+.section-title{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.section-title h2{font-size:18px}
+.section-title span{color:var(--faint);font-size:13px}
+.reveal{opacity:0;transform:translateY(12px);animation:rise .5s var(--ease) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.reveal{animation:none;opacity:1;transform:none}}
+
+/* palette */
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+.sw{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.sw .chip{height:52px}
+.sw .meta{padding:8px 10px;font-size:12px}
+.sw .meta b{display:block;font-size:12.5px}
+.sw .meta code{color:var(--faint);font-size:11px}
+.contrast{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;color:var(--success);background:var(--success-050);border-radius:var(--r-pill);padding:2px 7px}
+
+/* buttons */
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-weight:600;border-radius:var(--r-md);min-height:42px;padding:10px 16px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:transform .15s var(--ease),background .15s,box-shadow .15s,border-color .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn.primary{background:var(--primary);color:#fff;box-shadow:0 1px 2px rgba(42,81,214,.35)}
+.btn.primary:hover{background:var(--primary-ink);box-shadow:var(--sh-2)}
+.btn.accent{background:var(--accent);color:#fff}
+.btn.secondary{background:var(--surface);color:var(--text);border-color:var(--border-strong)}
+.btn.secondary:hover{border-color:var(--primary);color:var(--primary-ink)}
+.btn.ghost{background:transparent;color:var(--primary-ink)}
+.btn.danger{background:var(--danger);color:#fff}
+
+/* inputs */
+.field{display:grid;gap:6px}
+.field label{font-size:13px;font-weight:600;color:#39445a}
+.input{background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--r-sm);min-height:44px;padding:10px 12px;color:var(--text);font:inherit;width:100%;transition:border-color .15s,box-shadow .15s}
+.input::placeholder{color:var(--faint)}
+.input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(42,81,214,.16)}
+
+/* badges */
+.badge{border-radius:var(--r-pill);font-size:12px;font-weight:700;padding:5px 11px;display:inline-flex;gap:6px;align-items:center}
+.badge.ok{background:var(--success-050);color:var(--success)}
+.badge.warn{background:var(--warning-050);color:var(--warning)}
+.badge.err{background:var(--danger-050);color:var(--danger)}
+.badge.info{background:var(--info-050);color:var(--info)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* dashboard */
+.dash{display:grid;grid-template-columns:230px 1fr;gap:0;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-3);background:var(--surface)}
+.rail{background:linear-gradient(180deg,#14213d,#101a2e);color:#cdd7e8;padding:18px 14px;display:grid;gap:6px;align-content:start}
+.rail .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 16px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+.rail .logo{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:#fff;font-family:"Space Grotesk";font-weight:700}
+.rail .brand b{color:#fff;font-size:14px;font-family:"Space Grotesk"}
+.rail a{display:flex;align-items:center;gap:10px;color:#c2cde0;text-decoration:none;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;min-height:42px}
+.rail a:hover{background:rgba(255,255,255,.08);color:#fff}
+.rail a.active{background:rgba(224,123,24,.16);color:#ffd9ad;box-shadow:inset 3px 0 0 var(--accent)}
+.rail .ico{width:18px;height:18px;border-radius:5px;background:currentColor;opacity:.75}
+.panel{padding:22px;background:var(--bg);display:grid;gap:16px;align-content:start}
+.panel .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;box-shadow:var(--sh-1);transition:transform .15s var(--ease),box-shadow .15s}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
+.stat .lab{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.stat .val{font-family:"Space Grotesk";font-size:26px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat .trend{font-size:12px;font-weight:700;margin-top:4px}
+.stat .up{color:var(--success)} .stat .down{color:var(--danger)}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--border)}
+th{background:var(--surface-3);color:#45506a;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--surface-2)}
+td b{font-weight:600}
+.bars{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:8px}
+.bars .bar{flex:1;background:linear-gradient(180deg,var(--primary),#5b7be6);border-radius:8px 8px 4px 4px;position:relative;transition:height .6s var(--ease)}
+.bars .bar.alt{background:linear-gradient(180deg,var(--accent),#f0a155)}
+.bars .bar span{position:absolute;top:-20px;left:0;right:0;text-align:center;font-size:11px;font-weight:700;color:var(--muted)}
+.axis{display:flex;gap:10px;margin-top:6px}
+.axis span{flex:1;text-align:center;font-size:11px;color:var(--faint)}
+
+/* login sample */
+.login{display:grid;grid-template-columns:1.05fr .95fr;gap:0;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-2)}
+.login .promo{background:linear-gradient(145deg,#14213d,#1d2d50);color:#eaf0fb;padding:30px;display:grid;align-content:center;gap:14px}
+.login .promo .kicker{color:#ffd9ad}
+.login .promo h2{color:#fff;font-size:28px}
+.login .promo ul{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.login .promo li{display:flex;gap:9px;align-items:center;color:#c7d2e6;font-size:14px}
+.login .promo li .tick{width:18px;height:18px;border-radius:50%;background:var(--success);display:inline-grid;place-items:center;flex:0 0 auto}
+.login .form{background:var(--surface);padding:30px;display:grid;gap:14px;align-content:center}
+.seg{background:var(--surface-3);border:1px solid var(--border);border-radius:10px;padding:4px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.seg button{border:0;background:transparent;border-radius:7px;min-height:38px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.on{background:#fff;color:var(--text);box-shadow:var(--sh-1)}
+.note{color:var(--faint);font-size:12px;display:flex;gap:7px;align-items:center;justify-content:center;margin-top:2px}
+
+@media(max-width:900px){.dash{grid-template-columns:1fr}.rail{display:none}.login{grid-template-columns:1fr}.login .promo{display:none}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="reveal">
+    <div class="kicker">Operasyon Portalı · Yeni Tasarım Yönü</div>
+    <h1 class="display">Orta tonlu, yüksek kontrastlı,<br>profesyonel 2026 arayüzü</h1>
+    <p class="sub">Zemin ne çok açık ne çok koyu; kartlar beyazla ayrışır, yazılar her yerde net okunur. Yumuşak köşeler, hafif gölgeler, ince animasyonlar. Aşağıdakiler yalnızca yön örneğidir — onayınca gerçek sayfalara uygulanır.</p>
+  </header>
+
+  <!-- PALETTE -->
+  <section class="card reveal" style="animation-delay:.05s">
+    <div class="section-title"><h2>Renk paleti</h2><span>WCAG AA+ kontrast doğrulandı</span></div>
+    <div class="sw-grid">
+      <div class="sw"><div class="chip" style="background:var(--bg)"></div><div class="meta"><b>Zemin</b><code>#e9eef6</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--surface);border-bottom:1px solid var(--border)"></div><div class="meta"><b>Kart</b><code>#ffffff</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--text)"></div><div class="meta"><b>Metin</b><code>#101a2e</code><span class="contrast">15.6:1</span></div></div>
+      <div class="sw"><div class="chip" style="background:var(--muted)"></div><div class="meta"><b>İkincil metin</b><code>#4b586e</code><span class="contrast">7.3:1</span></div></div>
+      <div class="sw"><div class="chip" style="background:var(--primary)"></div><div class="meta"><b>Marka</b><code>#2a51d6</code><span class="contrast">AA beyaz</span></div></div>
+      <div class="sw"><div class="chip" style="background:var(--accent)"></div><div class="meta"><b>Amber vurgu</b><code>#e07b18</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--success)"></div><div class="meta"><b>Başarılı</b><code>#0f8a5f</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--danger)"></div><div class="meta"><b>Hata</b><code>#d23b3b</code></div></div>
+    </div>
+  </section>
+
+  <!-- COMPONENTS -->
+  <section class="card reveal" style="animation-delay:.1s">
+    <div class="section-title"><h2>Bileşenler</h2><span>düğmeler · alanlar · durum etiketleri</span></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary">Birincil işlem</button>
+      <button class="btn accent">Vurgulu CTA</button>
+      <button class="btn secondary">İkincil</button>
+      <button class="btn ghost">Metin düğme</button>
+      <button class="btn danger">Sil</button>
+    </div>
+    <div class="row" style="margin-top:16px;gap:16px;align-items:end">
+      <div class="field" style="flex:1;min-width:220px"><label>E-posta</label><input class="input" placeholder="ornek@firma.com"></div>
+      <div class="field" style="flex:1;min-width:220px"><label>Parola</label><input class="input" type="password" placeholder="••••••••"></div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <span class="badge ok"><i class="dot"></i>Onaylı</span>
+      <span class="badge info"><i class="dot"></i>Taslak</span>
+      <span class="badge warn"><i class="dot"></i>Beklemede</span>
+      <span class="badge err"><i class="dot"></i>Reddedildi</span>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="reveal" style="animation-delay:.15s">
+    <div class="section-title" style="margin-bottom:10px"><h2 style="font-family:'Space Grotesk'">Dashboard örneği</h2><span>daha profesyonel panolar</span></div>
+    <div class="dash">
+      <nav class="rail">
+        <div class="brand"><span class="logo">OP</span><b>Operasyon</b></div>
+        <a class="active"><i class="ico"></i>Genel bakış</a>
+        <a><i class="ico"></i>Raporlar</a>
+        <a><i class="ico"></i>Atamalar</a>
+        <a><i class="ico"></i>Müşteriler</a>
+        <a><i class="ico"></i>Ekipman</a>
+        <a><i class="ico"></i>Ayarlar</a>
+      </nav>
+      <div class="panel">
+        <div class="ph">
+          <div><h3 style="font-size:20px">Genel bakış</h3><div style="color:var(--muted);font-size:13px;margin-top:2px">Bu hafta saha operasyonları</div></div>
+          <button class="btn primary">Yeni rapor</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="lab">Açık atama</div><div class="val">24</div><div class="trend up">▲ %12 bu hafta</div></div>
+          <div class="stat"><div class="lab">Tamamlanan</div><div class="val">148</div><div class="trend up">▲ %8</div></div>
+          <div class="stat"><div class="lab">Bekleyen onay</div><div class="val">6</div><div class="trend down">▼ 2 dün</div></div>
+          <div class="stat"><div class="lab">Aktif personel</div><div class="val">18</div><div class="trend" style="color:var(--muted)">— sabit</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card" style="padding:16px">
+            <div style="font-weight:600;margin-bottom:6px">Son raporlar</div>
+            <table>
+              <thead><tr><th>Rapor</th><th>Firma</th><th>Durum</th></tr></thead>
+              <tbody>
+                <tr><td><b>RPR-2026-000148</b></td><td>Demir Montaj</td><td><span class="badge ok"><i class="dot"></i>Onaylı</span></td></tr>
+                <tr><td><b>RPR-2026-000147</b></td><td>Akbaş Lojistik</td><td><span class="badge warn"><i class="dot"></i>Beklemede</span></td></tr>
+                <tr><td><b>RPR-2026-000146</b></td><td>Yıldız Enerji</td><td><span class="badge info"><i class="dot"></i>Taslak</span></td></tr>
+                <tr><td><b>RPR-2026-000145</b></td><td>Deniz İnşaat</td><td><span class="badge ok"><i class="dot"></i>Onaylı</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card" style="padding:16px">
+            <div style="font-weight:600;margin-bottom:10px">Haftalık tamamlanan</div>
+            <div class="bars">
+              <div class="bar" style="height:55%"><span>18</span></div>
+              <div class="bar" style="height:72%"><span>24</span></div>
+              <div class="bar alt" style="height:90%"><span>31</span></div>
+              <div class="bar" style="height:64%"><span>21</span></div>
+              <div class="bar" style="height:80%"><span>27</span></div>
+            </div>
+            <div class="axis"><span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGIN -->
+  <section class="reveal" style="animation-delay:.2s">
+    <div class="section-title" style="margin-bottom:10px"><h2 style="font-family:'Space Grotesk'">Giriş ekranı örneği</h2><span>sayfa sayfa yapı</span></div>
+    <div class="login">
+      <div class="promo">
+        <div class="kicker">Saha ve rapor yönetimi</div>
+        <h2>Operasyonlarınızı tek merkezden yönetin.</h2>
+        <ul>
+          <li><span class="tick"></span>Rol tabanlı güvenli erişim</li>
+          <li><span class="tick"></span>Şifreli rapor ve müşteri verileri</li>
+          <li><span class="tick"></span>Masaüstü ve mobil uyumlu</li>
+        </ul>
+      </div>
+      <div class="form">
+        <div class="seg"><button class="on">Giriş</button><button>Firma Kaydı</button></div>
+        <div class="field"><label>E-posta</label><input class="input" placeholder="ornek@firma.com"></div>
+        <div class="field"><label>Parola</label><input class="input" type="password" placeholder="••••••••"></div>
+        <button class="btn primary" style="justify-content:center;width:100%">Giriş yap</button>
+        <div class="note">🔒 Oturumunuz şifreli bağlantı üzerinden korunur</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script>
+// küçük giriş animasyonu: barları yükselt (reduced-motion'a saygılı)
+const rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!rm){ document.querySelectorAll('.bars .bar').forEach((b,i)=>{const h=b.style.height;b.style.height='0';setTimeout(()=>b.style.height=h, 250+i*90);}); }
+</script>
+</body>
+</html>
