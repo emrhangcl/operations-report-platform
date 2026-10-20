@@ -16,3 +16,6 @@ expo-go-qr.png
 artifacts/
 
 .env*
+
+# graphify bilgi grafigi ciktilari
+graphify-out/
