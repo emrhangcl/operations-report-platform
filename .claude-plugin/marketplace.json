@@ -1,0 +1,14 @@
+{
+  "name": "operations-portal",
+  "description": "Repository-local Claude Code plugins for the Operations Portal project",
+  "owner": {
+    "name": "emrhangcl"
+  },
+  "plugins": [
+    {
+      "name": "operations-portal-workflows",
+      "source": "./.agents/plugins/operations-portal-workflows",
+      "description": "Feature development, bug fix, review, database migration, and release workflows for this repository"
+    }
+  ]
+}

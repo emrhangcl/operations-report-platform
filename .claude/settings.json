@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "operations-portal": {
+      "source": {
+        "source": "github",
+        "repo": "emrhangcl/operations-report-platform"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "operations-portal-workflows@operations-portal": true
+  }
+}

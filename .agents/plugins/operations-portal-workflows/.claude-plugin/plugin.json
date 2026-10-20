@@ -1,0 +1,8 @@
+{
+  "name": "operations-portal-workflows",
+  "displayName": "Operations Portal Workflows",
+  "description": "Repository-local workflows for the Operations Portal project",
+  "author": {
+    "name": "emrhangcl"
+  }
+}
