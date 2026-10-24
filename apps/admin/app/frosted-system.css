@@ -489,6 +489,28 @@ body {
 .password-strength-track { background: var(--op-surface-muted) !important; }
 .password-strength-track span.passed { background: var(--op-primary) !important; }
 
+/* Kimlik paneli: tek vurgu (Yön B) — başlık, etiket ve onay metni nötr; amber yalnızca birincil eylem ve aktif sekme */
+.public-auth-panel > header { margin-top: 1.5rem; }
+.public-auth-panel > header h1 { color: var(--op-text) !important; }
+.public-auth-panel .auth-field > label,
+.public-auth-panel .segmented-field legend {
+  color: var(--op-text) !important;
+  font-size: var(--op-text-base) !important;
+  font-weight: 500 !important;
+}
+.public-auth-panel .public-form > label.consent-row {
+  color: var(--op-text-muted) !important;
+  font-size: var(--op-text-base) !important;
+  font-weight: 400 !important;
+}
+.public-auth-panel .consent-row a {
+  color: var(--op-text) !important;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.public-auth-panel .consent-row a:hover { color: var(--op-primary) !important; }
+.public-auth-panel .consent-row input { min-height: 0 !important; margin: 0.2em 0 0 !important; padding: 0 !important; }
+
 /* Personnel web workspace */
 .personnel-page,
 .personnel-center {
@@ -779,6 +801,8 @@ body {
     min-height: calc(100dvh - 4.5rem) !important;
     padding: 1.25rem 1rem 2rem !important;
   }
+  .public-auth-panel .two-columns { grid-template-columns: 1fr 1fr !important; }
+  .public-auth-panel .two-columns > :not(.auth-name-field) { grid-column: 1 / -1 !important; }
 
   .admin-content-inner,
   .owner-page { padding-inline: 0.75rem !important; }

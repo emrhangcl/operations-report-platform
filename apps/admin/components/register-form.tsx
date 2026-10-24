@@ -73,8 +73,8 @@ export function RegisterForm() {
     <form className="public-form" onSubmit={submit}>
       <div className="public-form-grid two-columns">
         <AuthField autoComplete="organization" containerClassName="span-2" icon={<Building2 size={18} />} label="Firma adı" maxLength={160} onChange={(event) => setOrganizationName(event.target.value)} placeholder="Firma unvanı" required value={organizationName} />
-        <AuthField autoComplete="given-name" icon={<User size={18} />} label="Ad" maxLength={80} onChange={(event) => setFirstName(event.target.value)} placeholder="Adınız" required value={firstName} />
-        <AuthField autoComplete="family-name" icon={<User size={18} />} label="Soyad" maxLength={80} onChange={(event) => setLastName(event.target.value)} placeholder="Soyadınız" required value={lastName} />
+        <AuthField autoComplete="given-name" containerClassName="auth-name-field" icon={<User size={18} />} label="Ad" maxLength={80} onChange={(event) => setFirstName(event.target.value)} placeholder="Adınız" required value={firstName} />
+        <AuthField autoComplete="family-name" containerClassName="auth-name-field" icon={<User size={18} />} label="Soyad" maxLength={80} onChange={(event) => setLastName(event.target.value)} placeholder="Soyadınız" required value={lastName} />
         <AuthField autoComplete="email" containerClassName="span-2" icon={<Mail size={18} />} label="İş e-postası" maxLength={254} onChange={(event) => setEmail(event.target.value)} placeholder="ornek@firma.com" required type="email" value={email} />
         <AuthField autoComplete="tel" icon={<Phone size={18} />} label="Telefon" maxLength={32} onChange={(event) => setPhone(event.target.value)} placeholder="05xx xxx xx xx" type="tel" value={phone} />
         <div>
@@ -91,7 +91,7 @@ export function RegisterForm() {
       </fieldset>
       <label className="consent-row">
         <input checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} required type="checkbox" />
-        <span><Link href="/privacy">Gizlilik/KVKK</Link> ve <Link href="/terms">kullanım-abonelik</Link> taslak alanlarını inceledim.</span>
+        <span><Link href="/privacy">Gizlilik/KVKK</Link> ve <Link href="/terms">kullanım ve abonelik koşulları</Link> metinlerini okudum.</span>
       </label>
       {message ? <div className="message error">{message}</div> : null}
       <button className="button public-form-submit" disabled={loading} type="submit">
