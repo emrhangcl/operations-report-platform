@@ -35,4 +35,4 @@ Kapsam: yerel `feat/saas-platform` dalı. Üretim verisi kullanılmadı.
 
 ## Release kuralı
 
-Otomatik kontrollerden biri başarısızsa release yapılmaz. Manuel akışlar staging’de gerçek olmayan test hesaplarıyla tamamlanır; production hesabı veya service-role anahtarı test verisine yazılmaz. Her release sonrasında build, DB testleri, dependency audit ve Docker/HTTP smoke testleri tekrarlanır.
+Otomatik kontroller `pnpm run preflight` ile tek komutta çalıştırılır (ayrıntı: `docs/DEPLOYMENT.md`); komut 0 dışında bir kodla çıkarsa ya da `db:test` gerektiği halde ATLANDI görünüyorsa release yapılmaz. Otomatik kontrollerden biri başarısızsa release yapılmaz. Manuel akışlar staging’de gerçek olmayan test hesaplarıyla tamamlanır; production hesabı veya service-role anahtarı test verisine yazılmaz. Her release sonrasında build, DB testleri, dependency audit ve Docker/HTTP smoke testleri tekrarlanır.
