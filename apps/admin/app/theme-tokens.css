@@ -1,0 +1,53 @@
+/*
+ * Theme tokens ("Calm Operations" direction).
+ * Semantic surface, accent, and status variables in the shadcn/ui token
+ * vocabulary, written as plain CSS (no Tailwind, no component library).
+ * The dark set reproduces the current graphite values exactly; legacy
+ * variables (--op-*, --source-*) alias these tokens.
+ *
+ * Rules (see apps/admin/DESIGN.md):
+ * - --primary is the only accent: primary button, active navigation, focus ring.
+ * - --destructive is only for destructive actions (delete) and failed states.
+ * - --success / --warning / --info carry status meaning only.
+ */
+
+:root {
+  /* Neutral surfaces */
+  --background: oklch(0.196 0.014 259);
+  --background-subtle: oklch(0.218 0.016 259);
+  --card: oklch(0.246 0.018 259);
+  --card-raised: oklch(0.272 0.02 259);
+  --card-subtle: oklch(0.226 0.017 259);
+  --muted: oklch(0.286 0.019 259);
+  --border: oklch(0.332 0.021 258);
+  --border-strong: oklch(0.405 0.024 258);
+
+  /* Neutral text */
+  --foreground: oklch(0.955 0.006 250);
+  --foreground-soft: oklch(0.86 0.012 250);
+  --muted-foreground: oklch(0.671 0.023 250);
+  --subtle-foreground: oklch(0.57 0.025 250);
+
+  /* Single accent */
+  --primary: oklch(0.775 0.152 71);
+  --primary-hover: oklch(0.83 0.145 76);
+  --primary-soft: oklch(0.775 0.152 71 / 0.13);
+  --primary-foreground: oklch(0.196 0.014 259);
+  --ring: var(--primary);
+
+  /* Semantic status */
+  --destructive: oklch(0.72 0.16 25);
+  --destructive-hover: oklch(0.78 0.16 25);
+  --destructive-soft: oklch(0.58 0.15 25 / 0.16);
+  --success: oklch(0.79 0.12 160);
+  --success-soft: oklch(0.58 0.1 160 / 0.16);
+  --warning: oklch(0.82 0.14 76);
+  --warning-soft: oklch(0.68 0.14 76 / 0.16);
+  --info: oklch(0.78 0.1 225);
+  --info-soft: oklch(0.58 0.1 225 / 0.16);
+
+  /* Single radius scale */
+  --radius: 0.75rem;
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-lg: calc(var(--radius) + 0.25rem);
+}

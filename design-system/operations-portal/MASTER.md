@@ -17,26 +17,36 @@
 
 ### Color Palette
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#2563EB` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#047857` | `--color-secondary` |
-| On Secondary | `#000000` | `--color-on-secondary` |
-| Accent/CTA | `#1D4ED8` | `--color-accent` |
-| On Accent/CTA | `#FFFFFF` | `--color-on-accent` |
-| Background | `#F8FAFC` | `--color-background` |
-| Foreground | `#1E293B` | `--color-foreground` |
-| Card | `#FFFFFF` | `--color-card` |
-| Card Foreground | `#1E293B` | `--color-card-foreground` |
-| Muted | `#E9EFF8` | `--color-muted` |
-| Muted Foreground | `#475569` | `--color-muted-foreground` |
-| Border | `#E2E8F0` | `--color-border` |
-| Destructive | `#DC2626` | `--color-destructive` |
-| On Destructive | `#FFFFFF` | `--color-on-destructive` |
-| Ring | `#2563EB` | `--color-ring` |
+Source of truth: `apps/admin/app/theme-tokens.css` and `apps/admin/DESIGN.md` (direction "Calm Operations": shadcn/ui token vocabulary in plain CSS, current graphite/amber identity kept). Only the dark set exists today; a light set will reuse the same names.
 
-**Color Notes:** Neutral surfaces, trust blue for primary actions, and restrained teal for positive operational states. Status meaning must never rely on color alone.
+| Role | Dark value | CSS Variable |
+|------|------------|--------------|
+| Background | `oklch(0.196 0.014 259)` | `--background` |
+| Background Subtle | `oklch(0.218 0.016 259)` | `--background-subtle` |
+| Card | `oklch(0.246 0.018 259)` | `--card` |
+| Card Raised | `oklch(0.272 0.02 259)` | `--card-raised` |
+| Card Subtle | `oklch(0.226 0.017 259)` | `--card-subtle` |
+| Muted (surface) | `oklch(0.286 0.019 259)` | `--muted` |
+| Border | `oklch(0.332 0.021 258)` | `--border` |
+| Border Strong | `oklch(0.405 0.024 258)` | `--border-strong` |
+| Foreground | `oklch(0.955 0.006 250)` | `--foreground` |
+| Foreground Soft | `oklch(0.86 0.012 250)` | `--foreground-soft` |
+| Muted Foreground | `oklch(0.671 0.023 250)` | `--muted-foreground` |
+| Subtle Foreground | `oklch(0.57 0.025 250)` | `--subtle-foreground` |
+| Primary (amber) | `oklch(0.775 0.152 71)` | `--primary` (+ `-hover`, `-soft`) |
+| On Primary | `oklch(0.196 0.014 259)` | `--primary-foreground` |
+| Focus Ring | `= --primary` | `--ring` |
+| Destructive | `oklch(0.72 0.16 25)` | `--destructive` (+ `-hover`, `-soft`) |
+| Success | `oklch(0.79 0.12 160)` | `--success` (+ `-soft`) |
+| Warning | `oklch(0.82 0.14 76)` | `--warning` (+ `-soft`) |
+| Info | `oklch(0.78 0.1 225)` | `--info` (+ `-soft`) |
+| Radius | `0.75rem` | `--radius` (`--radius-sm`, `--radius-lg`) |
+
+**Single accent rule:** amber (`--primary`) marks only the primary button, the active navigation item, and the focus ring. Titles, labels, table headers, and links are neutral. One primary button per page.
+
+**Semantic color rule:** green only for positive states (a zero count is not success); red (`--destructive`) only for destructive actions and failed states; "Add" actions are neutral secondary buttons. Inline deletes are ghost icon buttons; filled destructive only inside the confirmation dialog. Status meaning must never rely on color alone.
+
+Legacy variables (`--op-*`, `--source-*`) are aliases of these tokens; see the alias table in `apps/admin/DESIGN.md`.
 
 ### Typography
 

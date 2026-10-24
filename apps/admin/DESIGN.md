@@ -2,28 +2,30 @@
 name: Operasyon Portalı Admin
 description: Dark Frosted Technical control surface for tenant-scoped field and office work.
 colors:
-  graphite: "oklch(0.196 0.014 259)"
-  graphite-subtle: "oklch(0.218 0.016 259)"
-  panel: "oklch(0.246 0.018 259)"
-  panel-raised: "oklch(0.272 0.02 259)"
-  panel-subtle: "oklch(0.226 0.017 259)"
-  panel-muted: "oklch(0.286 0.019 259)"
-  line: "oklch(0.332 0.021 258)"
-  line-strong: "oklch(0.405 0.024 258)"
-  mist: "oklch(0.671 0.023 250)"
-  ice: "oklch(0.955 0.006 250)"
-  text-soft: "oklch(0.86 0.012 250)"
-  text-subtle: "oklch(0.57 0.025 250)"
-  signal: "oklch(0.775 0.152 71)"
-  signal-hover: "oklch(0.83 0.145 76)"
-  signal-soft: "oklch(0.775 0.152 71 / 0.13)"
+  background: "oklch(0.196 0.014 259)"
+  background-subtle: "oklch(0.218 0.016 259)"
+  card: "oklch(0.246 0.018 259)"
+  card-raised: "oklch(0.272 0.02 259)"
+  card-subtle: "oklch(0.226 0.017 259)"
+  muted: "oklch(0.286 0.019 259)"
+  border: "oklch(0.332 0.021 258)"
+  border-strong: "oklch(0.405 0.024 258)"
+  foreground: "oklch(0.955 0.006 250)"
+  foreground-soft: "oklch(0.86 0.012 250)"
+  muted-foreground: "oklch(0.671 0.023 250)"
+  subtle-foreground: "oklch(0.57 0.025 250)"
+  primary: "oklch(0.775 0.152 71)"
+  primary-hover: "oklch(0.83 0.145 76)"
+  primary-soft: "oklch(0.775 0.152 71 / 0.13)"
+  primary-foreground: "oklch(0.196 0.014 259)"
+  ring: "oklch(0.775 0.152 71)"
+  destructive: "oklch(0.72 0.16 25)"
+  destructive-hover: "oklch(0.78 0.16 25)"
+  destructive-soft: "oklch(0.58 0.15 25 / 0.16)"
   success: "oklch(0.79 0.12 160)"
   success-soft: "oklch(0.58 0.1 160 / 0.16)"
   warning: "oklch(0.82 0.14 76)"
   warning-soft: "oklch(0.68 0.14 76 / 0.16)"
-  danger: "oklch(0.72 0.16 25)"
-  danger-hover: "oklch(0.78 0.16 25)"
-  danger-soft: "oklch(0.58 0.15 25 / 0.16)"
   info: "oklch(0.78 0.1 225)"
   info-soft: "oklch(0.58 0.1 225 / 0.16)"
 typography:
@@ -66,6 +68,7 @@ typography:
 rounded:
   sm: "0.5rem"
   md: "0.75rem"
+  lg: "1rem"
   panel: "1rem"
   hero: "1.5rem"
   full: "999px"
@@ -80,31 +83,31 @@ spacing:
   shell: "4rem"
 components:
   button-signal:
-    backgroundColor: "{colors.signal}"
-    textColor: "{colors.graphite}"
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.primary-foreground}"
     rounded: "{rounded.md}"
     padding: "0.625rem 1.25rem"
     height: "2.625rem"
   button-outline:
     backgroundColor: "transparent"
-    textColor: "{colors.ice}"
+    textColor: "{colors.foreground}"
     rounded: "{rounded.md}"
     padding: "0.625rem 1.25rem"
     height: "2.625rem"
   input:
-    backgroundColor: "{colors.panel-subtle}"
-    textColor: "{colors.ice}"
+    backgroundColor: "{colors.card-subtle}"
+    textColor: "{colors.foreground}"
     rounded: "{rounded.sm}"
     padding: "0.625rem 0.75rem"
     height: "2.5rem"
   panel:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.ice}"
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.foreground}"
     rounded: "{rounded.md}"
     padding: "1rem"
   nav-active:
-    backgroundColor: "{colors.signal-soft}"
-    textColor: "{colors.signal}"
+    backgroundColor: "{colors.primary-soft}"
+    textColor: "{colors.primary}"
     rounded: "{rounded.sm}"
     height: "2.5rem"
 ---
@@ -115,14 +118,14 @@ components:
 
 **Creative North Star: "Frosted Technical Operations"**
 
-Operasyon Portalı Admin now belongs to the first-open landing screen's dark technical world. The system is graphite first: a low-glare operational canvas, translucent dark panels, fine steel borders, ice text, mist support copy, and amber signal for action, focus, route state, and proof. Every public, authentication, admin, owner, and personnel web surface should feel like one continuous operating environment rather than a jump between marketing and product skins.
+Operasyon Portalı Admin now belongs to the first-open landing screen's dark technical world. The system is graphite first: a low-glare operational canvas, translucent dark panels, fine steel borders, ice text, mist support copy, and a single amber accent for the primary action, active navigation, and focus. Every public, authentication, admin, owner, and personnel web surface should feel like one continuous operating environment rather than a jump between marketing and product skins.
 
 The design should stay technical, compact, and calm. Frost is a material layer for sticky headers, authentication panels, drawers, dialogs, and the public product shell; it is not decorative glass. Product truth, role context, organization boundaries, report integrity, and permission state remain more important than atmosphere.
 
 **Key Characteristics:**
 
 - Graphite canvas with dark panel layering across public and authenticated routes.
-- Amber signal reserved for primary action, focus, route state, counters, proof markers, and active progress.
+- Amber primary reserved for the primary action, active navigation, and focus.
 - Ice text and mist support copy create hierarchy without returning to a light enterprise surface.
 - Space Grotesk is public/display voice; IBM Plex Sans is the operational UI and body voice.
 - Borders, translucent panels, blur, and restrained shadow build depth without decorative dashboard novelty.
@@ -130,44 +133,63 @@ The design should stay technical, compact, and calm. Frost is a material layer f
 
 ## Colors
 
-The palette is a dark Frosted Technical system extracted from `frosted-system.css` and the first-open landing screen. The frontmatter is normative.
+Colors are semantic theme tokens in the shadcn/ui vocabulary, written as plain CSS custom properties in `app/theme-tokens.css` (no Tailwind, no component library). The frontmatter is normative. Today only the dark set exists and it reproduces the original graphite values exactly; a light set will use the same token names.
 
-### Primary
+### Surfaces
 
-- **Graphite:** The full-page canvas and continuity layer for public, authentication, admin, owner, and personnel routes.
-- **Panel:** The standard working surface for cards, tables, form panels, public boards, and workspace modules.
-- **Line:** The default structural border for panels, controls, navigation rows, tables, headers, and ledgers.
-- **Mist:** Supporting text, secondary navigation, subdued metadata, captions, and explanatory copy.
-- **Signal:** The amber action and focus color for primary buttons, active routes, focus rings, proof markers, progress, and selected states.
-- **Ice:** Primary text, headings, lockups, and high-confidence operational values.
+- **Background / Background Subtle:** The full-page canvas; the subtle step for sticky bars, public bands, and disabled fields.
+- **Card / Card Raised / Card Subtle:** Standard working surface; dialogs and raised layers; field backgrounds and nested containers.
+- **Muted:** Hover rows, disabled tracks, and quiet state surfaces.
+- **Border / Border Strong:** Default one-pixel structure; stronger dividers and scrollbar thumbs.
 
-### Secondary
+### Text
 
-- **Panel Raised:** Dialogs, lightboxes, and raised work surfaces that sit above the standard panel layer.
-- **Panel Subtle:** Field backgrounds, workspace cards, quiet bands, segmented controls, and nested operational containers.
-- **Signal Soft:** Low-emphasis selected backgrounds and amber icon wells.
+- **Foreground:** Primary text, headings, and operational values.
+- **Foreground Soft:** Table headers and intermediate copy.
+- **Muted Foreground / Subtle Foreground:** Supporting copy and metadata; faint placeholder-level copy.
 
-### Tertiary
+### Accent
 
-- **Success:** Completed, approved, constructive, and valid workflow states.
-- **Warning:** Subscription, draft, pending, grace, and caution states.
-- **Danger:** Destructive, failed, invalid, irreversible, or blocked states.
-- **Info:** Informational system messages only.
+- **Primary:** Operational amber. **Primary Foreground** is the text on a primary fill. **Primary Soft** is the selected-state background. **Ring** is the focus ring (same amber).
 
-### Neutral
+### Status
 
-- **Graphite Subtle:** Sticky bars, public bands, and secondary shell backgrounds.
-- **Panel Muted:** Hover rows, disabled tracks, and muted state surfaces.
-- **Line Strong:** Scrollbar thumbs, stronger dividers, and borders that must survive dark-panel compression.
-- **Text Soft / Text Subtle:** Intermediate and faint copy levels when mist is either too quiet or too prominent.
+- **Destructive:** Delete actions and failed or blocked states.
+- **Success:** Completed, approved, and valid states.
+- **Warning:** Draft, pending, subscription grace, and caution states.
+- **Info:** Informational system messages.
+- Each status has a `-soft` tint for chips and notices.
+
+### Radius
+
+One scale: `--radius` (0.75rem) with `--radius-sm` (0.5rem) and `--radius-lg` (1rem) derived from it.
+
+### Legacy aliases
+
+Older variables stay as aliases so class names and markup do not change. New CSS uses the theme tokens directly.
+
+| Legacy | Token |
+|---|---|
+| `--op-bg`, `--op-bg-subtle` | `--background`, `--background-subtle` |
+| `--op-surface`, `--op-surface-raised`, `--op-surface-subtle`, `--op-surface-muted` | `--card`, `--card-raised`, `--card-subtle`, `--muted` |
+| `--op-text`, `--op-text-soft`, `--op-text-muted`, `--op-text-subtle` / `--op-text-faint` | `--foreground`, `--foreground-soft`, `--muted-foreground`, `--subtle-foreground` |
+| `--op-border`, `--op-border-strong` | `--border`, `--border-strong` |
+| `--op-primary`, `--op-primary-hover`, `--op-primary-soft`, `--op-accent`, `--op-ring` | `--primary`, `--primary-hover`, `--primary-soft`, `--primary`, `--ring` |
+| `--op-danger`, `--op-danger-hover`, `--op-danger-soft` | `--destructive`, `--destructive-hover`, `--destructive-soft` |
+| `--op-success`, `--op-warning`, `--op-info` (+ `-soft`) | `--success`, `--warning`, `--info` (+ `-soft`) |
+| `--source-graphite`, `--source-panel`, `--source-line`, `--source-mist`, `--source-signal`, `--source-signal-hover`, `--source-ice` | `--background`, `--card`, `--border`, `--muted-foreground`, `--primary`, `--primary-hover`, `--foreground` |
+
+The old text-color variable `--muted` is now `--muted-text`; `--muted` is the shadcn surface token.
 
 ### Named Rules
 
-**The First-Viewport Authority Rule.** New web surfaces inherit the landing page's graphite, panel, line, mist, signal, and ice world before local styling decisions.
+**The Single Accent Rule.** Primary (amber) marks only the primary button, the active navigation item, and the focus ring. Page titles, section titles, form labels, table headers, and links are neutral (foreground or muted foreground). One primary button per page; on mobile it is full width and at least 44px tall. Existing screens that still use amber elsewhere are migrated page by page.
 
-**The Amber Signal Rule.** Signal is operational amber, not generic brand color; use it for state, action, focus, progress, and proof.
+**The Semantic Color Rule.** Green means a positive state only; a zero count is not a success. Red (destructive) means a destructive action or a failed state only. "Add" style actions are secondary (neutral outline), never red. Inline row deletes use a ghost icon button; a filled destructive button appears only inside the confirmation dialog.
 
-**The Semantic Reserve Rule.** Success, warning, danger, and info colors keep their workflow meaning and must not become decorative accents.
+**The Color Is Not Alone Rule.** Status color always comes with explicit Turkish text or an icon.
+
+**The First-Viewport Authority Rule.** New web surfaces inherit the theme tokens before local styling decisions.
 
 ## Typography
 
@@ -278,7 +300,7 @@ Brand lockups, workspace cards, account context, owner labels, and personnel ide
 
 ### Do:
 
-- **Do** start every web surface from `frosted-system.css` and the landing-page `source-*` world.
+- **Do** start every web surface from the theme tokens in `theme-tokens.css`; use legacy `--op-*` / `--source-*` names only in existing rules.
 - **Do** use Space Grotesk for public/display moments and IBM Plex Sans for product UI/body.
 - **Do** keep organization, role, permission, read-only, report, return, and subscription context visible when it changes available actions.
 - **Do** preserve keyboard focus, skip links, semantic controls, touch targets, responsive reflow, and reduced-motion behavior.
@@ -288,7 +310,7 @@ Brand lockups, workspace cards, account context, owner labels, and personnel ide
 ### Don't:
 
 - **Don't** reintroduce light enterprise pages, pale blue shells, or mismatched login/register themes.
-- **Don't** use amber as decoration; it must communicate action, focus, route state, progress, proof, or semantic warning.
+- **Don't** use amber for titles, labels, table headers, or links; it marks the primary action, active navigation, and focus only.
 - **Don't** invent customer proof, testimonials, logos, activity feeds, metrics, records, or capabilities.
 - **Don't** turn ordinary work panels into floating novelty dashboards when borders and panel tones already establish structure.
 - **Don't** use semantic colors for non-semantic decoration.
