@@ -1,11 +1,11 @@
 .source-landing {
-  --source-graphite: oklch(0.196 0.014 259);
-  --source-panel: oklch(0.246 0.018 259);
-  --source-line: oklch(0.332 0.021 258);
-  --source-mist: oklch(0.671 0.023 250);
-  --source-signal: oklch(0.775 0.152 71);
-  --source-signal-hover: oklch(0.83 0.145 76);
-  --source-ice: oklch(0.955 0.006 250);
+  --source-graphite: var(--background);
+  --source-panel: var(--card);
+  --source-line: var(--border);
+  --source-mist: var(--muted-foreground);
+  --source-signal: var(--primary);
+  --source-signal-hover: var(--primary-hover);
+  --source-ice: var(--foreground);
   --source-frost: oklch(0.246 0.018 259 / 0.55);
   min-height: 100vh;
   background: var(--source-graphite);

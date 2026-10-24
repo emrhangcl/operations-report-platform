@@ -136,7 +136,7 @@
   --surface-soft: var(--op-surface-muted);
   --surface-strong: var(--op-surface-subtle);
   --text: var(--op-text);
-  --muted: var(--op-text-muted);
+  --muted-text: var(--op-text-muted);
   --line: var(--op-border);
   --brand: var(--op-primary);
   --brand-dark: var(--op-primary-hover);
