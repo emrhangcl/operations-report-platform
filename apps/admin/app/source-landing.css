@@ -154,5 +154,9 @@
 }
 @media (min-width: 64rem) { .source-hero-grid { grid-template-columns: repeat(12,minmax(0,1fr)); gap: 2rem; } .source-hero-copy, .source-product-wrap { grid-column: span 6; } }
 @media (max-width: 47.999rem) { .source-nav { display: none; } }
-@media (max-width: 39.999rem) { .source-login-link { display: none; } }
+@media (max-width: 39.999rem) {
+  .source-login-link { display: none; }
+  .source-hero-facts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 1rem; }
+  .source-hero-facts i { display: none; }
+}
 @media (prefers-reduced-motion: reduce) { .source-landing *, .source-landing *::before, .source-landing *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
