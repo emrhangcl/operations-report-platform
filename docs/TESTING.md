@@ -34,6 +34,7 @@ Test files:
   - `apps/admin/lib/server/storage.test.ts`: path traversal, bucket names, image signature detection, signed link verification.
   - `apps/admin/lib/server/guards.test.ts`: `401`/`403` status for every guard failure, read-only versus write access, personnel versus admin, platform admin grant.
 - API routes and helpers: `apps/admin/app/api/admin/personnel/[id]/route.test.ts`, `apps/admin/app/api/admin/reports/[id]/route.test.ts`, `apps/admin/app/api/platform/organizations/[id]/route.test.ts`, `apps/admin/app/platform/_components/platform-client.test.ts`, `apps/admin/lib/organization-branding.test.ts`, `apps/admin/lib/organization-deletion.test.ts`.
+- Browser client: `apps/admin/lib/browser-client.test.ts`: scope header, read cache and invalidation, non-JSON and network failures, session fetch (success, `401`, malformed body), upload error messages.
 - Packages: `packages/data-client/src/builder.test.ts`, `packages/payments/src/index.test.ts`, `packages/shared/src/*.test.ts` (excel, permissions, rate limit, report number, subscription), `packages/validation/src/*.test.ts` (forms, customer signature, organization management).
 
 ## Database Tests (`pnpm db:test`)
