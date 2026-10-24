@@ -53,16 +53,16 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
     <section className={standalone ? "public-band pricing-standalone" : "public-band public-band-soft"} id="paketler">
       <div className="public-container">
         <div className="public-section-heading">
-          <h2>Aylık veya yıllık kullanım</h2>
-          <p>Yalnızca sistemde aktif ve satışa açık olarak tanımlanan gerçek paketler burada gösterilir.</p>
+          {standalone ? <h1>Paketler</h1> : <h2>Paketler</h2>}
+          <p>Firmanız için aylık veya yıllık kullanım seçin.</p>
         </div>
         {loading ? <div className="public-empty">Paketler yükleniyor...</div> : null}
         {!loading && message ? <div className="public-empty">{message}</div> : null}
         {!loading && !message && plans.length === 0 ? (
           <div className="public-empty">
-            <strong>Henüz satışa açık paket bulunmuyor.</strong>
-            <span>Paket ve ödeme sağlayıcısı tanımlandığında fiyatlar bu alanda yayınlanacak.</span>
-            <Link className="button secondary" href="/contact">Satış ile iletişime geç</Link>
+            <strong>Paketler henüz yayınlanmadı.</strong>
+            <span>Paketler yayınlandığında fiyatlar burada görünecek. Firmanıza uygun kullanım için satış ekibiyle görüşebilirsiniz.</span>
+            <Link className="button" href="/contact">Satış ile iletişime geç</Link>
           </div>
         ) : null}
         <div className="pricing-grid">
@@ -74,7 +74,7 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
                 <div>
                   <span className="plan-code">{plan.code}</span>
                   <h3>{plan.name}</h3>
-                  <p>{plan.description || "Bu paketin kapsamı satışa açan ekip tarafından henüz yayınlanmadı."}</p>
+                  <p>{plan.description || "Paket ayrıntıları için satış ekibiyle görüşebilirsiniz."}</p>
                 </div>
                 <dl>
                   <div><dt>Aylık</dt><dd>{monthly ?? "Tanımlanmadı"}</dd></div>

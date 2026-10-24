@@ -656,6 +656,27 @@ body {
 .public-site .public-brand .brand-copy > span,
 .public-auth-brand .brand-copy > span { color: var(--op-text-muted) !important; }
 
+/* Same amber mark as the auth shell; legacy .public-brand rules in globals.css outrank .brand-symbol. */
+.public-site .public-brand .brand-symbol,
+.public-site .site-footer-brand .brand-symbol {
+  background: var(--op-primary) !important;
+  border-color: transparent !important;
+  color: var(--op-bg) !important;
+}
+
+/* Legacy `.public-footer span { display: block }` would stack and misalign the lockup. */
+.public-site .site-footer-brand .brand-lockup { display: inline-flex; margin-top: 0; }
+.public-site .site-footer-brand .brand-symbol { display: inline-flex; margin-top: 0; }
+
+.public-site .site-footer-links { display: grid; gap: 0; align-content: start; }
+.public-site .site-footer-links strong { margin-bottom: var(--op-space-2); }
+.public-site .site-footer-links a { min-height: 2rem !important; }
+
+@media (max-width: 38rem) {
+  .public-site .public-footer-inner { grid-template-columns: 1fr 1fr !important; }
+  .public-site .site-footer-brand { grid-column: 1 / -1 !important; }
+}
+
 .public-site :where(h1, h2, h3),
 .public-auth-page :where(h1, h2),
 .personnel-page :where(h1, h2, h3) {
