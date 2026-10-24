@@ -4,7 +4,8 @@ Three automated layers cover the system. Run them from the repository root.
 
 | Command | What it runs | Needs |
 | --- | --- | --- |
-| `pnpm run test` | Vitest unit tests in every workspace package that has a `test` script | Nothing running |
+| `pnpm run test` | Vitest unit tests in every workspace package that has a `test` script, then `scripts/*.test.mjs` (`pnpm run test:scripts`) | Nothing running |
+| `pnpm run preflight` | typecheck, lint, test, design check, build, and `db:test` (skipped with a reason when the test database is unreachable) with a summary table | Optional: local PostgreSQL for `db:test` |
 | `pnpm db:test` | pgTAP security tests in `db/tests` against a freshly reset `operations_portal_test` database | Local PostgreSQL (`pnpm db:start`) |
 | `pnpm test:e2e` | HTTP end-to-end flows and attack scenarios against the running app (`scripts/e2e/local-stack.ts`) | `pnpm dev:admin` running, `E2E_*` accounts in `.env` |
 
@@ -79,6 +80,10 @@ Add or update tests when changing:
 ## Manual Verification
 
 Check affected flows in the browser with the console and network panel open: login and registration, platform panel, personnel account creation, reset, and deletion, master data management, assignments, report creation, submission, detail, deletion, PDF and Excel export, and organization branding.
+
+## Pre-Deployment Command (`pnpm run preflight`)
+
+`pnpm run preflight` runs typecheck, lint, test, design check, build, and (when the test database is reachable) `db:test` in one pass and prints a pass/fail summary; see `docs/DEPLOYMENT.md`. Its own unit tests live in `scripts/preflight.test.mjs` and run through `pnpm run test:scripts`, which `pnpm run test` calls after the workspace packages.
 
 ## Recommended Order
 

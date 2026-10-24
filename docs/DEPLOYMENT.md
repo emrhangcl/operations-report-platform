@@ -59,15 +59,15 @@ The organization reopen/delete feature (platform detail page) is part of the `00
 
 ## Pre-Deployment Checks
 
+`pnpm run preflight` (`scripts/preflight.mjs`) runs the automated checks in one command: `typecheck`, `lint`, `test`, `design:check`, `build`, and `db:test`. Every step runs even if an earlier one fails; the command prints a duration and result per step, ends with a summary table, and exits with `1` if any step failed. `db:test` runs only when `TEST_DATABASE_MIGRATION_URL` (environment or `.env`) is set and reachable; otherwise the table shows `ATLANDI (<reason>)` and that check must be run separately before a release. Connection strings and `.env` contents are never printed.
+
 1. `pnpm install` if dependencies changed.
-2. `pnpm run typecheck`, `pnpm run lint`, `pnpm run test`.
-3. `pnpm db:test` when migrations, policies, or triggers changed.
-4. `pnpm test:e2e` against a staging instance or the local app.
-5. `pnpm run build`.
-6. Confirm the required environment variables on the target.
-7. Back up the database and `OPS_DATA_DIR/storage`, then `pnpm db:migrate`.
-8. Start the new version and check `GET /api/health`.
-9. Sign in once per role (platform owner, organization admin, personnel) and open a report PDF.
+2. `pnpm run preflight` — all steps must pass (`db:test` must not be skipped when migrations, policies, or triggers changed).
+3. `pnpm test:e2e` against a staging instance or the local app.
+4. Confirm the required environment variables on the target.
+5. Back up the database and `OPS_DATA_DIR/storage`, then `pnpm db:migrate`.
+6. Start the new version and check `GET /api/health`.
+7. Sign in once per role (platform owner, organization admin, personnel) and open a report PDF.
 
 ## Not Yet Documented
 
