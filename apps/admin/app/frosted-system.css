@@ -244,7 +244,7 @@ body {
   .public-auth-panel .public-form > label,
   .segmented-field legend,
   .owner-form-grid label > span,
-  table th
+  table th:where(:not([data-ui="v2"] *))
 ) {
   color: var(--op-primary) !important;
   font-size: var(--op-text-lg) !important;
@@ -266,12 +266,12 @@ body {
 .table-panel,
 .owner-compact-table-wrap { border-color: var(--op-border) !important; background: var(--op-surface) !important; }
 
-:where(table, .owner-table) { color: var(--op-text) !important; }
-:where(table, .owner-table) thead,
-:where(table, .owner-table) th { background: var(--op-surface-subtle) !important; color: var(--op-primary) !important; }
-:where(table, .owner-table) th,
-:where(table, .owner-table) td { border-color: var(--op-border) !important; }
-:where(table, .owner-table) tbody tr:hover { background: var(--op-surface-muted) !important; }
+:where(table, .owner-table):where(:not([data-ui="v2"] *)) { color: var(--op-text) !important; }
+:where(table, .owner-table):where(:not([data-ui="v2"] *)) thead,
+:where(table, .owner-table):where(:not([data-ui="v2"] *)) th { background: var(--op-surface-subtle) !important; color: var(--op-primary) !important; }
+:where(table, .owner-table):where(:not([data-ui="v2"] *)) th,
+:where(table, .owner-table):where(:not([data-ui="v2"] *)) td { border-color: var(--op-border) !important; }
+:where(table, .owner-table):where(:not([data-ui="v2"] *)) tbody tr:hover { background: var(--op-surface-muted) !important; }
 
 /* Admin and owner workspaces */
 .app-shell,
