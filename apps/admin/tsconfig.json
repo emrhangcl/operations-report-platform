@@ -5,7 +5,16 @@
     "allowJs": false,
     "noEmit": true,
     "incremental": true,
-    "plugins": [{ "name": "next" }]
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
+    "paths": {
+      "@operations/types": ["../../packages/types/src/index.ts"],
+      "@operations/validation": ["../../packages/validation/src/index.ts"],
+      "@operations/shared": ["../../packages/shared/src/index.ts"],
+      "@operations/payments": ["../../packages/payments/src/index.ts"],
+      "@operations/data-client": ["../../packages/data-client/src/index.ts"],
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "next-env.d.ts",
