@@ -1,19 +1,32 @@
-import { Building2, CreditCard, LayoutDashboard, PackageOpen, ScrollText, ShieldCheck, type LucideIcon } from "lucide-react";
+import {
+  IconBuilding,
+  IconCreditCard,
+  IconDashboard,
+  IconDatabase,
+  IconPackage,
+  IconReport,
+  type Icon
+} from "@tabler/icons-react";
 
 export interface OwnerNavigationItem {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: Icon;
   exact?: boolean;
 }
 
+// shadcn dashboard-01 "navMain" karsiligi.
 export const ownerNavigation: OwnerNavigationItem[] = [
-  { href: "/platform", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
-  { href: "/platform/organizations", label: "Firmalar", icon: Building2 },
-  { href: "/platform/plans", label: "Paketler ve Fiyatlar", icon: PackageOpen },
-  { href: "/platform/payments", label: "Ödemeler", icon: CreditCard },
-  { href: "/platform/logs", label: "Sistem Kayıtları", icon: ScrollText },
-  { href: "/platform/system", label: "Sistem Durumu", icon: ShieldCheck }
+  { href: "/platform", label: "Genel Bakış", icon: IconDashboard, exact: true },
+  { href: "/platform/organizations", label: "Firmalar", icon: IconBuilding },
+  { href: "/platform/plans", label: "Paketler ve Fiyatlar", icon: IconPackage },
+  { href: "/platform/payments", label: "Ödemeler", icon: IconCreditCard }
+];
+
+// shadcn dashboard-01 "documents" grubu karsiligi.
+export const ownerSystemNavigation: OwnerNavigationItem[] = [
+  { href: "/platform/logs", label: "Sistem Kayıtları", icon: IconReport },
+  { href: "/platform/system", label: "Sistem Durumu", icon: IconDatabase }
 ];
 
 export function isOwnerNavigationActive(item: OwnerNavigationItem, pathname: string) {
@@ -21,5 +34,7 @@ export function isOwnerNavigationActive(item: OwnerNavigationItem, pathname: str
 }
 
 export function ownerPageTitle(pathname: string) {
-  return ownerNavigation.find((item) => isOwnerNavigationActive(item, pathname))?.label ?? "Platform";
+  return (
+    [...ownerNavigation, ...ownerSystemNavigation].find((item) => isOwnerNavigationActive(item, pathname))?.label ?? "Platform"
+  );
 }

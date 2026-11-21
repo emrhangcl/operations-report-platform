@@ -73,9 +73,9 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       <PortalContainerProvider container={root}>
         <TooltipProvider delayDuration={0}>
           <SidebarProvider
-            style={{ "--sidebar-width": "calc(var(--spacing) * 64)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}
+            style={{ "--sidebar-width": "calc(var(--spacing) * 72)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}
           >
-            <OwnerSidebar email={email} onSignOut={signOut} />
+            <OwnerSidebar email={email} onSignOut={signOut} variant="inset" />
             <SidebarInset>
               <OwnerSiteHeader onToggleTheme={toggleTheme} theme={theme} title={ownerPageTitle(pathname)} />
               <main className="flex flex-1 flex-col" id="owner-main">

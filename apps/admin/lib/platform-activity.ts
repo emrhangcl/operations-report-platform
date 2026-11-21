@@ -1,9 +1,10 @@
-// Owner panelindeki "Tahsilat / Yeni firma" grafiginin gunluk serisi. Toplama sunucuda yapilir;
+// Owner panelindeki "Odeme / Yeni firma" grafiginin gunluk serisi. Toplama sunucuda yapilir;
 // istemciye yalnizca gunluk toplamlar gider. Gunler Europe/Istanbul takvimine gore sayilir.
 
 export interface DailyActivity {
   date: string; // YYYY-MM-DD, Europe/Istanbul
   collectedMinor: number;
+  payments: number;
   newOrganizations: number;
 }
 
@@ -36,7 +37,7 @@ export function buildDailyActivity(input: {
   for (let offset = input.days - 1; offset >= 0; offset -= 1) {
     const date = dayKey(new Date(input.now.getTime() - offset * DAY_MS));
     if (byDate.has(date)) continue;
-    const day = { date, collectedMinor: 0, newOrganizations: 0 };
+    const day = { date, collectedMinor: 0, payments: 0, newOrganizations: 0 };
     byDate.set(date, day);
     series.push(day);
   }
@@ -44,7 +45,9 @@ export function buildDailyActivity(input: {
   for (const payment of input.payments) {
     if (!payment.paid_at) continue;
     const day = byDate.get(dayKey(new Date(payment.paid_at)));
-    if (day) day.collectedMinor += payment.amount_minor - payment.refunded_amount_minor;
+    if (!day) continue;
+    day.collectedMinor += payment.amount_minor - payment.refunded_amount_minor;
+    day.payments += 1;
   }
 
   for (const organization of input.organizations) {
@@ -57,7 +60,7 @@ export function buildDailyActivity(input: {
 
 export function periodChange(
   series: DailyActivity[],
-  key: "collectedMinor" | "newOrganizations",
+  key: "collectedMinor" | "payments" | "newOrganizations",
   days: number
 ): { current: number; previous: number; percent: number | null } {
   const sum = (items: DailyActivity[]) => items.reduce((total, item) => total + item[key], 0);

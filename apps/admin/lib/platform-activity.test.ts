@@ -38,6 +38,21 @@ describe("buildDailyActivity", () => {
     expect(series.reduce((sum, day) => sum + day.collectedMinor, 0)).toBe(7500);
   });
 
+  it("counts paid payments per Istanbul day, including partially refunded ones", () => {
+    const series = buildDailyActivity({
+      payments: [
+        { amount_minor: 10000, refunded_amount_minor: 2500, paid_at: "2026-11-18T09:00:00Z" },
+        { amount_minor: 5000, refunded_amount_minor: 0, paid_at: "2026-11-18T15:00:00Z" },
+        { amount_minor: 9999, refunded_amount_minor: 0, paid_at: null }
+      ],
+      organizations: [],
+      days: 7,
+      now
+    });
+    expect(series.find((day) => day.date === "2026-11-18")?.payments).toBe(2);
+    expect(series.reduce((sum, day) => sum + day.payments, 0)).toBe(2);
+  });
+
   it("counts organizations by their Istanbul creation day", () => {
     const series = buildDailyActivity({
       payments: [],
@@ -51,7 +66,7 @@ describe("buildDailyActivity", () => {
 });
 
 describe("periodChange", () => {
-  const day = (index: number, collectedMinor: number): DailyActivity => ({ date: `d${index}`, collectedMinor, newOrganizations: 0 });
+  const day = (index: number, collectedMinor: number): DailyActivity => ({ date: `d${index}`, collectedMinor, payments: 0, newOrganizations: 0 });
 
   it("returns no percentage when the previous period is zero", () => {
     const series = [day(1, 0), day(2, 0), day(3, 40), day(4, 60)];
