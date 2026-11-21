@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
       {sent ? (
         <Alert tone="success">Hesap mevcutsa parola yenileme bağlantısı e-posta adresine gönderildi.</Alert>
       ) : (
-        <form aria-describedby={message ? "forgot-password-error" : undefined} onSubmit={submit}>
+        <form aria-describedby={message ? "forgot-password-error" : undefined} method="post" onSubmit={submit}>
           <FieldGroup>
             <AuthField
               autoComplete="email"

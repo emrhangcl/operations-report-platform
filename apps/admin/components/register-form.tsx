@@ -80,7 +80,7 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={submit}>
+    <form method="post" onSubmit={submit}>
       <FieldGroup>
         <AuthField
           autoComplete="organization"

@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
       ) : null}
       {!updated && !ready ? <Alert tone="error">Geçerli parola yenileme oturumu bulunamadı.</Alert> : null}
       {!updated && ready ? (
-        <form aria-describedby={message ? "reset-password-error" : undefined} onSubmit={submit}>
+        <form aria-describedby={message ? "reset-password-error" : undefined} method="post" onSubmit={submit}>
           <FieldGroup>
             <Field>
               <AuthField

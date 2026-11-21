@@ -51,7 +51,7 @@ export default function LoginPage() {
       footer={<span>Firma hesabınız yok mu? <Link href="/register">Kayıt olun</Link></span>}
       title="Hesabınıza giriş yapın"
     >
-      <form aria-describedby={error ? "login-error" : notice ? "login-notice" : undefined} onSubmit={submit}>
+      <form aria-describedby={error ? "login-error" : notice ? "login-notice" : undefined} method="post" onSubmit={submit}>
         <FieldGroup>
           <AuthField
             autoComplete="email"
