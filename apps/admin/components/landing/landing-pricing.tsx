@@ -40,7 +40,7 @@ const SALES_TIER: PricingTier = {
   highlighted: true,
 };
 
-function toTier(plan: PublicPlan): PricingTier {
+function toTier(plan: PublicPlan, popular: boolean): PricingTier {
   const amount = (minor: number | null) => (minor === null ? "—" : minor / 100);
   return {
     id: plan.id,
@@ -55,6 +55,7 @@ function toTier(plan: PublicPlan): PricingTier {
     description: plan.description || "Firmanız için tüm özellikler",
     features: INCLUDED,
     cta: "Başlayın",
+    popular,
   };
 }
 
@@ -65,6 +66,12 @@ function yearlyDiscount(plans: PublicPlan[]) {
     .map((p) => 1 - (p.yearly_price_minor as number) / ((p.monthly_price_minor as number) * 12));
   const best = Math.max(0, ...rates);
   return best >= 0.01 ? `%${Math.round(best * 100)} tasarruf` : null;
+}
+
+// Uc veya daha fazla pakette ortadaki paket onerilir (orijinaldeki vurgulu kart). Satis verisine
+// dayanmadigi icin rozet "En populer" degil "Onerilen" der.
+function recommendedIndex(count: number) {
+  return count >= 3 ? Math.floor((count - 1) / 2) : -1;
 }
 
 export function LandingPricing() {
@@ -95,7 +102,7 @@ export function LandingPricing() {
         frequencies={PAYMENT_FREQUENCIES}
         frequencyLabels={FREQUENCY_LABELS}
         discounts={{ yearly: yearlyDiscount(plans) }}
-        tiers={[...plans.map(toTier), SALES_TIER]}
+        tiers={[...plans.map((plan, i) => toTier(plan, i === recommendedIndex(plans.length))), SALES_TIER]}
       />
     </div>
   );
