@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MinimalFooter } from "@/components/21st/minimal-footer";
 import { LandingFeatures } from "@/components/landing/landing-features";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingNavbar } from "@/components/landing/landing-navbar";
@@ -25,6 +26,9 @@ export default function NewLandingPreviewPage() {
       <section id="fiyatlar">
         <LandingPricing />
       </section>
+      <div id="iletisim" className="mt-20">
+        <MinimalFooter />
+      </div>
     </div>
   );
 }
