@@ -1,28 +1,48 @@
 "use client";
 
 import {
-  ArrowLeft,
-  CircleDollarSign,
-  Download,
-  FileClock,
-  ImagePlus,
-  LoaderCircle,
-  PauseCircle,
-  PlayCircle,
-  ShieldCheck,
-  Trash2,
-  Upload,
-  UserRound,
-  XCircle
-} from "lucide-react";
+  IconArrowLeft,
+  IconCircleX,
+  IconDownload,
+  IconLoader2,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconShieldCheck,
+  IconTrash,
+  IconUpload
+} from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { ConfirmDialog } from "../../../../components/ui";
+import { Alert, ConfirmDialog, EmptyState } from "@/components/firm-ui";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { platformRequest, PlatformRequestError, usePlatformDashboard } from "../../_components/platform-client";
 import type { OrganizationAction, OrganizationDetail } from "../../_components/platform-types";
-import { formatDate, formatMoney, OwnerEmpty, OwnerLoading, OwnerPageHeader, OwnerPanel, StatusBadge } from "../../_components/platform-ui";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  formatDate,
+  formatMoney,
+  OwnerEmpty,
+  OwnerLoading,
+  OwnerPage,
+  OwnerPageHeader,
+  OwnerPanel,
+  StatusBadge
+} from "../../_components/platform-ui";
 
 type DetailTab = "users" | "payments" | "exports" | "logs";
 type PendingConfirmation =
@@ -186,82 +206,117 @@ export default function PlatformOrganizationDetailPage() {
     }
   }
 
-  if (loading) return <div className="owner-page"><OwnerLoading /></div>;
-  if (!detail) return <div className="owner-page"><OwnerPageHeader description="Firma kaydı açılamadı." eyebrow="Müşteri yönetimi" title="Firma bulunamadı" />{error ? <div className="owner-message error">{error}</div> : null}</div>;
+  if (loading) return <OwnerPage><OwnerLoading /></OwnerPage>;
+  if (!detail) return <OwnerPage><OwnerPageHeader description="Firma kaydı açılamadı." eyebrow="Müşteri yönetimi" title="Firma bulunamadı" />{error ? <Alert tone="error">{error}</Alert> : null}</OwnerPage>;
 
   const organization = detail.organization;
   const deletionPending = Boolean(organization.deletion_started_at);
+  const historyTabs = [
+    { value: "users", label: "Kullanıcılar", count: detail.members.length },
+    { value: "payments", label: "Ödemeler", count: detail.payments.length },
+    { value: "exports", label: "Dışa Aktarımlar", count: detail.exportRequests.length },
+    { value: "logs", label: "İşlem Kayıtları", count: detail.auditLogs.length }
+  ] as const;
 
   return (
-    <div className="owner-page">
+    <OwnerPage>
       <OwnerPageHeader
-        actions={<Link className="owner-button owner-button-secondary" href="/platform/organizations"><ArrowLeft aria-hidden size={17} /> Firma listesi</Link>}
+        actions={<Button asChild size="sm" variant="outline"><Link href="/platform/organizations"><IconArrowLeft /> Firma listesi</Link></Button>}
         description={`${organization.slug} · ${organization.billing_email ?? "Faturalandırma e-postası yok"}`}
         eyebrow="Firma ayrıntısı"
         title={organization.name}
       />
-      {notice ? <div className="owner-message success" role="status">{notice}</div> : null}
-      {error ? <div className="owner-message error" role="alert">{error}</div> : null}
+      {notice ? <Alert tone="success">{notice}</Alert> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
 
-      <div className="owner-detail-grid">
-        <OwnerPanel title="Hesap özeti">
-          <div className="owner-detail-heading"><span className="owner-company-avatar">{organization.name.slice(0, 2).toLocaleUpperCase("tr-TR")}</span><div><strong>{organization.legal_name ?? organization.name}</strong><span>{organization.tax_identifier ?? "Vergi bilgisi girilmedi"}</span></div><StatusBadge status={organization.status} /></div>
-          <dl className="owner-key-values">
-            <div><dt>Abonelik</dt><dd><StatusBadge status={currentSubscription?.status} /></dd></div>
-            <div><dt>Dönem</dt><dd>{currentSubscription?.billing_interval ?? "Tanımlanmadı"}</dd></div>
-            <div><dt>Zaman dilimi</dt><dd>{organization.timezone}</dd></div>
-            <div><dt>Kayıt tarihi</dt><dd>{formatDate(organization.created_at)}</dd></div>
-            <div><dt>Kullanıcı</dt><dd>{detail.members.filter((member) => member.is_active).length} aktif</dd></div>
-            <div><dt>Son güncelleme</dt><dd>{formatDate(organization.updated_at)}</dd></div>
-          </dl>
-        </OwnerPanel>
+      <div className="grid grid-cols-1 gap-4 @5xl/main:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Hesap özeti</CardTitle>
+            <CardDescription>{organization.legal_name ?? organization.name} · {organization.tax_identifier ?? "Vergi bilgisi girilmedi"}</CardDescription>
+            <CardAction><StatusBadge status={organization.status} /></CardAction>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1"><dt className="text-sm text-muted-foreground">Abonelik</dt><dd><StatusBadge status={currentSubscription?.status} /></dd></div>
+              <div className="flex flex-col gap-1"><dt className="text-sm text-muted-foreground">Dönem</dt><dd className="text-sm font-medium">{currentSubscription?.billing_interval ?? "Tanımlanmadı"}</dd></div>
+              <div className="flex flex-col gap-1"><dt className="text-sm text-muted-foreground">Zaman dilimi</dt><dd className="text-sm font-medium">{organization.timezone}</dd></div>
+              <div className="flex flex-col gap-1"><dt className="text-sm text-muted-foreground">Kayıt tarihi</dt><dd className="text-sm font-medium tabular-nums">{formatDate(organization.created_at)}</dd></div>
+              <div className="flex flex-col gap-1"><dt className="text-sm text-muted-foreground">Kullanıcı</dt><dd className="text-sm font-medium tabular-nums">{detail.members.filter((member) => member.is_active).length} aktif</dd></div>
+              <div className="flex flex-col gap-1"><dt className="text-sm text-muted-foreground">Son güncelleme</dt><dd className="text-sm font-medium tabular-nums">{formatDate(organization.updated_at)}</dd></div>
+            </dl>
+          </CardContent>
+        </Card>
 
         <OwnerPanel description="Bu işlemler yalnızca platform sahibi tarafından uygulanabilir." title="Erişim ve abonelik">
-          <div className="owner-action-row">
+          <div className="flex flex-wrap gap-2">
             {organization.status === "active" ? (
-              <button className="owner-button owner-button-secondary" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "suspend" }, kind: "organization-action", message: "Bu firma askıya alınsın mı?" })} type="button"><PauseCircle aria-hidden size={17} /> Askıya al</button>
+              <Button disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "suspend" }, kind: "organization-action", message: "Bu firma askıya alınsın mı?" })} size="sm" type="button" variant="outline"><IconPlayerPause /> Askıya al</Button>
             ) : !deletionPending ? (
-              <button className="owner-button owner-button-secondary" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "activate" }, kind: "organization-action", message: "Bu firma yeniden açılsın mı? Mevcut aboneliği korunur; erişim abonelik durumuna göre belirlenir." })} type="button"><PlayCircle aria-hidden size={17} /> {organization.status === "closed" ? "Firmayı yeniden aç" : "Aktifleştir"}</button>
+              <Button disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "activate" }, kind: "organization-action", message: "Bu firma yeniden açılsın mı? Mevcut aboneliği korunur; erişim abonelik durumuna göre belirlenir." })} size="sm" type="button" variant="outline"><IconPlayerPlay /> {organization.status === "closed" ? "Firmayı yeniden aç" : "Aktifleştir"}</Button>
             ) : null}
             {currentSubscription?.status === "lifetime" ? (
-              <button className="owner-button owner-button-secondary" disabled={Boolean(busy) || !planId || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "remove_lifetime", planId, billingInterval }, kind: "organization-action", message: "Ömür boyu erişim kaldırılıp seçili paket ödeme bekliyor durumuna alınsın mı?" })} type="button">Ömür boyu erişimi kaldır</button>
+              <Button disabled={Boolean(busy) || !planId || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "remove_lifetime", planId, billingInterval }, kind: "organization-action", message: "Ömür boyu erişim kaldırılıp seçili paket ödeme bekliyor durumuna alınsın mı?" })} size="sm" type="button" variant="outline">Ömür boyu erişimi kaldır</Button>
             ) : (
-              <button className="owner-button" disabled={Boolean(busy) || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "grant_lifetime" }, kind: "organization-action", message: "Bu firmaya ömür boyu erişim verilsin mi?" })} type="button"><ShieldCheck aria-hidden size={17} /> Ömür boyu erişim ver</button>
+              <Button disabled={Boolean(busy) || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "grant_lifetime" }, kind: "organization-action", message: "Bu firmaya ömür boyu erişim verilsin mi?" })} size="sm" type="button"><IconShieldCheck /> Ömür boyu erişim ver</Button>
             )}
           </div>
-          <div className="owner-plan-controls">
-            <label><span>Paket</span><select disabled={Boolean(busy)} onChange={(event) => setPlanId(event.target.value)} value={planId}><option value="">Paket seçin</option>{activePlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></label>
-            <label><span>Dönem</span><select disabled={Boolean(busy)} onChange={(event) => setBillingInterval(event.target.value as "monthly" | "yearly")} value={billingInterval}><option value="monthly">Aylık</option><option value="yearly">Yıllık</option></select></label>
-            <button className="owner-button owner-button-secondary" disabled={Boolean(busy) || !planId || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "change_plan", planId, billingInterval }, kind: "organization-action", message: "Firmanın paketi değiştirilsin ve ödeme bekliyor durumuna alınsın mı?" })} type="button">Paketi değiştir</button>
+          <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_auto_auto]">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="organization-plan">Paket</Label>
+              <Select disabled={Boolean(busy)} onValueChange={setPlanId} value={planId}>
+                <SelectTrigger className="w-full" id="organization-plan" size="sm">
+                  <SelectValue placeholder="Paket seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activePlans.map((plan) => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="organization-interval">Dönem</Label>
+              <Select disabled={Boolean(busy)} onValueChange={(value) => setBillingInterval(value as "monthly" | "yearly")} value={billingInterval}>
+                <SelectTrigger className="w-full sm:w-32" id="organization-interval" size="sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Aylık</SelectItem>
+                  <SelectItem value="yearly">Yıllık</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button disabled={Boolean(busy) || !planId || organization.status === "closed"} onClick={() => setPendingConfirmation({ action: { action: "change_plan", planId, billingInterval }, kind: "organization-action", message: "Firmanın paketi değiştirilsin ve ödeme bekliyor durumuna alınsın mı?" })} size="sm" type="button" variant="outline">Paketi değiştir</Button>
           </div>
-          <div className="owner-danger-zone">
-            <button className="owner-button owner-button-ghost" disabled={Boolean(busy) || deletionPending} onClick={() => setPendingConfirmation({ kind: "export", message: "Bu firma için veri dışa aktarma talebi oluşturulsun mu?" })} type="button"><Download aria-hidden size={17} /> Verileri dışa aktar</button>
-            {organization.status !== "closed" ? <button className="owner-button owner-button-danger" disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "start_closure" }, kind: "organization-action", message: "Kapatma süreci başlatılsın mı? Firma verileri silinmez." })} type="button"><XCircle aria-hidden size={17} /> Kapatma sürecini başlat</button> : null}
-            <button className="owner-button owner-button-danger" disabled={Boolean(busy)} onClick={() => {
+          <Separator />
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={Boolean(busy) || deletionPending} onClick={() => setPendingConfirmation({ kind: "export", message: "Bu firma için veri dışa aktarma talebi oluşturulsun mu?" })} size="sm" type="button" variant="ghost"><IconDownload /> Verileri dışa aktar</Button>
+            {organization.status !== "closed" ? <Button disabled={Boolean(busy)} onClick={() => setPendingConfirmation({ action: { action: "start_closure" }, kind: "organization-action", message: "Kapatma süreci başlatılsın mı? Firma verileri silinmez." })} size="sm" type="button" variant="destructive"><IconCircleX /> Kapatma sürecini başlat</Button> : null}
+            <Button disabled={Boolean(busy)} onClick={() => {
               setDeletionConfirmation("");
               setPendingConfirmation({ kind: "delete-organization", message: "Firma, ona bağlı yönetici ve personel giriş hesapları, raporlar, fotoğraflar ve abonelik kayıtları kalıcı olarak silinir. Bu işlem geri alınamaz. Platform yöneticisi ve başka firmaya bağlı hesaplar korunur." });
-            }} type="button"><Trash2 aria-hidden size={17} /> {busy === "delete" ? "Firma ve hesaplar siliniyor…" : deletionPending ? "Silme işlemini tamamla" : "Firma ve hesaplarını sil"}</button>
+            }} size="sm" type="button" variant="destructive"><IconTrash /> {busy === "delete" ? "Firma ve hesaplar siliniyor…" : deletionPending ? "Silme işlemini tamamla" : "Firma ve hesaplarını sil"}</Button>
           </div>
-          {deletionPending ? <p role="status">Kalıcı silme işlemi başladı. Firma erişimi kapalıdır. İşlem yarıda kaldıysa “Silme işlemini tamamla” ile tekrar deneyin.</p> : null}
+          {deletionPending ? <p className="text-sm text-muted-foreground" role="status">Kalıcı silme işlemi başladı. Firma erişimi kapalıdır. İşlem yarıda kaldıysa “Silme işlemini tamamla” ile tekrar deneyin.</p> : null}
         </OwnerPanel>
       </div>
 
-      <OwnerPanel className="owner-branding-panel" description="Admin ve personel ekranlarında bu firmaya özel marka gösterilir." title="Firma logosu">
-        <div className="owner-branding-layout">
-          <div className="owner-branding-preview">
+      <OwnerPanel description="Admin ve personel ekranlarında bu firmaya özel marka gösterilir." title="Firma logosu">
+        <div className="grid grid-cols-1 gap-4 @3xl/main:grid-cols-2">
+          <div className="flex min-h-32 items-center justify-center rounded-lg border p-4">
             {organization.logo_url ? (
-              <Image alt={`${organization.name} logosu`} height={112} src={organization.logo_url} unoptimized width={300} />
+              <Image alt={`${organization.name} logosu`} className="h-auto max-h-28 w-auto max-w-full object-contain" height={112} src={organization.logo_url} unoptimized width={300} />
             ) : (
-              <div className="owner-branding-empty"><ImagePlus aria-hidden size={26} /><strong>Logo yüklenmedi</strong><span>Varsayılan portal markası kullanılıyor.</span></div>
+              <EmptyState className="py-6" title="Logo yüklenmedi">Varsayılan portal markası kullanılıyor.</EmptyState>
             )}
           </div>
-          <form className="owner-branding-form" onSubmit={uploadLogo}>
-            <label>
-              <span>Logo dosyası</span>
-              <input
+          <form className="flex flex-col gap-3" onSubmit={uploadLogo}>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="organization-logo">Logo dosyası</Label>
+              <Input
                 accept="image/png,image/jpeg,image/webp"
-                key={logoInputKey}
                 disabled={Boolean(busy) || deletionPending}
+                id="organization-logo"
+                key={logoInputKey}
                 onChange={(event) => {
                   const nextFile = event.target.files?.[0] ?? null;
                   if (nextFile && nextFile.size > 2 * 1024 * 1024) {
@@ -274,53 +329,120 @@ export default function PlatformOrganizationDetailPage() {
                 }}
                 type="file"
               />
-            </label>
-            <small>PNG, JPG veya WebP. En fazla 2 MB.</small>
-            <div className="owner-action-row">
-              <button className="owner-button" disabled={Boolean(busy) || deletionPending || !logoFile} type="submit">
-                {busy === "logo" ? <LoaderCircle aria-hidden className="spin" size={17} /> : <Upload aria-hidden size={17} />}
+              <p className="text-sm text-muted-foreground">PNG, JPG veya WebP. En fazla 2 MB.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={Boolean(busy) || deletionPending || !logoFile} size="sm" type="submit">
+                {busy === "logo" ? <IconLoader2 className="animate-spin" /> : <IconUpload />}
                 Logoyu kaydet
-              </button>
-              {organization.logo_url ? <button className="owner-button owner-button-danger" disabled={Boolean(busy) || deletionPending} onClick={() => setPendingConfirmation({ kind: "remove-logo", message: "Bu firmanın logosu kaldırılsın mı?" })} type="button"><Trash2 aria-hidden size={17} /> Logoyu kaldır</button> : null}
+              </Button>
+              {organization.logo_url ? <Button disabled={Boolean(busy) || deletionPending} onClick={() => setPendingConfirmation({ kind: "remove-logo", message: "Bu firmanın logosu kaldırılsın mı?" })} size="sm" type="button" variant="destructive"><IconTrash /> Logoyu kaldır</Button> : null}
             </div>
           </form>
         </div>
       </OwnerPanel>
 
-      <OwnerPanel className="owner-detail-tabs-panel" title="Firma geçmişi">
-        <div aria-label="Firma geçmişi bölümleri" className="owner-tabs" role="tablist">
-          {([
-            ["users", "Kullanıcılar", UserRound, detail.members.length],
-            ["payments", "Ödemeler", CircleDollarSign, detail.payments.length],
-            ["exports", "Dışa Aktarımlar", Download, detail.exportRequests.length],
-            ["logs", "İşlem Kayıtları", FileClock, detail.auditLogs.length]
-          ] as const).map(([value, label, Icon, count]) => (
-            <button aria-selected={tab === value} className={tab === value ? "active" : ""} key={value} onClick={() => setTab(value)} role="tab" type="button"><Icon aria-hidden size={17} /> {label}<span>{count}</span></button>
-          ))}
-        </div>
+      <OwnerPanel title="Firma geçmişi">
+        <Tabs className="gap-4" onValueChange={(value) => setTab(value as DetailTab)} value={tab}>
+          <TabsList aria-label="Firma geçmişi bölümleri" className="**:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:bg-muted-foreground/30 **:data-[slot=badge]:px-1">
+            {historyTabs.map((item) => (
+              <TabsTrigger key={item.value} value={item.value}>
+                {item.label} {item.count > 0 ? <Badge variant="secondary">{item.count}</Badge> : null}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {tab === "users" ? (
-          detail.members.length === 0 ? <OwnerEmpty text="Bu firmada kullanıcı bulunmuyor." /> : <div className="owner-list">{detail.members.map((member) => <div key={member.profile_id}><span className="owner-list-icon"><UserRound aria-hidden size={17} /></span><div><strong>{member.profile ? `${member.profile.first_name} ${member.profile.last_name}` : "Profil bulunamadı"}</strong><span>{member.profile?.email ?? "E-posta yok"}</span></div><small>{member.role}</small><StatusBadge status={member.is_active ? "active" : "suspended"} /></div>)}</div>
-        ) : null}
-        {tab === "payments" ? (
-          detail.payments.length === 0 ? <OwnerEmpty text="Ödeme kaydı bulunmuyor." /> : <div className="owner-list">{detail.payments.map((payment) => <div key={payment.id}><span className="owner-list-icon"><CircleDollarSign aria-hidden size={17} /></span><div><strong>{formatMoney(payment.amount_minor, payment.currency)}</strong><span>{payment.provider} · {formatDate(payment.created_at)}</span></div><StatusBadge status={payment.status} /></div>)}</div>
-        ) : null}
-        {tab === "exports" ? (
-          detail.exportRequests.length === 0 ? <OwnerEmpty text="Dışa aktarma talebi bulunmuyor." /> : <div className="owner-list">{detail.exportRequests.map((request) => <div key={request.id}><span className="owner-list-icon"><Download aria-hidden size={17} /></span><div><strong>{request.scope === "organization" ? "Firma verisi" : request.scope}</strong><span>{formatDate(request.requested_at)}</span></div><StatusBadge status={request.status} /></div>)}</div>
-        ) : null}
-        {tab === "logs" ? (
-          detail.auditLogs.length === 0 ? <OwnerEmpty text="İşlem kaydı bulunmuyor." /> : <div className="owner-list">{detail.auditLogs.map((audit) => <div key={audit.id}><span className="owner-list-icon"><FileClock aria-hidden size={17} /></span><div><strong>{audit.action}</strong><span>{audit.entity_table} · {formatDate(audit.created_at)}</span></div><small>{audit.actor_id ? audit.actor_id.slice(0, 8) : "sistem"}</small></div>)}</div>
-        ) : null}
+          <TabsContent value="users">
+            {detail.members.length === 0 ? <OwnerEmpty text="Bu firmada kullanıcı bulunmuyor." /> : (
+              <DataTablePanel>
+                <DataTable>
+                  <DataTableHeader><DataTableRow><DataTableHead>Kullanıcı</DataTableHead><DataTableHead>E-posta</DataTableHead><DataTableHead>Rol</DataTableHead><DataTableHead>Durum</DataTableHead></DataTableRow></DataTableHeader>
+                  <DataTableBody>
+                    {detail.members.map((member) => (
+                      <DataTableRow key={member.profile_id}>
+                        <DataTableCell className="font-medium">{member.profile ? `${member.profile.first_name} ${member.profile.last_name}` : "Profil bulunamadı"}</DataTableCell>
+                        <DataTableCell>{member.profile?.email ?? "E-posta yok"}</DataTableCell>
+                        <DataTableCell>{member.role}</DataTableCell>
+                        <DataTableCell><StatusBadge status={member.is_active ? "active" : "suspended"} /></DataTableCell>
+                      </DataTableRow>
+                    ))}
+                  </DataTableBody>
+                </DataTable>
+              </DataTablePanel>
+            )}
+          </TabsContent>
+          <TabsContent value="payments">
+            {detail.payments.length === 0 ? <OwnerEmpty text="Ödeme kaydı bulunmuyor." /> : (
+              <DataTablePanel>
+                <DataTable>
+                  <DataTableHeader><DataTableRow><DataTableHead>Tutar</DataTableHead><DataTableHead>Sağlayıcı</DataTableHead><DataTableHead>Tarih</DataTableHead><DataTableHead>Durum</DataTableHead></DataTableRow></DataTableHeader>
+                  <DataTableBody>
+                    {detail.payments.map((payment) => (
+                      <DataTableRow key={payment.id}>
+                        <DataTableCell className="font-medium tabular-nums">{formatMoney(payment.amount_minor, payment.currency)}</DataTableCell>
+                        <DataTableCell>{payment.provider}</DataTableCell>
+                        <DataTableCell className="tabular-nums">{formatDate(payment.created_at)}</DataTableCell>
+                        <DataTableCell><StatusBadge status={payment.status} /></DataTableCell>
+                      </DataTableRow>
+                    ))}
+                  </DataTableBody>
+                </DataTable>
+              </DataTablePanel>
+            )}
+          </TabsContent>
+          <TabsContent value="exports">
+            {detail.exportRequests.length === 0 ? <OwnerEmpty text="Dışa aktarma talebi bulunmuyor." /> : (
+              <DataTablePanel>
+                <DataTable>
+                  <DataTableHeader><DataTableRow><DataTableHead>Kapsam</DataTableHead><DataTableHead>Talep tarihi</DataTableHead><DataTableHead>Durum</DataTableHead></DataTableRow></DataTableHeader>
+                  <DataTableBody>
+                    {detail.exportRequests.map((request) => (
+                      <DataTableRow key={request.id}>
+                        <DataTableCell className="font-medium">{request.scope === "organization" ? "Firma verisi" : request.scope}</DataTableCell>
+                        <DataTableCell className="tabular-nums">{formatDate(request.requested_at)}</DataTableCell>
+                        <DataTableCell><StatusBadge status={request.status} /></DataTableCell>
+                      </DataTableRow>
+                    ))}
+                  </DataTableBody>
+                </DataTable>
+              </DataTablePanel>
+            )}
+          </TabsContent>
+          <TabsContent value="logs">
+            {detail.auditLogs.length === 0 ? <OwnerEmpty text="İşlem kaydı bulunmuyor." /> : (
+              <DataTablePanel>
+                <DataTable>
+                  <DataTableHeader><DataTableRow><DataTableHead>İşlem</DataTableHead><DataTableHead>Kayıt türü</DataTableHead><DataTableHead>Tarih</DataTableHead><DataTableHead>Yapan</DataTableHead></DataTableRow></DataTableHeader>
+                  <DataTableBody>
+                    {detail.auditLogs.map((audit) => (
+                      <DataTableRow key={audit.id}>
+                        <DataTableCell className="font-medium">{audit.action}</DataTableCell>
+                        <DataTableCell><Badge className="px-1.5 text-muted-foreground" variant="outline">{audit.entity_table}</Badge></DataTableCell>
+                        <DataTableCell className="tabular-nums">{formatDate(audit.created_at)}</DataTableCell>
+                        <DataTableCell className="font-mono text-xs text-muted-foreground">{audit.actor_id ? audit.actor_id.slice(0, 8) : "sistem"}</DataTableCell>
+                      </DataTableRow>
+                    ))}
+                  </DataTableBody>
+                </DataTable>
+              </DataTablePanel>
+            )}
+          </TabsContent>
+        </Tabs>
       </OwnerPanel>
       <ConfirmDialog
         confirmDisabled={pendingConfirmation?.kind === "delete-organization" && deletionConfirmation.trim() !== organization.slug}
         confirmLabel={pendingConfirmation?.kind === "delete-organization" ? "Kalıcı olarak sil" : "Onayla"}
-        description={<>{pendingConfirmation?.message}{pendingConfirmation?.kind === "delete-organization" ? <label className="owner-delete-confirmation"><span>Onay için firma kodunu yazın: <code>{organization.slug}</code></span><input autoComplete="off" onChange={(event) => setDeletionConfirmation(event.target.value)} spellCheck={false} value={deletionConfirmation} /></label> : null}</>}
+        description={<>{pendingConfirmation?.message}{pendingConfirmation?.kind === "delete-organization" ? (
+          <label className="mt-4 flex flex-col gap-2 text-foreground">
+            <span>Onay için firma kodunu yazın: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{organization.slug}</code></span>
+            <Input autoComplete="off" onChange={(event) => setDeletionConfirmation(event.target.value)} spellCheck={false} value={deletionConfirmation} />
+          </label>
+        ) : null}</>}
         onCancel={() => setPendingConfirmation(null)}
         onConfirm={confirmPendingAction}
         open={Boolean(pendingConfirmation)}
         title={pendingConfirmation?.kind === "delete-organization" ? "Firma ve hesaplarını kalıcı olarak sil" : "İşlem onayı"}
       />
-    </div>
+    </OwnerPage>
   );
 }

@@ -1,8 +1,13 @@
 "use client";
 
-import { ArrowRight, Building2, Search } from "lucide-react";
+import { IconArrowRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Alert } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { usePlatformDashboard } from "../_components/platform-client";
 import {
   DataTable,
@@ -15,6 +20,7 @@ import {
   formatDate,
   OwnerEmpty,
   OwnerLoading,
+  OwnerPage,
   OwnerPageHeader,
   OwnerPanel,
   StatusBadge
@@ -35,50 +41,72 @@ export default function PlatformOrganizationsPage() {
   }, [data.organizations, query, status]);
 
   return (
-    <div className="owner-page">
+    <OwnerPage>
       <OwnerPageHeader
         description="Firma hesaplarını, aboneliklerini ve erişim durumlarını tek listeden izleyin. Bir firmanın ayrıntısına girerek paket veya erişim işlemlerini yönetin."
         eyebrow="Müşteri yönetimi"
         title="Firmalar"
       />
-      {error ? <div className="owner-message error" role="alert">{error}</div> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
       {loading ? <OwnerLoading /> : (
         <OwnerPanel description={`${filtered.length} / ${data.organizations.length} firma gösteriliyor`} title="Firma dizini">
-          <div className="owner-toolbar">
-            <label className="owner-search">
-              <Search aria-hidden size={18} />
-              <span className="sr-only">Firma ara</span>
-              <input onChange={(event) => setQuery(event.target.value)} placeholder="Firma adı, kısa ad veya e-posta ara" type="search" value={query} />
-            </label>
-            <label className="owner-select-wrap">
-              <span className="sr-only">Duruma göre filtrele</span>
-              <select onChange={(event) => setStatus(event.target.value)} value={status}>
-                <option value="all">Tüm durumlar</option>
-                <option value="active">Aktif</option>
-                <option value="suspended">Askıda</option>
-                <option value="closed">Kapatıldı</option>
-              </select>
-            </label>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Label className="sr-only" htmlFor="organization-search">Firma ara</Label>
+            <Input
+              className="sm:max-w-sm"
+              id="organization-search"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Firma adı, kısa ad veya e-posta ara"
+              type="search"
+              value={query}
+            />
+            <Label className="sr-only" htmlFor="organization-status">Duruma göre filtrele</Label>
+            <Select onValueChange={setStatus} value={status}>
+              <SelectTrigger className="w-full sm:w-44" id="organization-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm durumlar</SelectItem>
+                <SelectItem value="active">Aktif</SelectItem>
+                <SelectItem value="suspended">Askıda</SelectItem>
+                <SelectItem value="closed">Kapatıldı</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {filtered.length === 0 ? <OwnerEmpty text="Arama ölçütlerine uyan firma bulunamadı." /> : (
-            <DataTablePanel className="owner-compact-table-wrap">
-              <DataTable className="owner-table owner-table-spacious">
-                <DataTableHeader><DataTableRow><DataTableHead>Firma</DataTableHead><DataTableHead>Erişim</DataTableHead><DataTableHead>Paket</DataTableHead><DataTableHead>Abonelik</DataTableHead><DataTableHead>Oluşturulma</DataTableHead><DataTableHead><span className="sr-only">Detay</span></DataTableHead></DataTableRow></DataTableHeader>
+            <DataTablePanel>
+              <DataTable>
+                <DataTableHeader>
+                  <DataTableRow>
+                    <DataTableHead>Firma</DataTableHead>
+                    <DataTableHead>Erişim</DataTableHead>
+                    <DataTableHead>Paket</DataTableHead>
+                    <DataTableHead>Abonelik</DataTableHead>
+                    <DataTableHead>Oluşturulma</DataTableHead>
+                    <DataTableHead><span className="sr-only">Detay</span></DataTableHead>
+                  </DataTableRow>
+                </DataTableHeader>
                 <DataTableBody>
                   {filtered.map((organization) => (
                     <DataTableRow key={organization.id}>
                       <DataTableCell>
-                        <Link className="owner-table-link" href={`/platform/organizations/${organization.id}`}>
-                          <span className="owner-company-mark"><Building2 aria-hidden size={18} /></span>
-                          <span><strong>{organization.name}</strong><small>{organization.billing_email ?? organization.slug}</small></span>
+                        <Link className="flex flex-col font-medium hover:underline" href={`/platform/organizations/${organization.id}`}>
+                          {organization.name}
+                          <span className="text-xs font-normal text-muted-foreground">{organization.billing_email ?? organization.slug}</span>
                         </Link>
                       </DataTableCell>
                       <DataTableCell><StatusBadge status={organization.status} /></DataTableCell>
                       <DataTableCell>{organization.subscription?.plan_id ? planNames.get(organization.subscription.plan_id) ?? "Tanımsız paket" : "Paket yok"}</DataTableCell>
                       <DataTableCell><StatusBadge status={organization.subscription?.status} /></DataTableCell>
-                      <DataTableCell>{formatDate(organization.created_at, false)}</DataTableCell>
-                      <DataTableCell><Link aria-label={`${organization.name} detayını aç`} className="owner-icon-link" href={`/platform/organizations/${organization.id}`}><ArrowRight aria-hidden size={18} /></Link></DataTableCell>
+                      <DataTableCell className="tabular-nums">{formatDate(organization.created_at, false)}</DataTableCell>
+                      <DataTableCell className="text-right">
+                        <Button asChild className="size-8 text-muted-foreground" size="icon" variant="ghost">
+                          <Link aria-label={`${organization.name} detayını aç`} href={`/platform/organizations/${organization.id}`}>
+                            <IconArrowRight />
+                          </Link>
+                        </Button>
+                      </DataTableCell>
                     </DataTableRow>
                   ))}
                 </DataTableBody>
@@ -87,6 +115,6 @@ export default function PlatformOrganizationsPage() {
           )}
         </OwnerPanel>
       )}
-    </div>
+    </OwnerPage>
   );
 }

@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from "@/components/shadcn/card";
 import {
   DataTable,
   DataTableBody,
@@ -8,9 +11,11 @@ import {
   DataTablePanel,
   DataTableRow,
   EmptyState,
+  FirmPage,
   LoadingState,
+  PageHeaderShell,
   StatusBadge as BaseStatusBadge
-} from "../../../components/ui";
+} from "@/components/firm-ui";
 
 const statusLabels: Record<string, string> = {
   active: "Aktif",
@@ -59,14 +64,14 @@ function statusTone(status: string | null | undefined) {
   return "neutral";
 }
 
+// dashboard-01 tablosundaki outline durum rozeti.
 export function StatusBadge({ status }: { status: string | null | undefined }) {
-  return (
-    <BaseStatusBadge
-      className={`owner-status owner-status-${status ?? "unknown"}`}
-      label={statusLabel(status)}
-      tone={statusTone(status)}
-    />
-  );
+  return <BaseStatusBadge label={statusLabel(status)} tone={statusTone(status)} />;
+}
+
+// Owner sayfa govdesi: firma paneliyle ayni "@container/main" sarmalayici.
+export function OwnerPage({ children }: { children: ReactNode }) {
+  return <FirmPage>{children}</FirmPage>;
 }
 
 export function OwnerPageHeader({
@@ -80,37 +85,45 @@ export function OwnerPageHeader({
   description: string;
   actions?: ReactNode;
 }) {
-  return (
-    <header className="owner-page-header owner-enter">
-      <div>
-        <span>{eyebrow}</span>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {actions ? <div className="owner-page-actions">{actions}</div> : null}
-    </header>
-  );
+  return <PageHeaderShell action={actions} description={description} eyebrow={eyebrow} title={title} />;
 }
 
-export function OwnerMetric({
-  icon,
+// dashboard-01 "SectionCards" karti: aciklama, tabular buyuk deger ve alt bilgi.
+export function OwnerStatCard({
   label,
   value,
   detail,
-  tone = "blue"
+  action,
+  textValue = false
 }: {
-  icon: ReactNode;
   label: string;
   value: ReactNode;
   detail: string;
-  tone?: "blue" | "green" | "orange" | "violet";
+  action?: ReactNode;
+  // Metin degerler (orn. "Baglanti calisiyor") buyuk boyda satir kirdigi icin text-2xl'de kalir.
+  textValue?: boolean;
 }) {
   return (
-    <article className={`owner-metric owner-enter owner-tone-${tone}`}>
-      <div className="owner-metric-top"><span>{icon}</span><small>{label}</small></div>
-      <strong>{value}</strong>
-      <p>{detail}</p>
-    </article>
+    <Card className="@container/card">
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className={textValue ? "text-2xl font-semibold tabular-nums" : "text-2xl font-semibold tabular-nums @[250px]/card:text-3xl"}>{value}</CardTitle>
+        {action ? <CardAction>{action}</CardAction> : null}
+      </CardHeader>
+      <CardFooter className="text-sm text-muted-foreground">{detail}</CardFooter>
+    </Card>
+  );
+}
+
+// SectionCards izgarasi (uc kart icin; tek kart kalan satir olusmaz).
+export function OwnerStatGrid({ children, label }: { children: ReactNode; label?: string }) {
+  return (
+    <section
+      aria-label={label}
+      className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @3xl/main:grid-cols-3 dark:*:data-[slot=card]:bg-card"
+    >
+      {children}
+    </section>
   );
 }
 
@@ -119,7 +132,7 @@ export function OwnerPanel({
   description,
   action,
   children,
-  className = ""
+  className
 }: {
   title: string;
   description?: string;
@@ -128,22 +141,23 @@ export function OwnerPanel({
   className?: string;
 }) {
   return (
-    <section className={`owner-panel owner-enter ${className}`}>
-      <div className="owner-panel-heading">
-        <div><h2>{title}</h2>{description ? <p>{description}</p> : null}</div>
-        {action}
-      </div>
-      {children}
-    </section>
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description ? <CardDescription>{description}</CardDescription> : null}
+        {action ? <CardAction>{action}</CardAction> : null}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">{children}</CardContent>
+    </Card>
   );
 }
 
 export function OwnerEmpty({ text }: { text: string }) {
-  return <EmptyState className="owner-empty">{text}</EmptyState>;
+  return <EmptyState>{text}</EmptyState>;
 }
 
 export function OwnerLoading() {
-  return <LoadingState className="owner-loading" label="Veriler hazırlanıyor..." />;
+  return <LoadingState label="Veriler hazırlanıyor..." />;
 }
 
 export {

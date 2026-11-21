@@ -1,11 +1,39 @@
 "use client";
 
-import { Check, Edit3, Eye, EyeOff, PackageOpen, Plus, Trash2, X } from "lucide-react";
-import { FormEvent, type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ConfirmDialog } from "../../../components/ui";
+import { IconDotsVertical, IconPlus } from "@tabler/icons-react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { Alert, ConfirmDialog, StatusBadge as BaseStatusBadge } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/shadcn/dropdown-menu";
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/shadcn/field";
+import { Input } from "@/components/shadcn/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/shadcn/sheet";
+import { Textarea } from "@/components/shadcn/textarea";
 import { platformRequest } from "../_components/platform-client";
 import type { Plan } from "../_components/platform-types";
-import { formatMoney, OwnerEmpty, OwnerLoading, OwnerPageHeader, OwnerPanel } from "../_components/platform-ui";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTablePanel,
+  DataTableRow,
+  formatMoney,
+  OwnerEmpty,
+  OwnerLoading,
+  OwnerPage,
+  OwnerPageHeader,
+  OwnerPanel
+} from "../_components/platform-ui";
 
 type ManagedPlan = Plan & { created_at?: string; updated_at?: string };
 type PlanForm = {
@@ -51,8 +79,6 @@ export default function PlatformPlansPage() {
   const [notice, setNotice] = useState("");
   const [pendingRemoval, setPendingRemoval] = useState<ManagedPlan | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<HTMLFormElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const loadPlans = useCallback(async () => {
     setError("");
@@ -67,19 +93,6 @@ export default function PlatformPlansPage() {
   }, []);
 
   useEffect(() => { void loadPlans(); }, [loadPlans]);
-  useEffect(() => {
-    if (!editorOpen) return;
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
-    const focusTimer = window.setTimeout(() => nameInputRef.current?.focus(), 40);
-
-    return () => {
-      window.clearTimeout(focusTimer);
-      previousFocusRef.current?.focus();
-      previousFocusRef.current = null;
-    };
-  }, [editorOpen]);
 
   function openNew() {
     setEditingId(null);
@@ -104,34 +117,11 @@ export default function PlatformPlansPage() {
     setEditorOpen(true);
   }
 
+  // Kayit surerken pencere kapatilamaz (Escape, disari tiklama ve Vazgec dahil).
   function closeEditor() {
     if (busy) return;
     setEditorOpen(false);
     setEditingId(null);
-  }
-
-  function handleEditorKeyDown(event: ReactKeyboardEvent<HTMLFormElement>) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeEditor();
-      return;
-    }
-
-    if (event.key !== "Tab") return;
-    const focusable = Array.from(editorRef.current?.querySelectorAll<HTMLElement>(
-      "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
-    ) ?? []).filter((element) => !element.hasAttribute("disabled"));
-    const first = focusable.at(0);
-    const last = focusable.at(-1);
-    if (!first || !last) return;
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -186,64 +176,210 @@ export default function PlatformPlansPage() {
   }
 
   return (
-    <div className="owner-page">
+    <OwnerPage>
       <OwnerPageHeader
-        actions={<button className="owner-button" onClick={openNew} type="button"><Plus aria-hidden size={18} /> Yeni paket</button>}
+        actions={<Button onClick={openNew} size="sm" type="button"><IconPlus /> Yeni paket</Button>}
         description="Satışa sunulacak paketleri, aylık ve yıllık fiyatlarını yönetin. Burada yayınlanan paketler fiyatlandırma sayfasında otomatik görünür."
         eyebrow="Gelir yönetimi"
         title="Paketler ve Fiyatlar"
       />
-      {notice ? <div className="owner-message success" role="status">{notice}</div> : null}
-      {error && !editorOpen ? <div className="owner-message error" role="alert">{error}</div> : null}
+      {notice ? <Alert tone="success">{notice}</Alert> : null}
+      {error && !editorOpen ? <Alert tone="error">{error}</Alert> : null}
       {loading ? <OwnerLoading /> : (
         <OwnerPanel description={`${plans.filter((plan) => plan.is_active).length} aktif, ${plans.filter((plan) => plan.is_public && plan.is_active).length} yayında`} title="Paket kataloğu">
           {plans.length === 0 ? <OwnerEmpty text="Henüz paket oluşturulmadı. İlk paketi ekleyerek başlayın." /> : (
-            <div className="owner-plan-grid">
-              {plans.map((plan) => (
-                <article className={!plan.is_active ? "archived" : ""} key={plan.id}>
-                  <div className="owner-plan-card-top">
-                    <span className="owner-plan-icon"><PackageOpen aria-hidden size={20} /></span>
-                    <div><small>{plan.code}</small><h2>{plan.name}</h2></div>
-                    <span className={plan.is_active ? "owner-plan-state active" : "owner-plan-state"}>{plan.is_active ? "Aktif" : "Arşiv"}</span>
-                  </div>
-                  <p>{plan.description || "Paket açıklaması eklenmedi."}</p>
-                  <div className="owner-plan-prices">
-                    <div><span>Aylık</span><strong>{formatMoney(plan.monthly_price_minor, plan.currency)}</strong></div>
-                    <div><span>Yıllık</span><strong>{formatMoney(plan.yearly_price_minor, plan.currency)}</strong></div>
-                  </div>
-                  <div className="owner-plan-visibility">{plan.is_public && plan.is_active ? <><Eye aria-hidden size={16} /> Web sitesinde yayında</> : <><EyeOff aria-hidden size={16} /> Yalnız yönetimde görünür</>}</div>
-                  <div className="owner-plan-actions">
-                    <button className="owner-button owner-button-secondary" disabled={busy} onClick={() => openEdit(plan)} type="button"><Edit3 aria-hidden size={16} /> Düzenle</button>
-                    <button aria-label={`${plan.name} paketini kaldır`} className="owner-icon-button danger" disabled={busy} onClick={() => setPendingRemoval(plan)} title="Paketi kaldır" type="button"><Trash2 aria-hidden size={17} /></button>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <DataTablePanel>
+              <DataTable>
+                <DataTableHeader>
+                  <DataTableRow>
+                    <DataTableHead>Paket</DataTableHead>
+                    <DataTableHead>Açıklama</DataTableHead>
+                    <DataTableHead className="text-right">Aylık</DataTableHead>
+                    <DataTableHead className="text-right">Yıllık</DataTableHead>
+                    <DataTableHead>Durum</DataTableHead>
+                    <DataTableHead>Görünürlük</DataTableHead>
+                    <DataTableHead><span className="sr-only">İşlemler</span></DataTableHead>
+                  </DataTableRow>
+                </DataTableHeader>
+                <DataTableBody>
+                  {plans.map((plan) => (
+                    <DataTableRow key={plan.id}>
+                      <DataTableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{plan.name}</span>
+                          <span className="font-mono text-xs text-muted-foreground">{plan.code}</span>
+                        </div>
+                      </DataTableCell>
+                      <DataTableCell className="max-w-xs whitespace-normal text-muted-foreground">
+                        {plan.description || "Paket açıklaması eklenmedi."}
+                      </DataTableCell>
+                      <DataTableCell className="text-right tabular-nums">{formatMoney(plan.monthly_price_minor, plan.currency)}</DataTableCell>
+                      <DataTableCell className="text-right tabular-nums">{formatMoney(plan.yearly_price_minor, plan.currency)}</DataTableCell>
+                      <DataTableCell>
+                        <BaseStatusBadge label={plan.is_active ? "Aktif" : "Arşiv"} tone={plan.is_active ? "success" : "neutral"} />
+                      </DataTableCell>
+                      <DataTableCell className="text-muted-foreground">
+                        {plan.is_public && plan.is_active ? "Web sitesinde yayında" : "Yalnız yönetimde görünür"}
+                      </DataTableCell>
+                      <DataTableCell className="text-right">
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-label={`${plan.name} paketi işlemleri`}
+                              className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+                              disabled={busy}
+                              size="icon"
+                              variant="ghost"
+                            >
+                              <IconDotsVertical />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onSelect={() => openEdit(plan)}>Düzenle</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setPendingRemoval(plan)} variant="destructive">
+                              Paketi kaldır
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </DataTableCell>
+                    </DataTableRow>
+                  ))}
+                </DataTableBody>
+              </DataTable>
+            </DataTablePanel>
           )}
         </OwnerPanel>
       )}
 
-      {editorOpen ? (
-        <div aria-modal="true" className="owner-modal" onMouseDown={(event) => { if (event.currentTarget === event.target) closeEditor(); }} role="dialog">
-          <form className="owner-modal-card" onKeyDown={handleEditorKeyDown} onSubmit={submit} ref={editorRef}>
-            <div className="owner-modal-heading"><div><span>{editingId ? "Paket düzenle" : "Yeni paket"}</span><h2>{editingId ? form.name : "Paket bilgileri"}</h2></div><button aria-label="Pencereyi kapat" className="owner-icon-button" disabled={busy} onClick={closeEditor} type="button"><X aria-hidden size={19} /></button></div>
-            {error ? <div className="owner-message error" role="alert">{error}</div> : null}
-            <div className="owner-form-grid">
-              <label><span>Paket adı *</span><input ref={nameInputRef} required maxLength={120} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} value={form.name} /></label>
-              <label><span>Paket kodu *</span><input required maxLength={60} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))} pattern="[a-z0-9_]+" placeholder="ornek_paket" value={form.code} /></label>
-              <label className="owner-form-full"><span>Açıklama</span><textarea maxLength={500} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={3} value={form.description} /></label>
-              <label><span>Aylık fiyat</span><div className="owner-price-input"><input inputMode="decimal" min="0" onChange={(event) => setForm((current) => ({ ...current, monthlyPrice: event.target.value }))} step="0.01" type="number" value={form.monthlyPrice} /><small>{form.currency}</small></div></label>
-              <label><span>Yıllık fiyat</span><div className="owner-price-input"><input inputMode="decimal" min="0" onChange={(event) => setForm((current) => ({ ...current, yearlyPrice: event.target.value }))} step="0.01" type="number" value={form.yearlyPrice} /><small>{form.currency}</small></div></label>
-              <label><span>Para birimi</span><select onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value as PlanForm["currency"] }))} value={form.currency}><option value="TRY">TRY · Türk Lirası</option><option value="USD">USD · ABD Doları</option><option value="EUR">EUR · Euro</option></select></label>
+      <Sheet onOpenChange={(open) => { if (!open) closeEditor(); }} open={editorOpen}>
+        <SheetContent
+          className="w-full sm:max-w-md"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            nameInputRef.current?.focus();
+          }}
+        >
+          <form className="flex h-full flex-col" onSubmit={submit}>
+            <SheetHeader>
+              <SheetTitle>{editingId ? form.name || "Paket düzenle" : "Paket bilgileri"}</SheetTitle>
+              <SheetDescription>{editingId ? "Paket düzenle" : "Yeni paket"}</SheetDescription>
+            </SheetHeader>
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+              {error ? <Alert tone="error">{error}</Alert> : null}
+              <FieldGroup className="gap-4">
+                <Field>
+                  <FieldLabel htmlFor="plan-name">Paket adı *</FieldLabel>
+                  <Input
+                    id="plan-name"
+                    maxLength={120}
+                    onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                    ref={nameInputRef}
+                    required
+                    value={form.name}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="plan-code">Paket kodu *</FieldLabel>
+                  <Input
+                    id="plan-code"
+                    maxLength={60}
+                    onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))}
+                    pattern="[a-z0-9_]+"
+                    placeholder="ornek_paket"
+                    required
+                    value={form.code}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="plan-description">Açıklama</FieldLabel>
+                  <Textarea
+                    id="plan-description"
+                    maxLength={500}
+                    onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                    rows={3}
+                    value={form.description}
+                  />
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="plan-monthly">Aylık fiyat ({form.currency})</FieldLabel>
+                    <Input
+                      id="plan-monthly"
+                      inputMode="decimal"
+                      min="0"
+                      onChange={(event) => setForm((current) => ({ ...current, monthlyPrice: event.target.value }))}
+                      step="0.01"
+                      type="number"
+                      value={form.monthlyPrice}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="plan-yearly">Yıllık fiyat ({form.currency})</FieldLabel>
+                    <Input
+                      id="plan-yearly"
+                      inputMode="decimal"
+                      min="0"
+                      onChange={(event) => setForm((current) => ({ ...current, yearlyPrice: event.target.value }))}
+                      step="0.01"
+                      type="number"
+                      value={form.yearlyPrice}
+                    />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor="plan-currency">Para birimi</FieldLabel>
+                  <Select
+                    onValueChange={(value) => setForm((current) => ({ ...current, currency: value as PlanForm["currency"] }))}
+                    value={form.currency}
+                  >
+                    <SelectTrigger className="w-full" id="plan-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TRY">TRY · Türk Lirası</SelectItem>
+                      <SelectItem value="USD">USD · ABD Doları</SelectItem>
+                      <SelectItem value="EUR">EUR · Euro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field orientation="horizontal">
+                  <Checkbox
+                    checked={form.isActive}
+                    id="plan-active"
+                    onCheckedChange={(value) => {
+                      const checked = value === true;
+                      setForm((current) => ({ ...current, isActive: checked, isPublic: checked ? current.isPublic : false }));
+                    }}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="plan-active">Aktif paket</FieldLabel>
+                    <FieldDescription>Yeni aboneliklerde seçilebilir.</FieldDescription>
+                  </FieldContent>
+                </Field>
+                <Field data-disabled={!form.isActive} orientation="horizontal">
+                  <Checkbox
+                    checked={form.isPublic}
+                    disabled={!form.isActive}
+                    id="plan-public"
+                    onCheckedChange={(value) => setForm((current) => ({ ...current, isPublic: value === true }))}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="plan-public">Web sitesinde yayınla</FieldLabel>
+                    <FieldDescription>Fiyatlandırma sayfasında müşterilere gösterilir.</FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
             </div>
-            <div className="owner-toggle-list">
-              <label><input checked={form.isActive} onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked, isPublic: event.target.checked ? current.isPublic : false }))} type="checkbox" /><span><strong>Aktif paket</strong><small>Yeni aboneliklerde seçilebilir.</small></span><i><Check aria-hidden size={14} /></i></label>
-              <label><input checked={form.isPublic} disabled={!form.isActive} onChange={(event) => setForm((current) => ({ ...current, isPublic: event.target.checked }))} type="checkbox" /><span><strong>Web sitesinde yayınla</strong><small>Fiyatlandırma sayfasında müşterilere gösterilir.</small></span><i><Check aria-hidden size={14} /></i></label>
-            </div>
-            <div className="owner-modal-actions"><button className="owner-button owner-button-secondary" disabled={busy} onClick={closeEditor} type="button">Vazgeç</button><button className="owner-button" disabled={busy} type="submit">{busy ? "Kaydediliyor..." : editingId ? "Değişiklikleri kaydet" : "Paketi oluştur"}</button></div>
+            <SheetFooter>
+              <Button disabled={busy} type="submit">
+                {busy ? "Kaydediliyor..." : editingId ? "Değişiklikleri kaydet" : "Paketi oluştur"}
+              </Button>
+              <Button disabled={busy} onClick={closeEditor} type="button" variant="outline">Vazgeç</Button>
+            </SheetFooter>
           </form>
-        </div>
-      ) : null}
+        </SheetContent>
+      </Sheet>
       <ConfirmDialog
         confirmLabel="Kaldır"
         description={pendingRemoval ? `${pendingRemoval.name} paketi kaldırılsın mı? Kullanılmış paketler geçmiş kayıtları korumak için arşivlenir.` : undefined}
@@ -257,6 +393,6 @@ export default function PlatformPlansPage() {
         open={Boolean(pendingRemoval)}
         title="Paket kaldırma onayı"
       />
-    </div>
+    </OwnerPage>
   );
 }
