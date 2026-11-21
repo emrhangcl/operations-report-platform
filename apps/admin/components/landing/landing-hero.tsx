@@ -18,7 +18,7 @@ export function LandingHero() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- orijinal demo duz <img> kullanir */}
         <img
-          src="/landing/owner-dashboard.png"
+          src="/landing/firm-dashboard.png"
           alt="Operasyon Portalı yönetim paneli"
           height={720}
           width={1400}
