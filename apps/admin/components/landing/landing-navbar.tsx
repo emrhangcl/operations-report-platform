@@ -15,9 +15,9 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { name: "Özellikler", link: "#ozellikler" },
-  { name: "Fiyatlar", link: "#fiyatlar" },
-  { name: "İletişim", link: "#iletisim" },
+  { name: "Özellikler", link: "/#ozellikler" },
+  { name: "Fiyatlar", link: "/#fiyatlar" },
+  { name: "İletişim", link: "/#iletisim" },
 ];
 
 export function LandingNavbar() {

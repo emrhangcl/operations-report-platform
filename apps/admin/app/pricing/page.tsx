@@ -1,10 +1,10 @@
+import { LandingPricing } from "@/components/landing/landing-pricing";
 import { MarketingShell } from "../../components/marketing-shell";
-import { PricingSection } from "../../components/pricing-section";
 
 export default function PricingPage() {
   return (
     <MarketingShell>
-      <PricingSection standalone />
+      <LandingPricing />
     </MarketingShell>
   );
 }

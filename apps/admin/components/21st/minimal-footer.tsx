@@ -25,11 +25,11 @@ export function MinimalFooter() {
 	const resources = [
 		{
 			title: 'Özellikler',
-			href: '#ozellikler',
+			href: '/#ozellikler',
 		},
 		{
 			title: 'Fiyatlar',
-			href: '#fiyatlar',
+			href: '/#fiyatlar',
 		},
 		{
 			title: 'Giriş',
