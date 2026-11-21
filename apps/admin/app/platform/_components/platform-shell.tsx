@@ -1,38 +1,55 @@
 "use client";
 
-import {
-  Building2,
-  CreditCard,
-  ExternalLink,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  PackageOpen,
-  ScrollText,
-  ShieldCheck,
-  X
-} from "lucide-react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ProductBrand } from "../../../components/logo";
-import { getBrowserClient } from "../../../lib/browser-client";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { CloseMobileSidebarOnNavigate } from "@/components/shadcn/close-mobile-sidebar";
+import { PortalContainerProvider } from "@/components/shadcn/portal-container";
+import { SidebarInset, SidebarProvider } from "@/components/shadcn/sidebar";
+import { TooltipProvider } from "@/components/shadcn/tooltip";
+import { getBrowserClient } from "@/lib/browser-client";
+import { ownerThemeBootScript, readOwnerTheme, writeOwnerTheme, type OwnerTheme } from "@/lib/owner-theme";
+import { ownerPageTitle } from "./owner-navigation";
+import { OwnerSidebar } from "./owner-sidebar";
+import { OwnerSiteHeader } from "./owner-site-header";
 
-const navigation = [
-  { href: "/platform", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
-  { href: "/platform/organizations", label: "Firmalar", icon: Building2 },
-  { href: "/platform/plans", label: "Paketler ve Fiyatlar", icon: PackageOpen },
-  { href: "/platform/payments", label: "Ödemeler", icon: CreditCard },
-  { href: "/platform/logs", label: "Sistem Kayıtları", icon: ScrollText },
-  { href: "/platform/system", label: "Sistem Durumu", icon: ShieldCheck }
-];
+function browserStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
+// v2 (shadcn) owner iskeleti. Kok eleman [data-ui="v2"] tasir; token'lar, Geist fontu ve
+// koyu tema yalnizca bu kokun icinde gecerlidir. Portal'lar da bu koke cizilir.
 export function PlatformShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  const [theme, setTheme] = useState<OwnerTheme>("dark");
+  const [email, setEmail] = useState<string | null>(null);
 
-  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    setTheme(readOwnerTheme(browserStorage()));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getBrowserClient()?.auth.getUser().then(({ data }) => {
+      if (!cancelled) setEmail(data.user?.email ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((current) => {
+      const next: OwnerTheme = current === "dark" ? "light" : "dark";
+      writeOwnerTheme(browserStorage(), next);
+      return next;
+    });
+  }, []);
 
   async function signOut() {
     await getBrowserClient()?.auth.signOut();
@@ -40,38 +57,36 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="owner-shell enterprise-owner-shell">
-      <a className="owner-skip-link" href="#owner-main">İçeriğe geç</a>
-      <button
-        aria-expanded={menuOpen}
-        aria-label={menuOpen ? "Menüyü kapat" : "Menüyü aç"}
-        className="owner-mobile-menu"
-        onClick={() => setMenuOpen((current) => !current)}
-        type="button"
+    <div
+      className={`${theme === "dark" ? "dark " : ""}min-h-svh bg-background text-foreground`}
+      data-ui="v2"
+      id="owner-root"
+      ref={setRoot}
+      suppressHydrationWarning
+    >
+      <script dangerouslySetInnerHTML={{ __html: ownerThemeBootScript }} />
+      <a
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:ring-2 focus:ring-ring"
+        href="#owner-main"
       >
-        {menuOpen ? <X aria-hidden size={21} /> : <Menu aria-hidden size={21} />}
-      </button>
-      <aside className={menuOpen ? "owner-sidebar enterprise-sidebar open" : "owner-sidebar enterprise-sidebar"}>
-        <Link className="owner-brand" href="/platform"><ProductBrand /></Link>
-        <div className="owner-workspace-label"><span>O</span><div><strong>Owner Workspace</strong><small>Platform yönetimi</small></div></div>
-        <nav aria-label="Owner paneli" className="owner-nav">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-            return (
-              <Link aria-current={active ? "page" : undefined} className={active ? "active" : ""} href={item.href} key={item.href}>
-                <Icon aria-hidden size={19} /><span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="owner-sidebar-footer">
-          <Link href="/app"><ExternalLink aria-hidden size={18} /><span>Firma paneline git</span></Link>
-          <button onClick={signOut} type="button"><LogOut aria-hidden size={18} /><span>Çıkış yap</span></button>
-        </div>
-      </aside>
-      {menuOpen ? <button aria-label="Menüyü kapat" className="owner-sidebar-scrim" onClick={() => setMenuOpen(false)} type="button" /> : null}
-      <main className="owner-main" id="owner-main">{children}</main>
+        İçeriğe geç
+      </a>
+      <PortalContainerProvider container={root}>
+        <TooltipProvider delayDuration={0}>
+          <SidebarProvider
+            style={{ "--sidebar-width": "calc(var(--spacing) * 72)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}
+          >
+            <CloseMobileSidebarOnNavigate />
+            <OwnerSidebar email={email} onSignOut={signOut} variant="inset" />
+            <SidebarInset>
+              <OwnerSiteHeader onToggleTheme={toggleTheme} theme={theme} title={ownerPageTitle(pathname)} />
+              <main className="flex flex-1 flex-col" id="owner-main">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </TooltipProvider>
+      </PortalContainerProvider>
     </div>
   );
 }

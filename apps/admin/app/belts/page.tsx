@@ -6,6 +6,7 @@ import type { Belt } from "@operations/types";
 import { beltSchema } from "@operations/validation";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,7 +22,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type BeltForm = {
@@ -130,15 +131,15 @@ export default function BeltsPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Bantlar"
         description="Mobil raporda seçilecek aktif bant listesini yönetin."
         action={<StatusBadge label={`${belts.length} bant`} tone="neutral" />}
       />
-      <form className="form-panel" onSubmit={submit}>
+      <form className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm" onSubmit={submit}>
         <FormSection>
-          <div className="form-grid">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <FormField label="Bant Kodu">
               <input
                 onChange={(event) => setForm({ ...form, code: event.target.value })}
@@ -202,7 +203,7 @@ export default function BeltsPage() {
                   <DataTableCell>{belt.description ?? "-"}</DataTableCell>
                   <DataTableCell>{new Date(belt.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
                   <DataTableCell>
-                    <FormActions style={{ marginTop: 0 }}>
+                    <FormActions>
                       <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(belt)} variant="secondary">
                         Düzenle
                       </Button>
@@ -234,7 +235,7 @@ export default function BeltsPage() {
         open={Boolean(pendingDelete)}
         title="Bant silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }
 

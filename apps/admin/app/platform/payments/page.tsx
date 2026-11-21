@@ -1,7 +1,11 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, CircleDollarSign, CreditCard, RefreshCw, RotateCcw } from "lucide-react";
+import { IconRefresh } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, StatusBadge as BaseStatusBadge } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Label } from "@/components/shadcn/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { platformRequest, usePlatformDashboard } from "../_components/platform-client";
 import type { PaymentEvent } from "../_components/platform-types";
 import {
@@ -16,9 +20,11 @@ import {
   formatMoney,
   OwnerEmpty,
   OwnerLoading,
-  OwnerMetric,
+  OwnerPage,
   OwnerPageHeader,
   OwnerPanel,
+  OwnerStatCard,
+  OwnerStatGrid,
   StatusBadge
 } from "../_components/platform-ui";
 
@@ -63,38 +69,69 @@ export default function PlatformPaymentsPage() {
   const metrics = dashboard.data.metrics;
 
   return (
-    <div className="owner-page">
+    <OwnerPage>
       <OwnerPageHeader
-        actions={<button className="owner-button owner-button-secondary" onClick={() => void Promise.all([load(), dashboard.reload()])} type="button"><RefreshCw aria-hidden size={17} /> Yenile</button>}
+        actions={<Button onClick={() => void Promise.all([load(), dashboard.reload()])} size="sm" type="button" variant="outline"><IconRefresh /> Yenile</Button>}
         description="Tahsilatları, iadeleri ve ödeme sağlayıcısından gelen teknik olayları birbirinden ayrılmış görünümde takip edin."
         eyebrow="Finans"
         title="Ödemeler"
       />
-      {error || dashboard.error ? <div className="owner-message error" role="alert">{error || dashboard.error}</div> : null}
+      {error || dashboard.error ? <Alert tone="error">{error || dashboard.error}</Alert> : null}
       {loading || dashboard.loading ? <OwnerLoading /> : (
         <>
-          <section aria-label="Ödeme metrikleri" className="owner-metric-grid owner-metric-grid-three">
-            <OwnerMetric detail={`${metrics.active_subscriptions} aktif abonelik`} icon={<CircleDollarSign aria-hidden size={18} />} label="Toplam tahsilat" tone="green" value={formatMoney(metrics.successful_collected_minor)} />
-            <OwnerMetric detail={`${metrics.pending_payments} bekleyen ödeme`} icon={<CreditCard aria-hidden size={18} />} label="Aylık düzenli gelir" tone="blue" value={formatMoney(metrics.mrr_minor)} />
-            <OwnerMetric detail={`${metrics.failed_renewals} başarısız yenileme`} icon={<RotateCcw aria-hidden size={18} />} label="Toplam iade" tone="orange" value={formatMoney(metrics.refunded_total_minor)} />
-          </section>
+          <OwnerStatGrid label="Ödeme metrikleri">
+            <OwnerStatCard detail={`${metrics.active_subscriptions} aktif abonelik`} label="Toplam tahsilat" value={formatMoney(metrics.successful_collected_minor)} />
+            <OwnerStatCard detail={`${metrics.pending_payments} bekleyen ödeme`} label="Aylık düzenli gelir" value={formatMoney(metrics.mrr_minor)} />
+            <OwnerStatCard detail={`${metrics.failed_renewals} başarısız yenileme`} label="Toplam iade" value={formatMoney(metrics.refunded_total_minor)} />
+          </OwnerStatGrid>
           <OwnerPanel
-            action={<label className="owner-select-wrap"><span className="sr-only">Ödeme durumuna göre filtrele</span><select onChange={(event) => setStatus(event.target.value)} value={status}><option value="all">Tüm ödemeler</option><option value="succeeded">Başarılı</option><option value="pending">Bekliyor</option><option value="failed">Başarısız</option><option value="refunded">İade</option></select></label>}
+            action={
+              <>
+                <Label className="sr-only" htmlFor="payment-status">Ödeme durumuna göre filtrele</Label>
+                <Select onValueChange={setStatus} value={status}>
+                  <SelectTrigger className="w-40" id="payment-status" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="all">Tüm ödemeler</SelectItem>
+                    <SelectItem value="succeeded">Başarılı</SelectItem>
+                    <SelectItem value="pending">Bekliyor</SelectItem>
+                    <SelectItem value="failed">Başarısız</SelectItem>
+                    <SelectItem value="refunded">İade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            }
             description={`${filtered.length} kayıt gösteriliyor`}
             title="Tahsilat geçmişi"
           >
             {filtered.length === 0 ? <OwnerEmpty text="Bu filtrede ödeme kaydı bulunmuyor." /> : (
-              <DataTablePanel className="owner-compact-table-wrap">
-                <DataTable className="owner-table owner-table-spacious">
-                  <DataTableHeader><DataTableRow><DataTableHead>Firma</DataTableHead><DataTableHead>Tutar</DataTableHead><DataTableHead>Sağlayıcı</DataTableHead><DataTableHead>Durum</DataTableHead><DataTableHead>Tarih</DataTableHead></DataTableRow></DataTableHeader>
+              <DataTablePanel>
+                <DataTable>
+                  <DataTableHeader>
+                    <DataTableRow>
+                      <DataTableHead>Firma</DataTableHead>
+                      <DataTableHead>Tutar</DataTableHead>
+                      <DataTableHead>Sağlayıcı</DataTableHead>
+                      <DataTableHead>Durum</DataTableHead>
+                      <DataTableHead>Tarih</DataTableHead>
+                    </DataTableRow>
+                  </DataTableHeader>
                   <DataTableBody>
                     {filtered.map((payment) => (
                       <DataTableRow key={payment.id}>
-                        <DataTableCell><strong>{payment.organization_name}</strong></DataTableCell>
-                        <DataTableCell><strong>{formatMoney(payment.amount_minor, payment.currency)}</strong>{payment.refunded_amount_minor > 0 ? <small className="owner-cell-note">{formatMoney(payment.refunded_amount_minor, payment.currency)} iade</small> : null}</DataTableCell>
+                        <DataTableCell className="font-medium">{payment.organization_name}</DataTableCell>
+                        <DataTableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium tabular-nums">{formatMoney(payment.amount_minor, payment.currency)}</span>
+                            {payment.refunded_amount_minor > 0 ? (
+                              <span className="text-xs text-muted-foreground tabular-nums">{formatMoney(payment.refunded_amount_minor, payment.currency)} iade</span>
+                            ) : null}
+                          </div>
+                        </DataTableCell>
                         <DataTableCell>{payment.provider}</DataTableCell>
                         <DataTableCell><StatusBadge status={payment.status} /></DataTableCell>
-                        <DataTableCell>{formatDate(payment.paid_at ?? payment.created_at)}</DataTableCell>
+                        <DataTableCell className="tabular-nums">{formatDate(payment.paid_at ?? payment.created_at)}</DataTableCell>
                       </DataTableRow>
                     ))}
                   </DataTableBody>
@@ -103,10 +140,37 @@ export default function PlatformPaymentsPage() {
             )}
           </OwnerPanel>
           <OwnerPanel description="Ödeme sağlayıcısından alınan son 50 teknik bildirim" title="Webhook olayları">
-            {events.length === 0 ? <OwnerEmpty text="Webhook olayı bulunmuyor." /> : <div className="owner-event-grid">{events.slice(0, 12).map((event) => <article className={event.hasError ? "danger" : ""} key={event.id}>{event.hasError ? <AlertTriangle aria-hidden size={18} /> : <CheckCircle2 aria-hidden size={18} />}<div><strong>{event.eventType}</strong><span>{event.organizationName} · {event.provider}</span></div><small>{formatDate(event.receivedAt)}</small></article>)}</div>}
+            {events.length === 0 ? <OwnerEmpty text="Webhook olayı bulunmuyor." /> : (
+              <DataTablePanel>
+                <DataTable>
+                  <DataTableHeader>
+                    <DataTableRow>
+                      <DataTableHead>Olay</DataTableHead>
+                      <DataTableHead>Firma</DataTableHead>
+                      <DataTableHead>Sağlayıcı</DataTableHead>
+                      <DataTableHead>Durum</DataTableHead>
+                      <DataTableHead>Tarih</DataTableHead>
+                    </DataTableRow>
+                  </DataTableHeader>
+                  <DataTableBody>
+                    {events.slice(0, 12).map((event) => (
+                      <DataTableRow key={event.id}>
+                        <DataTableCell className="font-medium">{event.eventType}</DataTableCell>
+                        <DataTableCell>{event.organizationName}</DataTableCell>
+                        <DataTableCell>{event.provider}</DataTableCell>
+                        <DataTableCell>
+                          <BaseStatusBadge label={event.hasError ? "Hata" : "Başarılı"} tone={event.hasError ? "danger" : "success"} />
+                        </DataTableCell>
+                        <DataTableCell className="tabular-nums">{formatDate(event.receivedAt)}</DataTableCell>
+                      </DataTableRow>
+                    ))}
+                  </DataTableBody>
+                </DataTable>
+              </DataTablePanel>
+            )}
           </OwnerPanel>
         </>
       )}
-    </div>
+    </OwnerPage>
   );
 }

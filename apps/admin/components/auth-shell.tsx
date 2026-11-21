@@ -1,53 +1,50 @@
 import Link from "next/link";
-import { CheckCircle2, LockKeyhole } from "lucide-react";
-import { ProductBrand } from "./logo";
+import { IconInnerShadowTop } from "@tabler/icons-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { FieldDescription } from "@/components/shadcn/field";
 
+// shadcn "login-03" / "signup-03" blogu birebir: gri zemin, ustte logo, kart icinde form,
+// kartin altinda kosullar notu. Fark: logo panellerle ayni Operasyon Portali isareti.
 export function AuthShell({
   children,
   description,
   footer,
-  mode,
+  legalNote = true,
   title
 }: {
   children: React.ReactNode;
   description?: string;
   footer?: React.ReactNode;
-  mode?: "login" | "register";
+  legalNote?: boolean;
   title: string;
 }) {
   return (
-    <main className="public-auth-page">
-      <div className="public-auth-layout">
-        <aside className="public-auth-context">
-          <Link aria-label="Ana sayfa" className="public-auth-brand" href="/">
-            <ProductBrand />
-          </Link>
-          <div className="public-auth-context-copy">
-            <h2>Saha operasyonlarınızı tek merkezden yönetin.</h2>
-            <p>Atamalar, servis raporları, müşteri onayları ve ekip takibi aynı güvenli çalışma alanında.</p>
-            <ul>
-              <li><CheckCircle2 aria-hidden size={17} /> Organizasyon ve rol tabanlı erişim</li>
-              <li><CheckCircle2 aria-hidden size={17} /> Güvenli rapor ve müşteri verileri</li>
-              <li><CheckCircle2 aria-hidden size={17} /> Masaüstü ve mobil uyumlu kullanım</li>
-            </ul>
-          </div>
-          <div className="public-auth-security-note"><LockKeyhole aria-hidden size={16} /> Oturumunuz şifreli bağlantı üzerinden korunur.</div>
-        </aside>
-        <section className="public-auth-panel">
-          {mode ? (
-            <nav aria-label="Hesap işlemleri" className="auth-mode-tabs">
-              <Link aria-current={mode === "login" ? "page" : undefined} className={mode === "login" ? "active" : ""} href="/login">Giriş</Link>
-              <Link aria-current={mode === "register" ? "page" : undefined} className={mode === "register" ? "active" : ""} href="/register">Firma Kaydı</Link>
-            </nav>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 text-foreground md:p-10" data-ui="v2">
+      <main className="flex w-full max-w-sm flex-col gap-6">
+        <Link className="flex items-center gap-2 self-center font-medium" href="/">
+          <IconInnerShadowTop className="size-5" />
+          Operasyon Portalı
+        </Link>
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">
+                <h1>{title}</h1>
+              </CardTitle>
+              {description ? <CardDescription>{description}</CardDescription> : null}
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              {children}
+              {footer ? <FieldDescription className="text-center [&_a]:underline [&_a]:underline-offset-4">{footer}</FieldDescription> : null}
+            </CardContent>
+          </Card>
+          {legalNote ? (
+            <FieldDescription className="px-6 text-center">
+              Devam ederek <Link href="/terms">Kullanım Şartları</Link> ve <Link href="/privacy">Gizlilik Politikası</Link>&apos;nı kabul etmiş olursunuz.
+            </FieldDescription>
           ) : null}
-          <header>
-            <h1>{title}</h1>
-            {description ? <p>{description}</p> : null}
-          </header>
-          {children}
-          {footer ? <footer>{footer}</footer> : null}
-        </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

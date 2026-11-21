@@ -8860,12 +8860,12 @@ textarea:focus-visible {
   border-color: var(--color-pebble) !important;
 }
 
-th {
+th:where(:not([data-ui="v2"] *)) {
   background: var(--color-cloud) !important;
   color: var(--color-stone) !important;
 }
 
-td,
+td:where(:not([data-ui="v2"] *)),
 .owner-table td,
 .owner-table th,
 .kv div,
@@ -8879,7 +8879,7 @@ td,
   color: var(--color-ink) !important;
 }
 
-tbody tr:hover,
+tbody:where(:not([data-ui="v2"] *)) tr:hover,
 .owner-table tbody tr:hover {
   background: var(--color-cloud) !important;
 }

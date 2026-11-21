@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Loader2, Lock, Mail, Phone, User } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { Alert } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Field, FieldGroup, FieldLabel } from "@/components/shadcn/field";
+import { ToggleGroup, ToggleGroupItem } from "@/components/shadcn/toggle-group";
 import { AuthField, PasswordStrength } from "./auth-field";
 
+// shadcn "signup-02" form yapisi; alanlar ve kayit API'si onceki formla ayni.
 export function RegisterForm() {
   const router = useRouter();
   const [organizationName, setOrganizationName] = useState("");
@@ -29,6 +35,10 @@ export function RegisterForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!termsAccepted) {
+      setMessage("Devam etmek için Gizlilik/KVKK ve kullanım koşullarını onaylayın.");
+      return;
+    }
     setLoading(true);
     setMessage("");
 
@@ -70,34 +80,108 @@ export function RegisterForm() {
   }
 
   return (
-    <form className="public-form" onSubmit={submit}>
-      <div className="public-form-grid two-columns">
-        <AuthField autoComplete="organization" containerClassName="span-2" icon={<Building2 size={18} />} label="Firma adı" maxLength={160} onChange={(event) => setOrganizationName(event.target.value)} placeholder="Firma unvanı" required value={organizationName} />
-        <AuthField autoComplete="given-name" containerClassName="auth-name-field" icon={<User size={18} />} label="Ad" maxLength={80} onChange={(event) => setFirstName(event.target.value)} placeholder="Adınız" required value={firstName} />
-        <AuthField autoComplete="family-name" containerClassName="auth-name-field" icon={<User size={18} />} label="Soyad" maxLength={80} onChange={(event) => setLastName(event.target.value)} placeholder="Soyadınız" required value={lastName} />
-        <AuthField autoComplete="email" containerClassName="span-2" icon={<Mail size={18} />} label="İş e-postası" maxLength={254} onChange={(event) => setEmail(event.target.value)} placeholder="ornek@firma.com" required type="email" value={email} />
-        <AuthField autoComplete="tel" icon={<Phone size={18} />} label="Telefon" maxLength={32} onChange={(event) => setPhone(event.target.value)} placeholder="05xx xxx xx xx" type="tel" value={phone} />
-        <div>
-          <AuthField autoComplete="new-password" icon={<Lock size={18} />} label="Parola" minLength={10} onChange={(event) => setPassword(event.target.value)} placeholder="En az 10 karakter" required type="password" value={password} />
+    <form method="post" onSubmit={submit}>
+      <FieldGroup>
+        <AuthField
+          autoComplete="organization"
+          label="Firma adı"
+          maxLength={160}
+          onChange={(event) => setOrganizationName(event.target.value)}
+          placeholder="Firma unvanı"
+          required
+          value={organizationName}
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <AuthField
+            autoComplete="given-name"
+            label="Ad"
+            maxLength={80}
+            onChange={(event) => setFirstName(event.target.value)}
+            placeholder="Adınız"
+            required
+            value={firstName}
+          />
+          <AuthField
+            autoComplete="family-name"
+            label="Soyad"
+            maxLength={80}
+            onChange={(event) => setLastName(event.target.value)}
+            placeholder="Soyadınız"
+            required
+            value={lastName}
+          />
+        </div>
+        <AuthField
+          autoComplete="email"
+          hint="Hesap doğrulaması ve faturalar bu adrese gönderilir."
+          label="İş e-postası"
+          maxLength={254}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="ornek@firma.com"
+          required
+          type="email"
+          value={email}
+        />
+        <AuthField
+          autoComplete="tel"
+          label="Telefon"
+          maxLength={32}
+          onChange={(event) => setPhone(event.target.value)}
+          placeholder="05xx xxx xx xx"
+          type="tel"
+          value={phone}
+        />
+        <Field>
+          <AuthField
+            autoComplete="new-password"
+            label="Parola"
+            minLength={10}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            type="password"
+            value={password}
+          />
           <PasswordStrength password={password} />
-        </div>
-      </div>
-      <fieldset className="segmented-field">
-        <legend>Faturalandırma dönemi</legend>
-        <div className="segmented-control">
-          <button className={interval === "monthly" ? "active" : ""} onClick={() => setInterval("monthly")} type="button">Aylık</button>
-          <button className={interval === "yearly" ? "active" : ""} onClick={() => setInterval("yearly")} type="button">Yıllık</button>
-        </div>
-      </fieldset>
-      <label className="consent-row">
-        <input checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} required type="checkbox" />
-        <span><Link href="/privacy">Gizlilik/KVKK</Link> ve <Link href="/terms">kullanım ve abonelik koşulları</Link> metinlerini okudum.</span>
-      </label>
-      {message ? <div className="message error">{message}</div> : null}
-      <button className="button public-form-submit" disabled={loading} type="submit">
-        {loading ? <Loader2 aria-hidden className="auth-spinner" size={18} /> : <Building2 aria-hidden size={18} />}
-        {loading ? "Hesap hazırlanıyor" : "Firma Hesabı Oluştur"}
-      </button>
+        </Field>
+        <Field>
+          <FieldLabel id="billing-interval-label">Faturalandırma dönemi</FieldLabel>
+          <ToggleGroup
+            aria-labelledby="billing-interval-label"
+            className="w-full"
+            onValueChange={(value) => {
+              if (value === "monthly" || value === "yearly") setInterval(value);
+            }}
+            type="single"
+            value={interval}
+            variant="outline"
+          >
+            <ToggleGroupItem className="flex-1" value="monthly">Aylık</ToggleGroupItem>
+            <ToggleGroupItem className="flex-1" value="yearly">Yıllık</ToggleGroupItem>
+          </ToggleGroup>
+        </Field>
+        <Field orientation="horizontal">
+          <Checkbox
+            checked={termsAccepted}
+            id="register-terms"
+            onCheckedChange={(checked) => {
+              setTermsAccepted(checked === true);
+              if (checked === true) setMessage("");
+            }}
+          />
+          <FieldLabel className="font-normal leading-snug [&_a]:underline [&_a]:underline-offset-4" htmlFor="register-terms">
+            <span>
+              <Link href="/privacy">Gizlilik/KVKK</Link> ve <Link href="/terms">kullanım ve abonelik koşulları</Link> metinlerini okudum.
+            </span>
+          </FieldLabel>
+        </Field>
+        {message ? <Alert tone="error">{message}</Alert> : null}
+        <Field>
+          <Button disabled={loading} type="submit">
+            {loading ? <Loader2 aria-hidden className="animate-spin" /> : null}
+            {loading ? "Hesap hazırlanıyor" : "Firma Hesabı Oluştur"}
+          </Button>
+        </Field>
+      </FieldGroup>
     </form>
   );
 }

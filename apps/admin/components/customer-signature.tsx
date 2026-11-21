@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { ArrowLeft, CheckCircle2, Eraser, PenLine, Send, Undo2 } from "lucide-react";
+import { ArrowLeft, Eraser, Send, Undo2 } from "lucide-react";
 import { CUSTOMER_SIGNATURE_CONSENT, customerSignatureSchema, type CustomerSignature } from "@operations/validation";
-import { Button } from "./ui";
-import styles from "./customer-signature.module.css";
+import { Alert, Button, FormField } from "@/components/firm-ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Field, FieldLabel } from "@/components/shadcn/field";
 
 type Point = [number, number];
 
@@ -18,29 +20,63 @@ export function SignaturePhotoPreview({ file, url, caption }: { file?: File; url
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
   const src = url || localUrl;
-  return <figure style={{ margin: 0 }}>
-    {src ? <Image src={src} alt={caption || "Rapor fotoğrafı"} width={640} height={360} unoptimized style={{ width: "100%", height: "auto", maxHeight: 260, objectFit: "contain", borderRadius: 8 }} /> : null}
-    <figcaption>{caption || "Rapor fotoğrafı"}</figcaption>
-  </figure>;
+  return (
+    <figure className="m-0 grid gap-2">
+      {src ? (
+        <Image
+          alt={caption || "Rapor fotoğrafı"}
+          className="h-auto max-h-64 w-full rounded-lg border bg-muted object-contain"
+          height={360}
+          src={src}
+          unoptimized
+          width={640}
+        />
+      ) : null}
+      <figcaption className="text-sm break-words text-muted-foreground">{caption || "Rapor fotoğrafı"}</figcaption>
+    </figure>
+  );
 }
 
 function SignatureDrawing({ strokes }: { strokes: Point[][] }) {
   return <>{strokes.map((stroke, i) => <polyline key={i} points={stroke.map((point) => point.join(",")).join(" ")} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}</>;
 }
 
-export function CustomerSignatureView({ signature, signedAt }: { signature: unknown; signedAt?: string | null }) {
+// Firma paneli (v2) icin ayni imza gorunumu: shadcn Card yapisi.
+export function CustomerSignatureCard({ signature, signedAt }: { signature: unknown; signedAt?: string | null }) {
   const parsed = customerSignatureSchema.safeParse(signature);
-  if (!parsed.success) return <section className={styles.card}><h3>Firma yetkilisi onayı</h3><p>Bu raporda kayıtlı dijital teslim imzası bulunmuyor.</p></section>;
-  const value = parsed.data;
   const date = signedAt ? new Date(signedAt) : null;
-  return <section className={styles.card} aria-label="Firma yetkilisi onayı">
-    <div className={styles.heading}><CheckCircle2 size={22} aria-hidden /><h3>Firma yetkilisi onayı</h3></div>
-    <svg className={styles.preview} viewBox="0 0 600 240" role="img" aria-label={`${value.signer_name} tarafından atılan teslim imzası`}><SignatureDrawing strokes={value.strokes} /></svg>
-    <strong>{value.signer_name}</strong><span>{value.signer_title}</span>
-    {date && !Number.isNaN(date.getTime()) ? <time dateTime={signedAt!}>{date.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })} (Türkiye saati)</time> : null}
-    <p>{CUSTOMER_SIGNATURE_CONSENT}</p>
-    <p>Eve/ofise giriş zamanı ve dönüş araç kilometresi, müşteri teslim onayından sonra personel tarafından kaydedilen kapanış bilgileridir.</p>
-  </section>;
+  return (
+    <section aria-label="Firma yetkilisi onayı" className="bg-card text-card-foreground flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+      <h2 className="leading-none font-semibold">Firma yetkilisi onayı</h2>
+      {parsed.success ? (
+        <>
+          <svg
+            aria-label={`${parsed.data.signer_name} tarafından atılan teslim imzası`}
+            className="block h-auto w-full max-w-md rounded-lg border bg-muted/40 text-foreground"
+            role="img"
+            viewBox="0 0 600 240"
+          >
+            <SignatureDrawing strokes={parsed.data.strokes} />
+          </svg>
+          <div className="grid gap-1 text-sm">
+            <span className="font-medium">{parsed.data.signer_name}</span>
+            <span className="text-muted-foreground">{parsed.data.signer_title}</span>
+            {date && !Number.isNaN(date.getTime()) ? (
+              <time className="text-muted-foreground" dateTime={signedAt ?? undefined}>
+                {date.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })} (Türkiye saati)
+              </time>
+            ) : null}
+          </div>
+          <p className="text-sm text-muted-foreground">{CUSTOMER_SIGNATURE_CONSENT}</p>
+          <p className="text-sm text-muted-foreground">
+            Eve/ofise giriş zamanı ve dönüş araç kilometresi, müşteri teslim onayından sonra personel tarafından kaydedilen kapanış bilgileridir.
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground">Bu raporda kayıtlı dijital teslim imzası bulunmuyor.</p>
+      )}
+    </section>
+  );
 }
 
 export function CustomerSignatureApproval({ companyName, reportDate, summary, initialName, loading, onBack, onSubmit }: {
@@ -75,45 +111,82 @@ export function CustomerSignatureApproval({ companyName, reportDate, summary, in
     setError("");
     await onSubmit(parsed.data);
   }
-  return <section className={styles.approval} aria-labelledby="signature-heading">
-    <Button variant="secondary" disabled={loading} icon={<ArrowLeft size={18} aria-hidden />} onClick={onBack}>Rapora dön</Button>
-    <div className={styles.card}>
-      <div className={styles.heading}><PenLine size={24} aria-hidden /><div><small>SON ADIM · TESLİM ONAYI</small><h2 id="signature-heading">Firma yetkilisinin imzası</h2></div></div>
-      <p>Cihazı firma yetkilisine verin. Yetkili, raporu inceleyip aşağıdaki alana parmağı veya kalemiyle imzasını atabilir.</p>
-      <div className={styles.summary}><strong>{companyName}</strong><span>{reportDate.split("-").reverse().join(".")}</span>{summary}</div>
-      <fieldset disabled={loading} className={styles.fields}>
-        <label>Yetkilinin adı ve soyadı<input autoComplete="off" maxLength={120} value={name} onChange={(event) => { setName(event.target.value); setConsent(false); }} /></label>
-        <label>Görevi / unvanı<input autoComplete="organization-title" maxLength={120} placeholder="Örn. Bakım sorumlusu" value={title} onChange={(event) => { setTitle(event.target.value); setConsent(false); }} /></label>
-        <div className={styles.padLabel}><strong>İmza</strong><span>Parmak, kalem veya fare ile</span></div>
-        <div className={styles.pad}>
-          <svg viewBox="0 0 600 240" preserveAspectRatio="none" role="img" aria-label="Firma yetkilisi çizim imza alanı" aria-describedby="signature-help"
-            onPointerDown={(event) => {
-              if (loading || pointer.current !== null || event.button !== 0) return;
-              if (strokes.length >= 40 || strokes.reduce((sum, stroke) => sum + stroke.length, 0) >= 2000) { setError("İmza alanı doldu. Temizleyip yeniden imzalayın."); return; }
-              event.preventDefault(); setConsent(false); setError(""); pointer.current = event.pointerId;
-              current.current = [point(event)]; setDrawing(current.current); event.currentTarget.setPointerCapture(event.pointerId);
-            }}
-            onPointerMove={(event) => {
-              if (loading || pointer.current !== event.pointerId) return;
-              const next = point(event), last = current.current[current.current.length - 1];
-              if (!last || Math.hypot(next[0] - last[0], next[1] - last[1]) < 2) return;
-              if (current.current.length >= 500 || strokes.reduce((sum, stroke) => sum + stroke.length, current.current.length) >= 2000) { setError("İmza sınırına ulaşıldı. Gerekirse temizleyip yeniden imzalayın."); return; }
-              current.current = [...current.current, next]; setDrawing(current.current);
-            }} onPointerUp={(event) => finish(event)} onPointerCancel={(event) => finish(event, true)} onLostPointerCapture={(event) => finish(event, true)}>
-            <SignatureDrawing strokes={[...strokes, drawing]} />
-          </svg>
-          {strokes.length === 0 && drawing.length === 0 ? <span className={styles.placeholder}>Buraya imza atın</span> : null}
-        </div>
-        <div className={styles.actions}>
-          <Button variant="secondary" disabled={!strokes.length || loading} icon={<Undo2 size={17} aria-hidden />} onClick={() => { setStrokes((previous) => previous.slice(0, -1)); setConsent(false); }}>Geri al</Button>
-          <Button variant="subtle" disabled={!strokes.length || loading} icon={<Eraser size={17} aria-hidden />} onClick={() => { setStrokes([]); setConsent(false); setError(""); }}>Temizle</Button>
-        </div>
-        <p id="signature-help">Çizim yapamıyorsanız raporu taslak olarak saklayıp imza alabilecek şekilde devam edin.</p>
-        <label className={styles.consent}><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>{CUSTOMER_SIGNATURE_CONSENT}</span></label>
-      </fieldset>
-      {error ? <div role="alert" className="message error">{error}</div> : null}
-      <p>İmza bu raporla birlikte saklanır ve PDF belgesinde görünür. İmzalanan iş ve teslim bilgileri değiştirilemez; dönüş saati ile araç teslim kilometresi personel tarafından dönüşte tamamlanır.</p>
-      <Button className={styles.submit} disabled={loading || drawing.length > 0} icon={<Send size={18} aria-hidden />} onClick={submit}>{loading ? "İmzalı rapor kaydediliyor…" : "Onayla ve raporu gönder"}</Button>
-    </div>
-  </section>;
+  return (
+    <section aria-labelledby="signature-heading" className="grid gap-4">
+      <div>
+        <Button disabled={loading} icon={<ArrowLeft aria-hidden />} onClick={onBack} variant="secondary">Rapora dön</Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardDescription>Son adım · Teslim onayı</CardDescription>
+          <CardTitle className="text-xl" id="signature-heading">Firma yetkilisinin imzası</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <p className="text-sm text-muted-foreground">Cihazı firma yetkilisine verin. Yetkili, raporu inceleyip aşağıdaki alana parmağı veya kalemiyle imzasını atabilir.</p>
+          <div className="grid gap-2 rounded-lg bg-muted p-4 text-sm break-words">
+            <strong className="font-medium">{companyName}</strong>
+            <span>{reportDate.split("-").reverse().join(".")}</span>
+            {summary}
+          </div>
+          <fieldset className="m-0 grid min-w-0 gap-4 border-0 p-0" disabled={loading}>
+            <FormField label="Yetkilinin adı ve soyadı">
+              <input autoComplete="off" maxLength={120} onChange={(event) => { setName(event.target.value); setConsent(false); }} value={name} />
+            </FormField>
+            <FormField label="Görevi / unvanı">
+              <input autoComplete="organization-title" maxLength={120} onChange={(event) => { setTitle(event.target.value); setConsent(false); }} placeholder="Örn. Bakım sorumlusu" value={title} />
+            </FormField>
+            <div className="grid gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-medium">İmza</span>
+                <span className="text-muted-foreground">Parmak, kalem veya fare ile</span>
+              </div>
+              <div className="relative overflow-hidden rounded-lg border bg-muted/40 text-foreground">
+                <svg
+                  aria-describedby="signature-help"
+                  aria-label="Firma yetkilisi çizim imza alanı"
+                  className="block aspect-[5/2] h-auto min-h-44 w-full cursor-crosshair touch-none select-none"
+                  preserveAspectRatio="none"
+                  role="img"
+                  viewBox="0 0 600 240"
+                  onPointerDown={(event) => {
+                    if (loading || pointer.current !== null || event.button !== 0) return;
+                    if (strokes.length >= 40 || strokes.reduce((sum, stroke) => sum + stroke.length, 0) >= 2000) { setError("İmza alanı doldu. Temizleyip yeniden imzalayın."); return; }
+                    event.preventDefault(); setConsent(false); setError(""); pointer.current = event.pointerId;
+                    current.current = [point(event)]; setDrawing(current.current); event.currentTarget.setPointerCapture(event.pointerId);
+                  }}
+                  onPointerMove={(event) => {
+                    if (loading || pointer.current !== event.pointerId) return;
+                    const next = point(event), last = current.current[current.current.length - 1];
+                    if (!last || Math.hypot(next[0] - last[0], next[1] - last[1]) < 2) return;
+                    if (current.current.length >= 500 || strokes.reduce((sum, stroke) => sum + stroke.length, current.current.length) >= 2000) { setError("İmza sınırına ulaşıldı. Gerekirse temizleyip yeniden imzalayın."); return; }
+                    current.current = [...current.current, next]; setDrawing(current.current);
+                  }}
+                  onPointerUp={(event) => finish(event)}
+                  onPointerCancel={(event) => finish(event, true)}
+                  onLostPointerCapture={(event) => finish(event, true)}
+                >
+                  <SignatureDrawing strokes={[...strokes, drawing]} />
+                </svg>
+                {strokes.length === 0 && drawing.length === 0 ? (
+                  <span className="pointer-events-none absolute inset-x-0 top-[45%] text-center text-sm text-muted-foreground">Buraya imza atın</span>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={!strokes.length || loading} icon={<Undo2 aria-hidden />} onClick={() => { setStrokes((previous) => previous.slice(0, -1)); setConsent(false); }} variant="secondary">Geri al</Button>
+              <Button disabled={!strokes.length || loading} icon={<Eraser aria-hidden />} onClick={() => { setStrokes([]); setConsent(false); setError(""); }} variant="subtle">Temizle</Button>
+            </div>
+            <p className="text-sm text-muted-foreground" id="signature-help">Çizim yapamıyorsanız raporu taslak olarak saklayıp imza alabilecek şekilde devam edin.</p>
+            <Field className="items-start rounded-lg border p-4" orientation="horizontal">
+              <Checkbox checked={consent} id="signature-consent" onCheckedChange={(checked) => setConsent(checked === true)} />
+              <FieldLabel className="leading-normal font-normal" htmlFor="signature-consent">{CUSTOMER_SIGNATURE_CONSENT}</FieldLabel>
+            </Field>
+          </fieldset>
+          {error ? <Alert tone="error">{error}</Alert> : null}
+          <p className="text-sm text-muted-foreground">İmza bu raporla birlikte saklanır ve PDF belgesinde görünür. İmzalanan iş ve teslim bilgileri değiştirilemez; dönüş saati ile araç teslim kilometresi personel tarafından dönüşte tamamlanır.</p>
+          <Button className="h-10 w-full" disabled={loading || drawing.length > 0} icon={<Send aria-hidden />} onClick={submit}>{loading ? "İmzalı rapor kaydediliyor…" : "Onayla ve raporu gönder"}</Button>
+        </CardContent>
+      </Card>
+    </section>
+  );
 }

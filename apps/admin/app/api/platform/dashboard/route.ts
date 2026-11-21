@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "../../../../lib/rate-limit";
+import { buildDailyActivity } from "../../../../lib/platform-activity";
 import { requirePlatformAdmin } from "../../../../lib/server/guards";
 
 export const runtime = "nodejs";
+
+const ACTIVITY_DAYS = 90;
 
 export async function GET(request: Request) {
   const rateLimited = enforceRateLimit(request, "platform-dashboard");
@@ -13,7 +16,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: auth.message }, { status: auth.status });
   }
 
-  const [metricsResult, organizationsResult, plansResult, eventsResult, auditResult] = await Promise.all([
+  const now = new Date();
+  const activitySince = new Date(now.getTime() - ACTIVITY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    metricsResult,
+    organizationsResult,
+    plansResult,
+    eventsResult,
+    auditResult,
+    activityPaymentsResult,
+    activityOrganizationsResult
+  ] = await Promise.all([
     auth.service.rpc("platform_dashboard_metrics"),
     auth.service
       .from("organizations")
@@ -34,7 +48,19 @@ export async function GET(request: Request) {
       .from("audit_logs")
       .select("id,organization_id,actor_id,action,entity_table,entity_id,created_at")
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(20),
+    // Grafik serisi: yalnizca basarili tahsilatlar; ham satirlar yanita girmez.
+    auth.service
+      .from("payments")
+      .select("amount_minor,refunded_amount_minor,paid_at")
+      .eq("status", "succeeded")
+      .gte("paid_at", activitySince)
+      .limit(5000),
+    auth.service
+      .from("organizations")
+      .select("created_at")
+      .gte("created_at", activitySince)
+      .limit(5000)
   ]);
 
   if (
@@ -42,7 +68,9 @@ export async function GET(request: Request) {
     organizationsResult.error ||
     plansResult.error ||
     eventsResult.error ||
-    auditResult.error
+    auditResult.error ||
+    activityPaymentsResult.error ||
+    activityOrganizationsResult.error
   ) {
     return NextResponse.json({ message: "Platform paneli verileri alınamadı." }, { status: 500 });
   }
@@ -64,8 +92,21 @@ export async function GET(request: Request) {
     (subscriptionResult.data ?? []).map((subscription) => [subscription.organization_id, subscription])
   );
 
+  const activity = buildDailyActivity({
+    payments: (activityPaymentsResult.data ?? []).map((payment) => ({
+      // bigint kolonlari surucuden metin olarak gelebilir.
+      amount_minor: Number(payment.amount_minor),
+      refunded_amount_minor: Number(payment.refunded_amount_minor ?? 0),
+      paid_at: payment.paid_at
+    })),
+    organizations: activityOrganizationsResult.data ?? [],
+    days: ACTIVITY_DAYS,
+    now
+  });
+
   return NextResponse.json({
     metrics: metricsResult.data ?? {},
+    activity,
     plans: plansResult.data ?? [],
     organizations: (organizationsResult.data ?? []).map((organization) => ({
       ...organization,

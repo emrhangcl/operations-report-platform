@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ImagePlus, LoaderCircle, Trash2, Upload } from "lucide-react";
+import { LoaderCircle, Trash2, Upload } from "lucide-react";
 import { loadAccountContext, updateAccountBrandingCache } from "../lib/account-context-client";
 import { getBrowserClient, scopeHeaders } from "../lib/browser-client";
-import { Alert, Button, ConfirmDialog, EmptyState, FormActions, FormField, LoadingState } from "./ui";
+import { Alert, Button, ConfirmDialog, EmptyState, FormActions, FormField, LoadingState } from "@/components/firm-ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -145,65 +147,85 @@ export function OrganizationBrandingSettings() {
   }
 
   if (loading) {
-    return <LoadingState aria-busy="true" className="branding-loading" label="Marka bilgileri yükleniyor" />;
+    return <LoadingState aria-busy="true" label="Marka bilgileri yükleniyor" />;
   }
 
+  // shadcn Card yapisi: solda onizleme, sagda yukleme formu.
   return (
     <>
-      <section className="branding-settings" aria-labelledby="branding-title">
-        <div className="branding-preview-panel">
-          <div className="branding-section-heading">
-            <span className="branding-heading-icon"><ImagePlus aria-hidden size={20} /></span>
-            <div>
-              <h2 id="branding-title">Panel logosu</h2>
-              <p>Admin ve personel ekranlarında firmanızın markası gösterilir.</p>
+      <section aria-labelledby="branding-title" className="grid gap-4 @3xl/main:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle id="branding-title">Panel logosu</CardTitle>
+            <CardDescription>Admin ve personel ekranlarında firmanızın markası gösterilir.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed p-6">
+              {previewUrl || branding?.logoUrl ? (
+                <Image
+                  alt={`${branding?.organizationName ?? "Firma"} logo önizlemesi`}
+                  className="max-h-28 w-auto object-contain"
+                  height={120}
+                  src={previewUrl ?? branding?.logoUrl ?? ""}
+                  unoptimized
+                  width={320}
+                />
+              ) : (
+                <EmptyState className="py-6" title="Henüz logo yüklenmedi">
+                  Varsayılan Operasyon Portalı markası kullanılıyor.
+                </EmptyState>
+              )}
             </div>
-          </div>
-          <div className="branding-preview">
-            {previewUrl || branding?.logoUrl ? (
-              <Image
-                alt={`${branding?.organizationName ?? "Firma"} logo önizlemesi`}
-                height={120}
-                src={previewUrl ?? branding?.logoUrl ?? ""}
-                unoptimized
-                width={320}
-              />
-            ) : (
-              <EmptyState className="branding-empty-preview" title="Henüz logo yüklenmedi">
-                Varsayılan Operasyon Portalı markası kullanılıyor.
-              </EmptyState>
-            )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <form className="branding-upload-panel" onSubmit={upload}>
-          <FormField
-            hint="PNG, JPG veya WebP. En fazla 2 MB. Yatay logolar panelde daha iyi görünür."
-            htmlFor="organization-logo"
-            label="Logo dosyası"
-          >
-            <input
-              accept="image/png,image/jpeg,image/webp"
-              id="organization-logo"
-              onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
-              ref={inputRef}
-              type="file"
-            />
-          </FormField>
-          {file ? <div className="branding-file-summary"><strong>{file.name}</strong><span>{(file.size / 1024).toLocaleString("tr-TR", { maximumFractionDigits: 0 })} KB</span></div> : null}
-          {message ? <Alert tone="success">{message}</Alert> : null}
-          {error ? <Alert tone="error">{error}</Alert> : null}
-          <FormActions className="branding-actions">
-            <Button disabled={busy || !file} icon={busy ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Upload aria-hidden size={18} />} type="submit">
-              {busy ? "Kaydediliyor" : "Logoyu Kaydet"}
-            </Button>
-            {branding?.logoUrl ? (
-              <Button disabled={busy} icon={<Trash2 aria-hidden size={18} />} onClick={() => setConfirmLogoRemoval(true)} variant="danger">
-                Logoyu Kaldır
-              </Button>
-            ) : null}
-          </FormActions>
-        </form>
+        <Card>
+          <CardHeader>
+            <CardTitle>Logo yükle</CardTitle>
+            <CardDescription>Yeni logo kaydedildiğinde tüm panellerde hemen görünür.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4" onSubmit={upload}>
+              <FormField
+                hint="PNG, JPG veya WebP. En fazla 2 MB. Yatay logolar panelde daha iyi görünür."
+                htmlFor="organization-logo"
+                label="Logo dosyası"
+              >
+                <Input
+                  accept="image/png,image/jpeg,image/webp"
+                  id="organization-logo"
+                  onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
+                  ref={inputRef}
+                  type="file"
+                />
+              </FormField>
+              {file ? (
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate font-medium">{file.name}</span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {(file.size / 1024).toLocaleString("tr-TR", { maximumFractionDigits: 0 })} KB
+                  </span>
+                </div>
+              ) : null}
+              {message ? <Alert tone="success">{message}</Alert> : null}
+              {error ? <Alert tone="error">{error}</Alert> : null}
+              <FormActions>
+                <Button
+                  disabled={busy || !file}
+                  icon={busy ? <LoaderCircle aria-hidden className="animate-spin" /> : <Upload aria-hidden />}
+                  type="submit"
+                >
+                  {busy ? "Kaydediliyor" : "Logoyu Kaydet"}
+                </Button>
+                {branding?.logoUrl ? (
+                  <Button disabled={busy} icon={<Trash2 aria-hidden />} onClick={() => setConfirmLogoRemoval(true)} variant="danger">
+                    Logoyu Kaldır
+                  </Button>
+                ) : null}
+              </FormActions>
+            </form>
+          </CardContent>
+        </Card>
       </section>
       <ConfirmDialog
         confirmLabel="Logoyu Kaldır"

@@ -1,4 +1,7 @@
 import type { BillingInterval, OrganizationStatus, SubscriptionStatus } from "@operations/types";
+import type { DailyActivity } from "../../../lib/platform-activity";
+
+export type { DailyActivity };
 
 export interface PlatformMetrics {
   total_organizations: number;
@@ -79,6 +82,7 @@ export interface GlobalAuditLog {
 
 export interface DashboardPayload {
   metrics: PlatformMetrics;
+  activity: DailyActivity[];
   plans: Plan[];
   organizations: OrganizationRow[];
   paymentEvents: PaymentEvent[];
@@ -185,6 +189,7 @@ export const emptyMetrics: PlatformMetrics = {
 
 export const emptyDashboard: DashboardPayload = {
   metrics: emptyMetrics,
+  activity: [],
   plans: [],
   organizations: [],
   paymentEvents: [],

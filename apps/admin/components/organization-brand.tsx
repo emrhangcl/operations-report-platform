@@ -10,6 +10,8 @@ interface BrandingPayload {
   logoUrl: string | null;
 }
 
+// Firma logosu varsa logo + firma adi, yoksa urun isareti. ProductBrand gibi parcalari
+// dogrudan ebeveynin cocugu olarak verir (SidebarMenuButton / flex kap).
 export function OrganizationBrand({ scope = "admin" }: { scope?: AccountScope }) {
   const [branding, setBranding] = useState<BrandingPayload | null>(null);
 
@@ -34,21 +36,17 @@ export function OrganizationBrand({ scope = "admin" }: { scope?: AccountScope })
   }
 
   return (
-    <span className="organization-brand-lockup">
-      <span className="organization-logo-frame">
-        <Image
-          alt={`${branding.organizationName} logosu`}
-          height={48}
-          onError={() => setBranding({ ...branding, logoUrl: null })}
-          src={branding.logoUrl}
-          unoptimized
-          width={132}
-        />
-      </span>
-      <span className="organization-brand-copy">
-        <strong>{branding.organizationName}</strong>
-        <span>Operasyon Portalı</span>
-      </span>
-    </span>
+    <>
+      <Image
+        alt={`${branding.organizationName} logosu`}
+        className="h-5 w-auto max-w-20 shrink-0 object-contain"
+        height={20}
+        onError={() => setBranding({ ...branding, logoUrl: null })}
+        src={branding.logoUrl}
+        unoptimized
+        width={56}
+      />
+      <span className="truncate text-base font-semibold">{branding.organizationName}</span>
+    </>
   );
 }

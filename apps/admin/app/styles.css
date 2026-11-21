@@ -1,0 +1,229 @@
+/*
+ * Tek stil giris noktasi.
+ *
+ * Katman sirasi bilinclidir:
+ *   theme, base (Tailwind preflight) < legacy (eski CSS) < components < utilities
+ * - Henuz tasinmamis sayfalarda eski kurallar preflight'i ezer, gorunum korunur.
+ * - v2 (shadcn) sayfalarinda Tailwind utility'leri eski kurallari ezer.
+ * v2 token'lari yalnizca [data-ui="v2"] kokunde tanimlanir; eski sayfalarin :root
+ * degiskenleri (theme-tokens.css) ayni adlari kullandigi icin global tanimlanmaz.
+ */
+@layer theme, base, legacy, v2-reset, components, utilities;
+
+@import "./theme-tokens.css" layer(legacy);
+@import "./globals.css" layer(legacy);
+@import "./enterprise-system.css" layer(legacy);
+@import "./public-system.css" layer(legacy);
+@import "./frosted-system.css" layer(legacy);
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Preflight, eski CSS'in tarayicinin varsayilanina guvendigi bazi ozellikleri sifirlar.
+ * Tasinmamis sayfalarda yalnizca bunlari geri getirir; :where() ozgulluk 0 oldugundan
+ * eski CSS'in kendi kurallari her zaman kazanir. v2 kokunun icine dokunmaz.
+ */
+@layer legacy {
+  :where(h1, h2, h3, h4, h5, h6):where(:not([data-ui="v2"], [data-ui="v2"] *)) {
+    font-weight: bold;
+  }
+
+  :where(input[type="checkbox"], input[type="radio"]):where(:not([data-ui="v2"] *)) {
+    margin: 3px 3px 3px 4px;
+  }
+}
+
+/*
+ * Eski CSS'te eleman seciciler (a, button, table, th, td, .grid ...) v2 kokunun icine de
+ * uyar. Bu katman legacy'den sonra geldigi icin, v2 icinde o kurallarin degistirdigi
+ * ozellikleri preflight/shadcn varsayilanina geri ceker. Utility'ler hala kazanir.
+ */
+@layer v2-reset {
+  [data-ui="v2"],
+  [data-ui="v2"] * {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+  }
+
+  [data-ui="v2"] :where(a) {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: inherit;
+  }
+
+  [data-ui="v2"] :where(button, input, select, textarea) {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+  }
+
+  [data-ui="v2"] :where(button, a, input, select, textarea) {
+    transition: none;
+  }
+
+  [data-ui="v2"] :where(button:disabled) {
+    opacity: 1;
+    cursor: default;
+  }
+
+  [data-ui="v2"] :where(table) {
+    width: auto;
+    min-width: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: inherit;
+  }
+
+  [data-ui="v2"] :where(th, td) {
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-align: inherit;
+    text-transform: none;
+    vertical-align: middle;
+    background: none;
+    border-width: 0;
+    border-color: var(--border);
+  }
+
+  [data-ui="v2"] :where(td svg) {
+    margin: 0;
+    vertical-align: middle;
+    color: inherit;
+  }
+
+  [data-ui="v2"] :where(.grid) {
+    gap: 0;
+  }
+}
+
+@custom-variant dark (&:is(.dark *, .dark));
+
+/* shadcn/ui Neutral — acik */
+[data-ui="v2"] {
+  color-scheme: light;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.708 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* shadcn/ui Neutral — koyu */
+[data-ui="v2"].dark,
+[data-ui="v2"] .dark {
+  color-scheme: dark;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.708 0 0);
+  --chart-3: oklch(0.556 0 0);
+  --chart-4: oklch(0.439 0 0);
+  --chart-5: oklch(0.371 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  [data-ui="v2"],
+  [data-ui="v2"] * {
+    @apply border-border outline-ring/50;
+  }
+
+  [data-ui="v2"] {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}

@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getBrowserClient } from "../lib/browser-client";
+import { Alert, EmptyState, LoadingState } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/shadcn/card";
 
 type Subscription = {
   status: "pending" | "active" | "past_due" | "grace_period" | "read_only" | "canceled" | "lifetime";
@@ -83,30 +86,47 @@ export function SubscriptionStatus() {
     });
   }, [router]);
 
-  if (loading) return <div className="public-empty">Abonelik bilgisi yükleniyor...</div>;
-  if (message) return <div className="message error">{message}</div>;
-  if (!subscription) return <div className="public-empty"><strong>Abonelik kaydı bulunmuyor.</strong><Link className="button" href="/pricing">Paketleri Gör</Link></div>;
+  if (loading) return <LoadingState label="Abonelik bilgisi yükleniyor" />;
+  if (message) return <Alert tone="error">{message}</Alert>;
+  if (!subscription) {
+    return (
+      <EmptyState
+        action={<Button asChild><Link href="/pricing">Paketleri Gör</Link></Button>}
+        title="Abonelik kaydı bulunmuyor."
+      />
+    );
+  }
 
   const plan = Array.isArray(subscription.plans) ? subscription.plans[0]?.name : subscription.plans?.name;
   const canOpenApp = ["active", "past_due", "grace_period", "read_only", "lifetime"].includes(subscription.status);
+  const rows: Array<[string, string]> = [
+    ["Organizasyon", organizationName || "-"],
+    ["Paket", plan || "Paket seçilmedi"],
+    ["Dönem", subscription.billing_interval === "monthly" ? "Aylık" : subscription.billing_interval === "yearly" ? "Yıllık" : "Süresiz"],
+    ["Dönem sonu", subscription.current_period_ends_at ? new Date(subscription.current_period_ends_at).toLocaleDateString("tr-TR") : "-"]
+  ];
 
   return (
-    <div className="subscription-summary">
-      <div className="subscription-status-line">
-        <span>Durum</span>
-        <strong className={`subscription-state state-${subscription.status}`}>{labels[subscription.status]}</strong>
-      </div>
-      <dl>
-        <div><dt>Organizasyon</dt><dd>{organizationName || "-"}</dd></div>
-        <div><dt>Paket</dt><dd>{plan || "Paket seçilmedi"}</dd></div>
-        <div><dt>Dönem</dt><dd>{subscription.billing_interval === "monthly" ? "Aylık" : subscription.billing_interval === "yearly" ? "Yıllık" : "Süresiz"}</dd></div>
-        <div><dt>Dönem sonu</dt><dd>{subscription.current_period_ends_at ? new Date(subscription.current_period_ends_at).toLocaleDateString("tr-TR") : "-"}</dd></div>
-      </dl>
-      <div className="actions">
-        {canOpenApp ? <Link className="button" href="/app">Uygulamaya Git</Link> : null}
-        {subscription.status === "pending" || subscription.status === "past_due" ? <Link className="button" href="/checkout">Ödemeye Devam Et</Link> : null}
-        <Link className="button secondary" href="/account/billing">Faturalandırma Detayı</Link>
-      </div>
-    </div>
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardDescription>Durum</CardDescription>
+        <CardTitle className="text-2xl font-semibold">{labels[subscription.status]}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          {rows.map(([label, value]) => (
+            <div className="grid gap-1" key={label}>
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="font-medium">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+      <CardFooter className="flex flex-wrap gap-2">
+        {canOpenApp ? <Button asChild><Link href="/app">Uygulamaya Git</Link></Button> : null}
+        {subscription.status === "pending" || subscription.status === "past_due" ? <Button asChild><Link href="/checkout">Ödemeye Devam Et</Link></Button> : null}
+        <Button asChild variant="outline"><Link href="/account/billing">Faturalandırma Detayı</Link></Button>
+      </CardFooter>
+    </Card>
   );
 }

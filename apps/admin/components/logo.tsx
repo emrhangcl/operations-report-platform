@@ -1,15 +1,12 @@
-import { ClipboardCheck } from "lucide-react";
+import { IconInnerShadowTop } from "@tabler/icons-react";
 
+// shadcn dashboard-01 AppSidebar basligindaki isaret (FirmSidebar ve AuthShell ile ayni).
+// Parcalar dogrudan ebeveynin cocugu olur; SidebarMenuButton veya flex kap icinde kullanilir.
 export function ProductBrand() {
   return (
-    <span className="brand-lockup">
-      <span aria-hidden className="brand-symbol">
-        <ClipboardCheck size={22} strokeWidth={2.2} />
-      </span>
-      <span className="brand-copy">
-        <strong>Operasyon Portalı</strong>
-        <span>Saha ve rapor yönetimi</span>
-      </span>
-    </span>
+    <>
+      <IconInnerShadowTop aria-hidden className="size-5!" />
+      <span className="text-base font-semibold">Operasyon Portalı</span>
+    </>
   );
 }

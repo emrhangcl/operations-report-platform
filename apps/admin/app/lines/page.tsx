@@ -6,6 +6,7 @@ import type { Company, CompanyLine } from "@operations/types";
 import { companyLineSchema } from "@operations/validation";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,7 +22,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { getBrowserClient } from "../../lib/browser-client";
 
 type LineForm = {
@@ -125,15 +126,15 @@ export default function LinesPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Hatlar"
         description="Her firma için mobil raporda seçilecek hat listesini yönetin."
         action={<StatusBadge label={`${lines.length} hat`} tone="neutral" />}
       />
-      <form className="form-panel" onSubmit={submit}>
+      <form className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm" onSubmit={submit}>
         <FormSection>
-          <div className="form-grid">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <FormField label="Firma">
               <select
                 onChange={(event) => setForm({ ...form, company_id: event.target.value })}
@@ -198,7 +199,7 @@ export default function LinesPage() {
                   <DataTableCell>{line.name}</DataTableCell>
                   <DataTableCell>{new Date(line.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
                   <DataTableCell>
-                    <FormActions style={{ marginTop: 0 }}>
+                    <FormActions>
                       <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(line)} variant="secondary">
                         Düzenle
                       </Button>
@@ -230,6 +231,6 @@ export default function LinesPage() {
         open={Boolean(pendingDelete)}
         title="Hat silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }
