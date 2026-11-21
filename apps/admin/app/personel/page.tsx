@@ -562,6 +562,12 @@ export default function PersonnelWebPage() {
     );
   }
 
+  // Form acikken menuden ayrilmak kaydedilmemis girdiyi siler; once onay iste.
+  function confirmLeaveForm() {
+    if (screen !== "form" || readOnlyMode) return true;
+    return window.confirm("Kaydedilmemiş rapor bilgileri silinecek. Formdan çıkmak istiyor musunuz?");
+  }
+
   const activeScreen: PersonnelNavScreen | null =
     screen === "form" ? null : screen === "detail" ? "submitted" : screen;
   const title = screen === "form" ? (activeAssignment ? "Montaj Raporu" : "Rapor Formu") : screenTitles[screen];
@@ -573,8 +579,8 @@ export default function PersonnelWebPage() {
         <PersonnelShell
           activeScreen={activeScreen}
           newReportDisabled={readOnlyMode}
-          onNavigate={(next) => { if (!loading) setScreen(next); }}
-          onNewReport={() => { if (!loading) startNewReport(); }}
+          onNavigate={(next) => { if (!loading && confirmLeaveForm()) setScreen(next); }}
+          onNewReport={() => { if (!loading && confirmLeaveForm()) startNewReport(); }}
           onSignOut={() => { void signOut(); }}
           theme={theme}
           title={title}

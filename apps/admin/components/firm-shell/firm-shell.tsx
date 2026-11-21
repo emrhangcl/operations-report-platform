@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { IconInnerShadowTop } from "@tabler/icons-react";
 import { Alert } from "@/components/firm-ui";
 import { Button } from "@/components/shadcn/button";
+import { CloseMobileSidebarOnNavigate } from "@/components/shadcn/close-mobile-sidebar";
 import { PortalContainerProvider } from "@/components/shadcn/portal-container";
 import { Separator } from "@/components/shadcn/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/shadcn/sidebar";
@@ -136,6 +137,7 @@ export function FirmShell({ children }: { children: React.ReactNode }) {
       <SidebarProvider
         style={{ "--sidebar-width": "calc(var(--spacing) * 72)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}
       >
+        <CloseMobileSidebarOnNavigate />
         <FirmSidebar
           accessLabel={readOnly ? "Salt okunur" : "Tam erişim"}
           onSignOut={signOut}

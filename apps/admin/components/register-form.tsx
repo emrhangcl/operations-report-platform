@@ -163,7 +163,10 @@ export function RegisterForm() {
           <Checkbox
             checked={termsAccepted}
             id="register-terms"
-            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+            onCheckedChange={(checked) => {
+              setTermsAccepted(checked === true);
+              if (checked === true) setMessage("");
+            }}
           />
           <FieldLabel className="font-normal leading-snug [&_a]:underline [&_a]:underline-offset-4" htmlFor="register-terms">
             <span>

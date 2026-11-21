@@ -75,8 +75,8 @@
   --color-electric-cobalt: var(--op-primary);
 }
 
-html,
-body {
+html:where(:not(:has([data-ui="v2"]))),
+body:where(:not(:has([data-ui="v2"]))) {
   background: var(--op-bg) !important;
   color: var(--op-text) !important;
   font-family: var(--op-font-sans) !important;
@@ -96,7 +96,7 @@ body {
 *:where(:not([data-ui="v2"], [data-ui="v2"] *))::-webkit-scrollbar-track { background: var(--op-bg); }
 *:where(:not([data-ui="v2"], [data-ui="v2"] *))::-webkit-scrollbar-thumb { background: var(--op-border-strong); border: 2px solid var(--op-bg); border-radius: 999px; }
 
-:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):where(:not([data-ui="v2"] *)):focus-visible {
   outline-color: var(--op-primary) !important;
 }
 

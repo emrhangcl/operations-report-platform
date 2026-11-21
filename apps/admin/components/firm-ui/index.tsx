@@ -97,10 +97,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 export function IconButton({
   icon,
   variant = "secondary",
+  className,
   ...props
 }: Omit<ButtonProps, "children" | "icon"> & { "aria-label": string; icon: ReactNode }) {
   return (
-    <ShadcnButton className="size-8" size="icon" type="button" variant={buttonVariant[variant]} {...props}>
+    <ShadcnButton className={cn("size-8", className)} size="icon" type="button" variant={buttonVariant[variant]} {...props}>
       {icon}
     </ShadcnButton>
   );
@@ -133,7 +134,7 @@ export function ConfirmDialog({
           {description ? <AlertDialogDescription>{description}</AlertDialogDescription> : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-white hover:bg-destructive/90"
             disabled={confirmDisabled}

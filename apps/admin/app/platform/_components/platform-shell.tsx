@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { CloseMobileSidebarOnNavigate } from "@/components/shadcn/close-mobile-sidebar";
 import { PortalContainerProvider } from "@/components/shadcn/portal-container";
 import { SidebarInset, SidebarProvider } from "@/components/shadcn/sidebar";
 import { TooltipProvider } from "@/components/shadcn/tooltip";
@@ -75,6 +76,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           <SidebarProvider
             style={{ "--sidebar-width": "calc(var(--spacing) * 72)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}
           >
+            <CloseMobileSidebarOnNavigate />
             <OwnerSidebar email={email} onSignOut={signOut} variant="inset" />
             <SidebarInset>
               <OwnerSiteHeader onToggleTheme={toggleTheme} theme={theme} title={ownerPageTitle(pathname)} />
