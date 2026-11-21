@@ -48,11 +48,10 @@ import { Skeleton as ShadcnSkeleton } from "@/components/shadcn/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { cn } from "@/lib/utils";
 
-const TEXT = "[&_input:not([type=checkbox]):not([type=radio])]";
 // shadcn Input / Select / Textarea siniflari; sayfalardaki duz <input>, <select>, <textarea>
 // elemanlari bu sinifi tasiyan bir kabin icinde ayni gorunumu alir.
 export const controlClasses = cn(
-  `${TEXT}:h-9 ${TEXT}:w-full ${TEXT}:min-w-0 ${TEXT}:rounded-md ${TEXT}:border ${TEXT}:border-input ${TEXT}:bg-transparent ${TEXT}:px-3 ${TEXT}:py-1 ${TEXT}:text-base ${TEXT}:shadow-xs ${TEXT}:outline-none md:${TEXT}:text-sm dark:${TEXT}:bg-input/30`,
+  "[&_input:not([type=checkbox]):not([type=radio])]:h-9 [&_input:not([type=checkbox]):not([type=radio])]:w-full [&_input:not([type=checkbox]):not([type=radio])]:min-w-0 [&_input:not([type=checkbox]):not([type=radio])]:rounded-md [&_input:not([type=checkbox]):not([type=radio])]:border [&_input:not([type=checkbox]):not([type=radio])]:border-input [&_input:not([type=checkbox]):not([type=radio])]:bg-transparent [&_input:not([type=checkbox]):not([type=radio])]:px-3 [&_input:not([type=checkbox]):not([type=radio])]:py-1 [&_input:not([type=checkbox]):not([type=radio])]:text-base [&_input:not([type=checkbox]):not([type=radio])]:shadow-xs [&_input:not([type=checkbox]):not([type=radio])]:outline-none md:[&_input:not([type=checkbox]):not([type=radio])]:text-sm dark:[&_input:not([type=checkbox]):not([type=radio])]:bg-input/30",
   "[&_select]:h-9 [&_select]:w-full [&_select]:rounded-md [&_select]:border [&_select]:border-input [&_select]:bg-transparent [&_select]:px-3 [&_select]:py-1 [&_select]:text-sm [&_select]:shadow-xs [&_select]:outline-none dark:[&_select]:bg-input/30",
   "[&_textarea]:min-h-16 [&_textarea]:w-full [&_textarea]:rounded-md [&_textarea]:border [&_textarea]:border-input [&_textarea]:bg-transparent [&_textarea]:px-3 [&_textarea]:py-2 [&_textarea]:text-base [&_textarea]:shadow-xs [&_textarea]:outline-none md:[&_textarea]:text-sm dark:[&_textarea]:bg-input/30",
   "[&_input:focus-visible]:border-ring [&_input:focus-visible]:ring-[3px] [&_input:focus-visible]:ring-ring/50 [&_select:focus-visible]:border-ring [&_select:focus-visible]:ring-[3px] [&_select:focus-visible]:ring-ring/50 [&_textarea:focus-visible]:border-ring [&_textarea:focus-visible]:ring-[3px] [&_textarea:focus-visible]:ring-ring/50",

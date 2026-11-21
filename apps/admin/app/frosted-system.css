@@ -87,14 +87,14 @@ body {
   color: var(--op-text);
 }
 
-* {
+*:where(:not([data-ui="v2"], [data-ui="v2"] *)) {
   scrollbar-color: var(--op-border-strong) var(--op-bg);
   scrollbar-width: thin;
 }
 
-*::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-track { background: var(--op-bg); }
-*::-webkit-scrollbar-thumb { background: var(--op-border-strong); border: 2px solid var(--op-bg); border-radius: 999px; }
+*:where(:not([data-ui="v2"], [data-ui="v2"] *))::-webkit-scrollbar { width: 10px; height: 10px; }
+*:where(:not([data-ui="v2"], [data-ui="v2"] *))::-webkit-scrollbar-track { background: var(--op-bg); }
+*:where(:not([data-ui="v2"], [data-ui="v2"] *))::-webkit-scrollbar-thumb { background: var(--op-border-strong); border: 2px solid var(--op-bg); border-radius: 999px; }
 
 :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
   outline-color: var(--op-primary) !important;
@@ -153,17 +153,17 @@ body {
   color: var(--op-danger) !important;
 }
 
-:where(input, textarea, select) {
+:where(input, textarea, select):where(:not([data-ui="v2"] *)) {
   background: var(--op-surface-subtle) !important;
   border-color: var(--op-border) !important;
   color: var(--op-text) !important;
   caret-color: var(--op-primary);
 }
 
-:where(input, textarea)::placeholder { color: var(--op-text-faint) !important; opacity: 1; }
-:where(input, textarea, select):hover:not(:disabled) { border-color: var(--op-border-strong) !important; }
-:where(input, textarea, select):focus { border-color: var(--op-primary) !important; box-shadow: 0 0 0 3px var(--op-primary-soft) !important; }
-:where(input, textarea, select):disabled { background: var(--op-bg-subtle) !important; color: var(--op-text-faint) !important; }
+:where(input, textarea):where(:not([data-ui="v2"] *))::placeholder { color: var(--op-text-faint) !important; opacity: 1; }
+:where(input, textarea, select):where(:not([data-ui="v2"] *)):hover:not(:disabled) { border-color: var(--op-border-strong) !important; }
+:where(input, textarea, select):where(:not([data-ui="v2"] *)):focus { border-color: var(--op-primary) !important; box-shadow: 0 0 0 3px var(--op-primary-soft) !important; }
+:where(input, textarea, select):where(:not([data-ui="v2"] *)):disabled { background: var(--op-bg-subtle) !important; color: var(--op-text-faint) !important; }
 
 .card,
 .table-panel,

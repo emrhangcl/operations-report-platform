@@ -6,6 +6,7 @@ import type { Equipment } from "@operations/types";
 import { equipmentSchema } from "@operations/validation";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,7 +22,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type EquipmentForm = {
@@ -141,15 +142,15 @@ export default function EquipmentPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Ekipmanlar"
         description="Montaj ataması ve personel raporlarında seçilecek makine/ekipman listesini yönetin."
         action={<StatusBadge label={`${equipment.length} ekipman`} tone="neutral" />}
       />
-      <form className="form-panel" onSubmit={submit}>
+      <form className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm" onSubmit={submit}>
         <FormSection>
-          <div className="form-grid">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <FormField label="Ekipman Adı">
               <input
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -208,7 +209,7 @@ export default function EquipmentPage() {
                   <DataTableCell>{item.description ?? "-"}</DataTableCell>
                   <DataTableCell>{new Date(item.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
                   <DataTableCell>
-                    <FormActions style={{ marginTop: 0 }}>
+                    <FormActions>
                       <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(item)} variant="secondary">
                         Düzenle
                       </Button>
@@ -240,6 +241,6 @@ export default function EquipmentPage() {
         open={Boolean(pendingDelete)}
         title="Ekipman silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }

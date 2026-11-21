@@ -16,6 +16,7 @@ import type {
 import { processActions, productTypes } from "@operations/validation";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -31,7 +32,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { getBrowserClient } from "../../lib/browser-client";
 
 type AssignmentForm = {
@@ -446,25 +447,25 @@ export default function AssignmentsPage() {
   const pendingIsDelete = pendingConfirmation?.action === "delete";
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Montaj Atamaları"
         description="Bilinen montaj bilgilerini doldurun, işi seçilen personele atayın."
         action={<StatusBadge label={`${assignments.length} atama`} tone="neutral" />}
       />
 
-      <form className="form-panel assignment-form" onSubmit={submit}>
-        <div className="assignment-form-sections">
+      <form className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm" onSubmit={submit}>
+        <div className="grid gap-8">
           <FormSection title="Atama ve Firma">
-            <div className="form-grid assignment-grid">
-              <FormField className="assignment-field-amber" label="Atama Başlığı">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <FormField label="Atama Başlığı">
                 <input
                   onChange={(event) => update("title", event.target.value)}
                   placeholder="Boş bırakılırsa firma ve hat adı kullanılır"
                   value={form.title}
                 />
               </FormField>
-              <FormField className="assignment-field-amber" label="Atanacak Personel">
+              <FormField label="Atanacak Personel">
                 <select
                   onChange={(event) => update("assigned_to_profile_id", event.target.value)}
                   value={form.assigned_to_profile_id}
@@ -477,14 +478,14 @@ export default function AssignmentsPage() {
                   ))}
                 </select>
               </FormField>
-              <FormField className="assignment-field-amber" label="Planlanan Tarih">
+              <FormField label="Planlanan Tarih">
                 <input
                   onChange={(event) => update("scheduled_date", event.target.value)}
                   type="date"
                   value={form.scheduled_date}
                 />
               </FormField>
-              <FormField className="assignment-field-amber" label="Firma">
+              <FormField label="Firma">
                 <select onChange={(event) => updateCompany(event.target.value)} value={form.company_id}>
                   <option value="">Firma seçin</option>
                   {companies.map((company) => (
@@ -511,8 +512,8 @@ export default function AssignmentsPage() {
           </FormSection>
 
           <FormSection title="Araç ve Ürün">
-            <div className="form-grid assignment-grid">
-              <FormField className="assignment-field-strong-border" label="Araç Plakası">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <FormField label="Araç Plakası">
                 <select onChange={(event) => update("vehicle_plate", event.target.value)} value={form.vehicle_plate}>
                   <option value="">Plaka seçin</option>
                   {vehicles.map((vehicle) => (
@@ -520,7 +521,7 @@ export default function AssignmentsPage() {
                   ))}
                 </select>
               </FormField>
-              <FormField className="span-2 assignment-field-strong-border" label="Kullanılacak Makine/Ekipman">
+              <FormField className="md:col-span-2" label="Kullanılacak Makine/Ekipman">
                 <select
                   onChange={(event) => updateEquipment(event.target.value)}
                   value={form.used_equipment_ids[0] ?? ""}
@@ -536,9 +537,9 @@ export default function AssignmentsPage() {
           </FormSection>
 
           <FormSection title="İşlem ve Teknik">
-            <div className="form-grid assignment-grid">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <CheckPicker
-                className="span-2 assignment-compact-picker"
+                className="md:col-span-2"
                 label="Ürün Türü"
                 options={productTypes.map((value) => ({ label: value, value }))}
                 selected={form.product_types}
@@ -550,7 +551,7 @@ export default function AssignmentsPage() {
                 </FormField>
               ) : null}
               <CheckPicker
-                className="span-2 assignment-compact-picker"
+                className="md:col-span-2"
                 label="Yapılacak İşlem"
                 options={processActions.map((value) => ({ label: value, value }))}
                 selected={form.process_actions}
@@ -574,7 +575,7 @@ export default function AssignmentsPage() {
                 <input onChange={(event) => update("removed_belt_years", event.target.value)} value={form.removed_belt_years} />
               </FormField>
               <CheckPicker
-                className="span-2 assignment-compact-picker"
+                className="md:col-span-2"
                 label="Değiştirme Sebebi"
                 options={replacementReasonOptions.map((value) => ({ label: value, value }))}
                 selected={form.replacement_reasons}
@@ -592,7 +593,7 @@ export default function AssignmentsPage() {
           </FormSection>
 
           <FormSection title="Not ve Faturalandırma">
-            <div className="form-grid assignment-grid">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <FormField label="Faturalandırma">
                 <select onChange={(event) => update("billing_status", event.target.value)} value={form.billing_status}>
                   <option value="">Seçilmedi</option>
@@ -602,7 +603,7 @@ export default function AssignmentsPage() {
                   <option value="Bedelsiz İşlem Yapılmıştır">Bedelsiz İşlem Yapılmıştır</option>
                 </select>
               </FormField>
-              <FormField className="span-2" label="Personel Notu">
+              <FormField className="md:col-span-2" label="Personel Notu">
                 <textarea onChange={(event) => update("notes", event.target.value)} value={form.notes} />
               </FormField>
             </div>
@@ -663,7 +664,7 @@ export default function AssignmentsPage() {
                     <DataTableCell>
                       <strong>{assignment.title}</strong>
                       <br />
-                      <small>{assignment.notes ?? "-"}</small>
+                      <small className="text-muted-foreground">{assignment.notes ?? "-"}</small>
                     </DataTableCell>
                     <DataTableCell>
                       {assignedProfile
@@ -677,19 +678,18 @@ export default function AssignmentsPage() {
                     <DataTableCell>
                       {assignment.company_name_snapshot ?? "-"}
                       <br />
-                      <small>{assignmentWorkItemsText(assignment)}</small>
+                      <small className="text-muted-foreground">{assignmentWorkItemsText(assignment)}</small>
                     </DataTableCell>
                     <DataTableCell>{assignment.scheduled_date ? formatDate(assignment.scheduled_date) : "-"}</DataTableCell>
                     <DataTableCell>
                       <StatusBadge
-                        className={assignment.status === "IN_PROGRESS" ? "assignment-status-in-progress" : undefined}
                         label={statusLabels[assignment.status]}
                         tone={statusTone(assignment.status)}
                       />
                     </DataTableCell>
                     <DataTableCell>{assignment.report_id ? "Rapor oluşturuldu" : "-"}</DataTableCell>
                     <DataTableCell>
-                      <FormActions style={{ marginTop: 0 }}>
+                      <FormActions>
                         <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(assignment)} variant="secondary">
                           Düzenle
                         </Button>
@@ -742,7 +742,7 @@ export default function AssignmentsPage() {
         open={Boolean(pendingConfirmation)}
         title={pendingIsDelete ? "Montaj atamasını sil" : "Montaj atamasını iptal et"}
       />
-    </>
+    </FirmPage>
   );
 }
 
@@ -1065,10 +1065,10 @@ function ContactFields({
   onUpdate: (index: number, key: keyof CompanyContactDraft, value: string) => void;
 }) {
   return (
-    <FormField className="span-2 contact-list-field assignment-field-amber" label="Yetkili Kişiler">
-      <div className="contact-list">
+    <FormField className="md:col-span-2" label="Yetkili Kişiler">
+      <div className="grid gap-2">
         {contacts.map((contact, index) => (
-          <div className="contact-row" key={index}>
+          <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2" key={index}>
             <input
               aria-label={`Yetkili ${index + 1} adı`}
               onChange={(event) => onUpdate(index, "name", event.target.value)}
@@ -1084,7 +1084,6 @@ function ContactFields({
             {contacts.length > 1 ? (
               <Button
                 aria-label={`Yetkili ${index + 1} satırını kaldır`}
-                className="icon-button"
                 icon={<X aria-hidden size={16} />}
                 onClick={() => onRemove(index)}
                 variant="subtle"
@@ -1093,7 +1092,7 @@ function ContactFields({
           </div>
         ))}
       </div>
-      <Button className="contact-add-button" onClick={onAdd} variant="secondary">
+      <Button className="w-fit" onClick={onAdd} variant="secondary">
         Yetkili Ekle
       </Button>
     </FormField>
@@ -1110,9 +1109,9 @@ function ProductItemsField({
   const rows = normalizeWorkItems(items);
 
   return (
-    <FormField className="span-4 product-items-field" label="Ürün Detayları">
-      <div className="product-item-list">
-        <div className="product-item-row product-item-head">
+    <FormField className="md:col-span-2 xl:col-span-4" label="Ürün Detayları">
+      <div className="grid gap-2">
+        <div className="hidden gap-2 text-xs font-medium text-muted-foreground md:grid md:grid-cols-6">
           <span>Ürün Kodu</span>
           <span>Makine Adı</span>
           <span>Item / Coil Kodu</span>
@@ -1121,8 +1120,8 @@ function ProductItemsField({
           <span>Miktar</span>
         </div>
         {rows.map((item, index) => (
-          <div className="product-item-row" key={index}>
-            <div className="product-code-chip">{item.belt_code || "Bant kodu seçin"}</div>
+          <div className="grid items-center gap-2 md:grid-cols-6" key={index}>
+            <div className="flex h-9 items-center truncate rounded-md border bg-muted px-3 text-sm text-muted-foreground">{item.belt_code || "Bant kodu seçin"}</div>
             <input
               aria-label={`${item.belt_code || index + 1}. satır makine adı`}
               onChange={(event) => onUpdate(index, "machine_name", event.target.value)}
@@ -1181,10 +1180,10 @@ function WorkItemsField({
   const rows = normalizeWorkItems(items);
 
   return (
-    <FormField className="span-2 work-items-field" label="Hat ve Bant Kalemleri">
-      <div className="work-item-list">
+    <FormField className="md:col-span-2" label="Hat ve Bant Kalemleri">
+      <div className="grid gap-2">
         {rows.map((item, index) => (
-          <div className="work-item-row" key={index}>
+          <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2" key={index}>
             <select
               disabled={!companySelected}
               onChange={(event) => onUpdate(index, "line_name", event.target.value)}
@@ -1204,7 +1203,6 @@ function WorkItemsField({
             {rows.length > 1 ? (
               <Button
                 aria-label={`Kalem ${index + 1} satırını kaldır`}
-                className="icon-button"
                 icon={<X aria-hidden size={16} />}
                 onClick={() => onRemove(index)}
                 variant="subtle"
@@ -1213,7 +1211,7 @@ function WorkItemsField({
           </div>
         ))}
       </div>
-      <Button className="contact-add-button" icon={<Plus aria-hidden size={16} />} onClick={onAdd} variant="secondary">
+      <Button className="w-fit" icon={<Plus aria-hidden size={16} />} onClick={onAdd} variant="secondary">
         Kalem Ekle
       </Button>
     </FormField>
@@ -1235,9 +1233,9 @@ function CheckPicker({
 }) {
   return (
     <FormField className={className} label={label}>
-      <div className="choice-list">
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
         {options.map((option) => (
-          <label className="check-row" key={option.value}>
+          <label className="flex items-center gap-2 text-sm" key={option.value}>
             <input
               checked={selected.includes(option.value)}
               onChange={() => onToggle(option.value)}

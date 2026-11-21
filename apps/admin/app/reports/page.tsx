@@ -6,6 +6,7 @@ import { Download, FilterX, LoaderCircle, Trash2 } from "lucide-react";
 import type { Belt, Company, Profile, ReportListItem } from "@operations/types";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,7 +22,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type Filters = {
@@ -211,16 +212,16 @@ export default function ReportsPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Raporlar"
         description="Raporları filtreleyin, detaylarını açın ve Excel aktarımı yapın."
         action={
-          <FormActions style={{ marginTop: 0 }}>
+          <FormActions>
             <StatusBadge label={`${reports.length} rapor`} tone="neutral" />
             <Button
               disabled={exporting || selected.size === 0}
-              icon={exporting ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Download aria-hidden size={18} />}
+              icon={exporting ? <LoaderCircle aria-hidden className="animate-spin" size={18} /> : <Download aria-hidden size={18} />}
               onClick={() => exportReports("selected")}
             >
               {exporting ? "Aktarılıyor" : "Excel'e Aktar"}
@@ -238,14 +239,14 @@ export default function ReportsPage() {
       />
 
       <form
-        className="form-panel"
+        className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           void loadReports();
         }}
       >
         <FormSection>
-          <div className="form-grid">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <FormField htmlFor="reports-start" label="Başlangıç Tarihi">
               <input id="reports-start" name="start" onChange={updateFilter} type="date" value={filters.start} />
             </FormField>
@@ -306,7 +307,7 @@ export default function ReportsPage() {
           </Button>
           <Button
             disabled={exporting}
-            icon={exporting ? <LoaderCircle aria-hidden className="spin" size={18} /> : <Download aria-hidden size={18} />}
+            icon={exporting ? <LoaderCircle aria-hidden className="animate-spin" size={18} /> : <Download aria-hidden size={18} />}
             onClick={() => exportReports("filtered")}
             variant="secondary"
           >
@@ -402,7 +403,7 @@ export default function ReportsPage() {
         open={Boolean(pendingDelete)}
         title="Rapor silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }
 

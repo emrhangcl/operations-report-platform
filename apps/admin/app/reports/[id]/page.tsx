@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from "react";
-import { Building2, CalendarDays, CheckCircle2, ChevronLeft, ClipboardList, Clock3, Download, Gauge, ImageIcon, Maximize2, Pencil, Plus, Save, Share2, Trash2, UserRound, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Download, ImageIcon, Maximize2, Pencil, Plus, Save, Share2, Trash2, X } from "lucide-react";
 import type { Equipment, ReportFormValues, ReportWorkItem } from "@operations/types";
 import { emptyReportFormValues, processActions, productTypes } from "@operations/validation";
 import {
@@ -15,12 +15,17 @@ import {
   FormActions,
   FormField,
   FormSection,
+  FirmPage,
+  controlClasses,
   IconButton,
   LoadingState,
   PageHeaderShell,
   StatusBadge
-} from "../../../components/ui";
-import { CustomerSignatureView } from "../../../components/customer-signature";
+} from "@/components/firm-ui";
+import { Button as ShadcnButton } from "@/components/shadcn/button";
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Label } from "@/components/shadcn/label";
+import { CustomerSignatureCard } from "../../../components/customer-signature";
 import { downloadOrShareReportPdf } from "../../../lib/report-pdf-client";
 import { clearReadCache, getBrowserClient, scopeHeaders } from "../../../lib/browser-client";
 
@@ -307,12 +312,12 @@ export default function ReportDetailPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title={report?.report_number ?? "Rapor Detayı"}
         description={report ? `${text(report.company_name_snapshot)} · ${dateOnly(report.report_date)}` : "Rapor bilgileri yükleniyor."}
         action={report ? (
-          <FormActions className="header-actions">
+          <FormActions>
             <Button icon={<ChevronLeft aria-hidden size={18} />} onClick={() => router.push("/reports")} variant="secondary">
               Raporlara Dön
             </Button>
@@ -381,7 +386,7 @@ export default function ReportDetailPage() {
       ) : (
         <>
           <ReportSummary report={report} photoCount={report.report_photos?.length ?? 0} />
-          <div className="detail-sections">
+          <div className="grid gap-4 @3xl/main:grid-cols-2">
             <Section
               title="Genel Bilgiler"
               rows={[
@@ -468,10 +473,11 @@ export default function ReportDetailPage() {
               photoUrls={photoUrls}
               onOpen={(photo, signedUrl, index) => setActivePhoto({ ...photo, signedUrl, index })}
             />
-            <div className="detail-section-wide">
-              <CustomerSignatureView signature={report.customer_signature} signedAt={report.customer_signed_at ?? null} />
+            <div className="@3xl/main:col-span-2">
+              <CustomerSignatureCard signature={report.customer_signature} signedAt={report.customer_signed_at ?? null} />
             </div>
             <Section
+              wide
               title="Sistem Bilgileri"
               rows={[
                 ["Raporu oluşturan", text(report.created_by_name_snapshot)],
@@ -495,7 +501,7 @@ export default function ReportDetailPage() {
         open={deleteDialogOpen}
         title="Rapor silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }
 
@@ -528,15 +534,15 @@ function ReportEditForm({
 }) {
   return (
     <form
-      className="form-panel assignment-form report-edit-form"
+      className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm"
       onSubmit={(event) => {
         event.preventDefault();
         onSave();
       }}
     >
-      <div className="assignment-form-sections">
-        <FormSection className="form-subsection" title="Genel Bilgiler">
-          <div className="form-grid assignment-grid">
+      <div className="grid gap-8">
+        <FormSection title="Genel Bilgiler">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <EditField label="Rapor Tarihi">
               <input
                 onChange={(event) => onUpdate("report_date", event.target.value)}
@@ -546,7 +552,7 @@ function ReportEditForm({
               />
             </EditField>
             <EditField label="Firma">
-              <div className="personnel-readonly">{text(report.company_name_snapshot)}</div>
+              <div className="flex h-9 items-center truncate rounded-md border bg-muted px-3 text-sm text-muted-foreground">{text(report.company_name_snapshot)}</div>
             </EditField>
             <EditField label="Yetkili Kişi">
               <input onChange={(event) => onUpdate("company_contact_name", event.target.value)} value={values.company_contact_name} />
@@ -561,13 +567,13 @@ function ReportEditForm({
               onUpdate={onUpdateWorkItem}
             />
             <EditField label="Raporu Oluşturan">
-              <div className="personnel-readonly">{text(report.created_by_name_snapshot)}</div>
+              <div className="flex h-9 items-center truncate rounded-md border bg-muted px-3 text-sm text-muted-foreground">{text(report.created_by_name_snapshot)}</div>
             </EditField>
           </div>
         </FormSection>
 
-        <FormSection className="form-subsection" title="Araç ve Zaman">
-          <div className="form-grid assignment-grid">
+        <FormSection title="Araç ve Zaman">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <EditField label="Araç Plakası">
               <input onChange={(event) => onUpdate("vehicle_plate", event.target.value)} value={values.vehicle_plate} />
             </EditField>
@@ -578,7 +584,7 @@ function ReportEditForm({
               <input inputMode="numeric" onChange={(event) => onUpdate("vehicle_end_km", event.target.value)} value={values.vehicle_end_km} />
             </EditField>
             <EditSelectionPicker
-              className="span-2"
+              className="md:col-span-2"
               emptyText="Ekipman tanımlı değil"
               label="Kullanılan Makine/Ekipman"
               options={equipment.map((item) => ({ label: item.name, value: item.id }))}
@@ -593,10 +599,10 @@ function ReportEditForm({
           </div>
         </FormSection>
 
-        <FormSection className="form-subsection" title="Ürün ve İşlem">
-          <div className="form-grid assignment-grid">
+        <FormSection title="Ürün ve İşlem">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <EditCheckPicker
-              className="span-2 assignment-compact-picker"
+              className="md:col-span-2"
               label="Ürün Türü"
               options={productTypes.map((value) => ({ label: value, value }))}
               selected={values.product_types}
@@ -608,7 +614,7 @@ function ReportEditForm({
               </EditField>
             ) : null}
             <EditCheckPicker
-              className="span-2 assignment-compact-picker"
+              className="md:col-span-2"
               label="Yapılan İşlem"
               options={processActions.map((value) => ({ label: value, value }))}
               selected={values.process_actions}
@@ -632,7 +638,7 @@ function ReportEditForm({
               <input onChange={(event) => onUpdate("removed_belt_years", event.target.value)} value={values.removed_belt_years} />
             </EditField>
             <EditCheckPicker
-              className="span-2 assignment-compact-picker"
+              className="md:col-span-2"
               label="Değiştirme Sebebi"
               options={replacementReasonOptions.map((value) => ({ label: value, value }))}
               selected={values.replacement_reasons}
@@ -643,14 +649,14 @@ function ReportEditForm({
                 <input onChange={(event) => onUpdate("replacement_reason_other", event.target.value)} value={values.replacement_reason_other} />
               </EditField>
             ) : null}
-            <EditField className="span-2" label="Yapılan İşlem Açıklama">
+            <EditField className="md:col-span-2" label="Yapılan İşlem Açıklama">
               <textarea onChange={(event) => onUpdate("process_description", event.target.value)} value={values.process_description} />
             </EditField>
           </div>
         </FormSection>
 
-        <FormSection className="form-subsection" title="Pres, Test ve Teslim">
-          <div className="form-grid assignment-grid">
+        <FormSection title="Pres, Test ve Teslim">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <EditField label="Test Parçası">
               <select onChange={(event) => onUpdate("has_test_piece", event.target.value as ReportFormValues["has_test_piece"])} value={values.has_test_piece}>
                 <option value="">Seçilmedi</option>
@@ -727,8 +733,8 @@ function ReportEditForm({
           </div>
         </FormSection>
 
-        <FormSection className="form-subsection" title="Not ve Faturalandırma">
-          <div className="form-grid assignment-grid">
+        <FormSection title="Not ve Faturalandırma">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <EditField label="Faturalandırma">
               <select onChange={(event) => onUpdate("billing_status", event.target.value as ReportFormValues["billing_status"])} value={values.billing_status}>
                 <option value="">Seçilmedi</option>
@@ -736,7 +742,7 @@ function ReportEditForm({
                 <option value="Bedelsiz İşlem Yapılmıştır">Bedelsiz İşlem Yapılmıştır</option>
               </select>
             </EditField>
-            <EditField className="span-2" label="Teknik Detaylar">
+            <EditField className="md:col-span-2" label="Teknik Detaylar">
               <textarea onChange={(event) => onUpdate("technical_details", event.target.value)} value={values.technical_details} />
             </EditField>
           </div>
@@ -785,7 +791,7 @@ function EditDateTimeField({ label, onChange, value }: { label: string; onChange
 
 function EditToggle({ label, onChange, value }: { label: string; onChange: (value: boolean) => void; value: boolean }) {
   return (
-    <label className="personnel-toggle-row">
+    <label className="flex items-center gap-2 text-sm">
       <input checked={value} onChange={(event) => onChange(event.target.checked)} type="checkbox" />
       <span>{label}</span>
     </label>
@@ -807,9 +813,9 @@ function EditCheckPicker({
 }) {
   return (
     <FormField className={className} label={label}>
-      <div className="choice-list">
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
         {options.map((option) => (
-          <label className="check-row" key={option.value}>
+          <label className="flex items-center gap-2 text-sm" key={option.value}>
             <input
               checked={selected.includes(option.value)}
               onChange={() => onToggle(option.value)}
@@ -846,18 +852,18 @@ function EditSelectionPicker({
 
   return (
     <FormField className={className} label={label}>
-      <details className="personnel-choice-panel">
-        <summary>{selectedLabels.length > 0 ? selectedLabels.join(", ") : options.length > 0 ? placeholder : emptyText}</summary>
-        <div>
+      <details className="rounded-md border shadow-xs">
+        <summary className="flex h-9 cursor-pointer items-center truncate px-3 text-sm">{selectedLabels.length > 0 ? selectedLabels.join(", ") : options.length > 0 ? placeholder : emptyText}</summary>
+        <div className="grid gap-1 border-t p-2">
           {options.map((option) => (
-            <label className="personnel-check-row" key={option.value}>
+            <label className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-accent" key={option.value}>
               <input
                 checked={selected.includes(option.value)}
                 onChange={() => onToggle(option.value)}
                 type="checkbox"
               />
               <span>{option.label}</span>
-              {selected.includes(option.value) ? <CheckCircle2 aria-hidden size={16} /> : null}
+              {selected.includes(option.value) ? <CheckCircle2 aria-hidden className="ml-auto size-4" /> : null}
             </label>
           ))}
         </div>
@@ -880,10 +886,10 @@ function EditWorkItemsField({
   const rows = normalizeWorkItems(items);
 
   return (
-    <div className="field span-4 product-items-field">
-      <label>Hat, Bant ve Ürün Detayları</label>
-      <div className="product-item-list">
-        <div className="product-item-row product-item-head report-edit-work-row">
+    <div className="grid gap-2 md:col-span-2 xl:col-span-4">
+      <Label>Hat, Bant ve Ürün Detayları</Label>
+      <div className={`grid gap-2 ${controlClasses}`}>
+        <div className="hidden gap-2 text-xs font-medium text-muted-foreground md:grid md:grid-cols-[repeat(7,minmax(0,1fr))_2rem]">
           <span>Hat</span>
           <span>Bant Kodu</span>
           <span>Makine Adı</span>
@@ -894,7 +900,7 @@ function EditWorkItemsField({
           <span />
         </div>
         {rows.map((item, index) => (
-          <div className="product-item-row report-edit-work-row" key={index}>
+          <div className="grid items-center gap-2 md:grid-cols-[repeat(7,minmax(0,1fr))_2rem]" key={index}>
             <input
               aria-label={`${index + 1}. satır hat adı`}
               onChange={(event) => onUpdate(index, "line_name", event.target.value)}
@@ -941,7 +947,6 @@ function EditWorkItemsField({
             {rows.length > 1 ? (
               <IconButton
                 aria-label={`${index + 1}. iş kalemini kaldır`}
-                className="icon-button"
                 icon={<Trash2 aria-hidden size={16} />}
                 onClick={() => removeWorkItem(index)}
                 variant="subtle"
@@ -952,7 +957,7 @@ function EditWorkItemsField({
           </div>
         ))}
       </div>
-      <Button className="contact-add-button" icon={<Plus aria-hidden size={16} />} onClick={addWorkItem} variant="secondary">
+      <Button className="w-fit" icon={<Plus aria-hidden size={16} />} onClick={addWorkItem} variant="secondary">
         Kalem Ekle
       </Button>
     </div>
@@ -962,57 +967,56 @@ function EditWorkItemsField({
 function ReportSummary({ report, photoCount }: { report: ReportDetail; photoCount: number }) {
   const personnelText = report.report_personnel?.map((item) => item.name_snapshot).filter(Boolean).join(", ") || "-";
 
+  // shadcn dashboard-01 "SectionCards" yapisi.
   return (
-    <section className="report-summary" aria-label="Rapor özeti">
-      <SummaryCard icon={<Building2 aria-hidden size={18} />} label="Firma" value={text(report.company_name_snapshot)} meta={text(report.company_contact_name)} />
-      <SummaryCard icon={<ClipboardList aria-hidden size={18} />} label="Hat / Bant" value={reportBeltCodesText(report)} meta={text(report.line_name)} />
-      <SummaryCard icon={<Gauge aria-hidden size={18} />} label="Araç ve KM" value={text(report.vehicle_plate)} meta={kmText(report.vehicle_start_km, report.vehicle_end_km)} />
-      <SummaryCard icon={<CalendarDays aria-hidden size={18} />} label="Rapor Tarihi" value={dateOnly(report.report_date)} meta={`${photoCount} fotoğraf`} />
-      <SummaryCard icon={<UserRound aria-hidden size={18} />} label="Personel" value={personnelText} meta={text(report.created_by_name_snapshot)} />
-      <SummaryCard icon={<Clock3 aria-hidden size={18} />} label="Durum" value={statusText(report.status)} meta={dateTime(report.submitted_at || report.updated_at)} />
+    <section
+      aria-label="Rapor özeti"
+      className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3 dark:*:data-[slot=card]:bg-card"
+    >
+      <SummaryCard label="Firma" value={text(report.company_name_snapshot)} meta={text(report.company_contact_name)} />
+      <SummaryCard label="Hat / Bant" value={reportBeltCodesText(report)} meta={text(report.line_name)} />
+      <SummaryCard label="Araç ve KM" value={text(report.vehicle_plate)} meta={kmText(report.vehicle_start_km, report.vehicle_end_km)} />
+      <SummaryCard label="Rapor Tarihi" value={dateOnly(report.report_date)} meta={`${photoCount} fotoğraf`} />
+      <SummaryCard label="Personel" value={personnelText} meta={text(report.created_by_name_snapshot)} />
+      <SummaryCard label="Durum" value={statusText(report.status)} meta={dateTime(report.submitted_at || report.updated_at)} />
     </section>
   );
 }
 
-function SummaryCard({
-  icon,
-  label,
-  meta,
-  value
-}: {
-  icon: React.ReactNode;
-  label: string;
-  meta: string;
-  value: string;
-}) {
+function SummaryCard({ label, meta, value }: { label: string; meta: string; value: string }) {
   return (
-    <article className="report-summary-card">
-      <div className="summary-icon">{icon}</div>
-      <div>
-        <span>{label}</span>
-        <strong>{value || "-"}</strong>
-        <small>{meta || "-"}</small>
-      </div>
-    </article>
+    <Card className="@container/card">
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="truncate text-xl font-semibold @[250px]/card:text-2xl">{value || "-"}</CardTitle>
+      </CardHeader>
+      <CardFooter className="text-sm text-muted-foreground">
+        <span className="truncate">{meta || "-"}</span>
+      </CardFooter>
+    </Card>
   );
 }
 
-function Section({ title, rows }: { title: string; rows: Array<[string, string]> }) {
+function Section({ title, rows, wide = false }: { title: string; rows: Array<[string, string]>; wide?: boolean }) {
   return (
-    <FormSection className="card detail-section">
-      <div className="detail-section-title">
-        <h2>{title}</h2>
-        {title === "Sistem Bilgileri" ? <StatusBadge label={rows.find(([label]) => label === "Durum")?.[1] ?? "-"} tone="neutral" /> : null}
-      </div>
-      <dl className="kv">
+    <Card className={wide ? "@3xl/main:col-span-2" : undefined}>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {title === "Sistem Bilgileri" ? (
+          <CardAction>
+            <StatusBadge label={rows.find(([label]) => label === "Durum")?.[1] ?? "-"} tone="neutral" />
+          </CardAction>
+        ) : null}
+      </CardHeader>
+      <dl className="grid gap-3 px-6 text-sm">
         {rows.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value || "-"}</dd>
+          <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4" key={label}>
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="break-words whitespace-pre-wrap">{value || "-"}</dd>
           </div>
         ))}
       </dl>
-    </FormSection>
+    </Card>
   );
 }
 
@@ -1026,57 +1030,64 @@ function PhotoSection({
   onOpen: (photo: ReportPhoto, signedUrl: string, index: number) => void;
 }) {
   return (
-    <section className="card detail-section detail-section-wide">
-      <div className="detail-section-title">
-        <h2>Fotoğraflar</h2>
-        <StatusBadge label={`${photos.length} adet`} tone="neutral" />
-      </div>
-      {photos.length === 0 ? (
-        <EmptyState className="compact">Fotoğraf eklenmemiş.</EmptyState>
-      ) : (
-        <div className="report-photo-grid">
-          {photos.map((photo, index) => {
-            const path = photo.storage_path ?? "";
-            const signedUrl = photoUrls[path];
+    <Card className="@3xl/main:col-span-2">
+      <CardHeader>
+        <CardTitle>Fotoğraflar</CardTitle>
+        <CardAction>
+          <StatusBadge label={`${photos.length} adet`} tone="neutral" />
+        </CardAction>
+      </CardHeader>
+      <div className="px-6">
+        {photos.length === 0 ? (
+          <EmptyState className="rounded-lg border border-dashed py-8">Fotoğraf eklenmemiş.</EmptyState>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 @3xl/main:grid-cols-4">
+            {photos.map((photo, index) => {
+              const path = photo.storage_path ?? "";
+              const signedUrl = photoUrls[path];
 
-            return (
-              <button
-                className="report-photo-card"
-                disabled={!signedUrl}
-                key={photo.id ?? path}
-                onClick={() => signedUrl && onOpen(photo, signedUrl, index)}
-                type="button"
-              >
-                {signedUrl ? (
-                  <span className="report-photo-image">
-                    <Image
-                      alt={photo.caption || `Rapor fotoğrafı ${index + 1}`}
-                      height={220}
-                      sizes="(max-width: 980px) 50vw, 220px"
-                      src={signedUrl}
-                      unoptimized
-                      width={320}
-                    />
-                    <span className="photo-open-badge">
-                      <Maximize2 aria-hidden size={14} />
-                      Aç
-                    </span>
+              return (
+                <button
+                  className="group grid gap-2 text-left disabled:cursor-not-allowed"
+                  disabled={!signedUrl}
+                  key={photo.id ?? path}
+                  onClick={() => signedUrl && onOpen(photo, signedUrl, index)}
+                  type="button"
+                >
+                  <span className="relative block aspect-[4/3] overflow-hidden rounded-lg border bg-muted">
+                    {signedUrl ? (
+                      <>
+                        <Image
+                          alt={photo.caption || `Rapor fotoğrafı ${index + 1}`}
+                          className="size-full object-cover"
+                          height={220}
+                          sizes="(max-width: 980px) 50vw, 220px"
+                          src={signedUrl}
+                          unoptimized
+                          width={320}
+                        />
+                        <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                          <Maximize2 aria-hidden className="size-3.5" />
+                          Aç
+                        </span>
+                      </>
+                    ) : (
+                      <span className="flex size-full items-center justify-center text-muted-foreground">
+                        <ImageIcon aria-hidden className="size-6" />
+                      </span>
+                    )}
                   </span>
-                ) : (
-                  <span className="report-photo-placeholder">
-                    <ImageIcon aria-hidden size={26} />
+                  <span className="grid gap-0.5 text-sm">
+                    <span className="truncate font-medium">{photo.caption || "Açıklama yok"}</span>
+                    <span className="truncate text-muted-foreground">{photo.category || `Fotoğraf ${index + 1}`}</span>
                   </span>
-                )}
-                <span className="report-photo-meta">
-                  <strong>{photo.caption || "Açıklama yok"}</strong>
-                  <span>{photo.category || `Fotoğraf ${index + 1}`}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </section>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
@@ -1116,25 +1127,27 @@ function PhotoLightbox({ photo, onClose }: { photo: ActivePhoto; onClose: () => 
   }
 
   return (
-    <div className="photo-lightbox" onClick={onClose} role="presentation">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose} role="presentation">
       <div
         aria-label={`Rapor fotoğrafı ${photo.index + 1}`}
         aria-modal="true"
-        className="photo-lightbox-panel"
+        className="flex max-h-full w-full max-w-5xl flex-col gap-4 rounded-lg border bg-background p-4 shadow-lg"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={handleKeyDown}
         ref={panelRef}
         role="dialog"
       >
-        <div className="photo-lightbox-top">
-          <div>
-            <strong>{photo.caption || `Fotoğraf ${photo.index + 1}`}</strong>
-            <span>{[photo.category, dateTime(photo.created_at)].filter((value) => value && value !== "-").join(" · ") || "Rapor fotoğrafı"}</span>
+        <div className="flex items-start justify-between gap-4">
+          <div className="grid gap-1 text-sm">
+            <strong className="font-semibold">{photo.caption || `Fotoğraf ${photo.index + 1}`}</strong>
+            <span className="text-muted-foreground">{[photo.category, dateTime(photo.created_at)].filter((value) => value && value !== "-").join(" · ") || "Rapor fotoğrafı"}</span>
           </div>
-          <div className="photo-lightbox-actions">
-            <a className="button secondary" href={photo.signedUrl} rel="noreferrer" target="_blank">
-              Yeni Sekmede Aç
-            </a>
+          <div className="flex items-center gap-2">
+            <ShadcnButton asChild size="sm" variant="outline">
+              <a href={photo.signedUrl} rel="noreferrer" target="_blank">
+                Yeni Sekmede Aç
+              </a>
+            </ShadcnButton>
             <IconButton
               aria-label="Fotoğrafı kapat"
               icon={<X aria-hidden size={20} />}
@@ -1143,10 +1156,11 @@ function PhotoLightbox({ photo, onClose }: { photo: ActivePhoto; onClose: () => 
             />
           </div>
         </div>
-        <div className="photo-lightbox-image">
+        <div className="relative h-[70vh] w-full overflow-hidden rounded-md bg-muted">
           <Image
             alt={photo.caption || `Rapor fotoğrafı ${photo.index + 1}`}
             fill
+            className="object-contain"
             sizes="92vw"
             src={photo.signedUrl}
             unoptimized

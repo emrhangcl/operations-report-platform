@@ -15,7 +15,7 @@ import {
   EmptyState,
   LoadingState,
   StatusBadge
-} from "./ui";
+} from "@/components/firm-ui";
 
 type PaymentRow = { id: string; status: string; amount_minor: number; currency: string; paid_at: string | null; created_at: string };
 type InvoiceRow = { id: string; invoice_number: string | null; status: string; total_minor: number; currency: string; issued_at: string | null; created_at: string };
@@ -79,10 +79,10 @@ export function BillingOverview() {
   if (message) return <Alert tone="error">{message}</Alert>;
 
   return (
-    <div className="billing-sections">
-      <section>
-        <h2>Ödemeler</h2>
-        {payments.length === 0 ? <EmptyState>Henüz ödeme kaydı bulunmuyor.</EmptyState> : (
+    <div className="grid gap-6">
+      <section className="grid gap-3">
+        <h2 className="text-base font-medium">Ödemeler</h2>
+        {payments.length === 0 ? <EmptyState className="rounded-lg border">Henüz ödeme kaydı bulunmuyor.</EmptyState> : (
           <DataTablePanel>
             <DataTable>
               <DataTableHeader>
@@ -107,9 +107,9 @@ export function BillingOverview() {
           </DataTablePanel>
         )}
       </section>
-      <section>
-        <h2>Faturalar</h2>
-        {invoices.length === 0 ? <EmptyState>Henüz fatura kaydı bulunmuyor.</EmptyState> : (
+      <section className="grid gap-3">
+        <h2 className="text-base font-medium">Faturalar</h2>
+        {invoices.length === 0 ? <EmptyState className="rounded-lg border">Henüz fatura kaydı bulunmuyor.</EmptyState> : (
           <DataTablePanel>
             <DataTable>
               <DataTableHeader>

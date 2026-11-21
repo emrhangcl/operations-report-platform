@@ -6,6 +6,7 @@ import type { Company } from "@operations/types";
 import { companySchema } from "@operations/validation";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,7 +22,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type CompanyForm = {
@@ -138,15 +139,15 @@ export default function CompaniesPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Firmalar"
         description="Rapor formlarında seçilecek müşteri firmalarını yönetin."
         action={<StatusBadge label={`${companies.length} firma`} tone="neutral" />}
       />
-      <form className="form-panel" onSubmit={submit}>
+      <form className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm" onSubmit={submit}>
         <FormSection>
-          <div className="form-grid">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <FormField label="Firma Adı">
               <input
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -223,7 +224,7 @@ export default function CompaniesPage() {
                   <DataTableCell>{company.contact_phone ?? "-"}</DataTableCell>
                   <DataTableCell>{new Date(company.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
                   <DataTableCell>
-                    <FormActions style={{ marginTop: 0 }}>
+                    <FormActions>
                       <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(company)} variant="secondary">
                         Düzenle
                       </Button>
@@ -255,6 +256,6 @@ export default function CompaniesPage() {
         open={Boolean(pendingDelete)}
         title="Firma silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }

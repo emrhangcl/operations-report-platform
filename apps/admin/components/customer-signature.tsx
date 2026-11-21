@@ -43,6 +43,44 @@ export function CustomerSignatureView({ signature, signedAt }: { signature: unkn
   </section>;
 }
 
+// Firma paneli (v2) icin ayni imza gorunumu: shadcn Card yapisi.
+export function CustomerSignatureCard({ signature, signedAt }: { signature: unknown; signedAt?: string | null }) {
+  const parsed = customerSignatureSchema.safeParse(signature);
+  const date = signedAt ? new Date(signedAt) : null;
+  return (
+    <section aria-label="Firma yetkilisi onayı" className="bg-card text-card-foreground flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+      <h2 className="leading-none font-semibold">Firma yetkilisi onayı</h2>
+      {parsed.success ? (
+        <>
+          <svg
+            aria-label={`${parsed.data.signer_name} tarafından atılan teslim imzası`}
+            className="block h-auto w-full max-w-md rounded-lg border bg-muted/40 text-foreground"
+            role="img"
+            viewBox="0 0 600 240"
+          >
+            <SignatureDrawing strokes={parsed.data.strokes} />
+          </svg>
+          <div className="grid gap-1 text-sm">
+            <span className="font-medium">{parsed.data.signer_name}</span>
+            <span className="text-muted-foreground">{parsed.data.signer_title}</span>
+            {date && !Number.isNaN(date.getTime()) ? (
+              <time className="text-muted-foreground" dateTime={signedAt ?? undefined}>
+                {date.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })} (Türkiye saati)
+              </time>
+            ) : null}
+          </div>
+          <p className="text-sm text-muted-foreground">{CUSTOMER_SIGNATURE_CONSENT}</p>
+          <p className="text-sm text-muted-foreground">
+            Eve/ofise giriş zamanı ve dönüş araç kilometresi, müşteri teslim onayından sonra personel tarafından kaydedilen kapanış bilgileridir.
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground">Bu raporda kayıtlı dijital teslim imzası bulunmuyor.</p>
+      )}
+    </section>
+  );
+}
+
 export function CustomerSignatureApproval({ companyName, reportDate, summary, initialName, loading, onBack, onSubmit }: {
   companyName: string; reportDate: string; summary: React.ReactNode; initialName: string; loading: boolean;
   onBack: () => void; onSubmit: (signature: CustomerSignature) => Promise<void>;

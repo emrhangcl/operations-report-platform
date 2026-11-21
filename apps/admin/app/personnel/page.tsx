@@ -6,6 +6,7 @@ import type { Profile, UserRole } from "@operations/types";
 import { userAccountSchema } from "@operations/validation";
 import {
   Alert,
+  FirmPage,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,7 +22,7 @@ import {
   FormSection,
   PageHeaderShell,
   StatusBadge
-} from "../../components/ui";
+} from "@/components/firm-ui";
 import { clearReadCache, getBrowserClient, scopeHeaders } from "../../lib/browser-client";
 
 type PersonnelForm = {
@@ -188,15 +189,15 @@ export default function PersonnelPage() {
   }
 
   return (
-    <>
+    <FirmPage>
       <PageHeaderShell
         title="Kullanıcılar"
         description="Personel ve admin hesaplarını oluşturun, düzenleyin ve silin."
         action={<StatusBadge label={`${rows.length} kullanıcı`} tone="neutral" />}
       />
-      <form className="form-panel" onSubmit={submit}>
+      <form className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-6 shadow-sm" onSubmit={submit}>
         <FormSection>
-          <div className="form-grid">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <FormField label="Ad">
               <input
                 onChange={(event) => setForm({ ...form, first_name: event.target.value })}
@@ -300,7 +301,7 @@ export default function PersonnelPage() {
                   </DataTableCell>
                   <DataTableCell>{new Date(profile.created_at).toLocaleDateString("tr-TR")}</DataTableCell>
                   <DataTableCell>
-                    <FormActions style={{ marginTop: 0 }}>
+                    <FormActions>
                       <Button icon={<Pencil aria-hidden size={16} />} onClick={() => edit(profile)} variant="secondary">
                         Düzenle
                       </Button>
@@ -330,6 +331,6 @@ export default function PersonnelPage() {
         open={Boolean(pendingDelete)}
         title="Personel silme onayı"
       />
-    </>
+    </FirmPage>
   );
 }
