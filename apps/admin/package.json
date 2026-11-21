@@ -15,6 +15,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@number-flow/react": "^0.6.2",
     "@operations/data-client": "workspace:*",
     "@operations/payments": "workspace:*",
     "@operations/shared": "workspace:*",

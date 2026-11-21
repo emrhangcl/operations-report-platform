@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LandingFeatures } from "@/components/landing/landing-features";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingNavbar } from "@/components/landing/landing-navbar";
+import { LandingPricing } from "@/components/landing/landing-pricing";
 import { LandingWorkflow } from "@/components/landing/landing-workflow";
 
 // Yeni ana sayfanin bolum bolum kuruldugu onizleme. Tum bolumler secilince "/" bununla degisir.
@@ -20,6 +21,9 @@ export default function NewLandingPreviewPage() {
       </section>
       <section id="is-akisi">
         <LandingWorkflow />
+      </section>
+      <section id="fiyatlar">
+        <LandingPricing />
       </section>
     </div>
   );
