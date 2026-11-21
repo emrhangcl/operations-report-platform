@@ -1,9 +1,9 @@
 "use client";
 // Aceternity UI "Resizable Navbar" — https://ui.aceternity.com/components/resizable-navbar
-// Orijinal kod. Farklar: NavbarLogo bizim logo ve adimizi gosterir (CSP: dis gorsel yok);
+// Orijinal kod. Farklar: NavbarLogo owner panelindeki isareti (IconInnerShadowTop) ve adimizi gosterir;
 // NavbarButton'daki islevsiz `button` sinifi cikarildi (eski CSS'teki .button kurali turuncu boyuyordu).
 import { cn } from "@/lib/utils";
-import { IconMenu2, IconX } from "@tabler/icons-react";
+import { IconInnerShadowTop, IconMenu2, IconX } from "@tabler/icons-react";
 import {
   motion,
   AnimatePresence,
@@ -239,13 +239,7 @@ export const NavbarLogo = () => {
       href="/"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- orijinal bilesen duz <img> kullanir */}
-      <img
-        src="/operations-app-icon.png"
-        alt="logo"
-        width={30}
-        height={30}
-      />
+      <IconInnerShadowTop className="size-6 text-black dark:text-white" />
       <span className="font-medium text-black dark:text-white">Operasyon Portalı</span>
     </Link>
   );

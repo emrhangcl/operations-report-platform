@@ -1,8 +1,9 @@
 "use client"
 // 21st.dev "Pricing Section" (aymanch-03, MIT) — orijinal PricingSection. Fark: sekme etiketleri
-// ve indirim rozeti disaridan verilir.
+// ve indirim rozeti disaridan verilir; 4'ten az kartta izgara daralip ortalanir.
 
 import * as React from "react"
+import { cn } from "@/lib/utils"
 import { PricingCard, type PricingTier } from "@/components/21st/pricing-card"
 import { Tab } from "@/components/21st/pricing-tab"
 
@@ -46,7 +47,16 @@ export function PricingSection({
         </div>
       </div>
 
-      <div className="grid w-full max-w-6xl gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        className={cn(
+          "grid w-full gap-6",
+          // Orijinal 4 sutun; daha az paket varken kartlar sola yigilmasin diye ortalanir.
+          tiers.length <= 1 && "max-w-sm",
+          tiers.length === 2 && "max-w-3xl sm:grid-cols-2",
+          tiers.length === 3 && "max-w-5xl sm:grid-cols-2 lg:grid-cols-3",
+          tiers.length >= 4 && "max-w-6xl sm:grid-cols-2 xl:grid-cols-4"
+        )}
+      >
         {tiers.map((tier) => (
           <PricingCard
             key={tier.id}
