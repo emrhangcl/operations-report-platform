@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AdminShell } from "./admin-shell";
+import { FirmShell } from "./firm-shell/firm-shell";
 
 const adminRoutePrefixes = [
   "/app",
@@ -23,5 +23,5 @@ function isAdminRoute(pathname: string) {
 
 export function RouteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  return isAdminRoute(pathname) ? <AdminShell>{children}</AdminShell> : children;
+  return isAdminRoute(pathname) ? <FirmShell>{children}</FirmShell> : children;
 }
