@@ -1,53 +1,58 @@
+import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, LockKeyhole } from "lucide-react";
-import { ProductBrand } from "./logo";
+import { IconInnerShadowTop } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
 
+// shadcn "login-02" / "signup-02" blogu birebir: solda logo ve form, sagda gorsel.
+// Farklar: logo kutusuz Operasyon Portali isareti (panellerle ayni), sagdaki yer tutucu
+// gorselin yerine firma paneli ekran goruntusu. Baslik ve aciklama formun ustunde ortali.
 export function AuthShell({
   children,
   description,
   footer,
-  mode,
-  title
+  title,
+  wide = false
 }: {
   children: React.ReactNode;
   description?: string;
   footer?: React.ReactNode;
-  mode?: "login" | "register";
   title: string;
+  wide?: boolean;
 }) {
   return (
-    <main className="public-auth-page">
-      <div className="public-auth-layout">
-        <aside className="public-auth-context">
-          <Link aria-label="Ana sayfa" className="public-auth-brand" href="/">
-            <ProductBrand />
-          </Link>
-          <div className="public-auth-context-copy">
-            <h2>Saha operasyonlarınızı tek merkezden yönetin.</h2>
-            <p>Atamalar, servis raporları, müşteri onayları ve ekip takibi aynı güvenli çalışma alanında.</p>
-            <ul>
-              <li><CheckCircle2 aria-hidden size={17} /> Organizasyon ve rol tabanlı erişim</li>
-              <li><CheckCircle2 aria-hidden size={17} /> Güvenli rapor ve müşteri verileri</li>
-              <li><CheckCircle2 aria-hidden size={17} /> Masaüstü ve mobil uyumlu kullanım</li>
-            </ul>
+    <div className="min-h-svh bg-background text-foreground" data-ui="v2">
+      <div className="grid min-h-svh lg:grid-cols-2">
+        <div className="flex flex-col gap-4 p-6 md:p-10">
+          <div className="flex justify-center gap-2 md:justify-start">
+            <Link className="flex items-center gap-2 font-medium" href="/">
+              <IconInnerShadowTop className="size-5" />
+              Operasyon Portalı
+            </Link>
           </div>
-          <div className="public-auth-security-note"><LockKeyhole aria-hidden size={16} /> Oturumunuz şifreli bağlantı üzerinden korunur.</div>
-        </aside>
-        <section className="public-auth-panel">
-          {mode ? (
-            <nav aria-label="Hesap işlemleri" className="auth-mode-tabs">
-              <Link aria-current={mode === "login" ? "page" : undefined} className={mode === "login" ? "active" : ""} href="/login">Giriş</Link>
-              <Link aria-current={mode === "register" ? "page" : undefined} className={mode === "register" ? "active" : ""} href="/register">Firma Kaydı</Link>
-            </nav>
-          ) : null}
-          <header>
-            <h1>{title}</h1>
-            {description ? <p>{description}</p> : null}
-          </header>
-          {children}
-          {footer ? <footer>{footer}</footer> : null}
-        </section>
+          <div className="flex flex-1 items-center justify-center">
+            <main className={cn("w-full", wide ? "max-w-md" : "max-w-xs")}>
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <h1 className="text-2xl font-bold">{title}</h1>
+                  {description ? <p className="text-sm text-balance text-muted-foreground">{description}</p> : null}
+                </div>
+                {children}
+                {footer ? <div className="text-center text-sm text-muted-foreground [&_a]:underline [&_a]:underline-offset-4">{footer}</div> : null}
+              </div>
+            </main>
+          </div>
+        </div>
+        <div className="relative hidden bg-muted lg:block">
+          <Image
+            alt="Operasyon Portalı firma paneli"
+            className="absolute inset-0 h-full w-full object-cover object-left-top dark:brightness-[0.2] dark:grayscale"
+            fill
+            priority
+            sizes="50vw"
+            src="/landing/firm-dashboard.png"
+          />
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

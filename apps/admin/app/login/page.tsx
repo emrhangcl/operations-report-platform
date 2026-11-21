@@ -1,9 +1,12 @@
 "use client";
 
-import { Loader2, Lock, LogIn, Mail } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { Alert } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Field, FieldGroup } from "@/components/shadcn/field";
 import { AuthField } from "../../components/auth-field";
 import { AuthShell } from "../../components/auth-shell";
 import { getBrowserClient } from "../../lib/browser-client";
@@ -44,21 +47,43 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      description="Yetkili yönetici veya personel hesabınızla devam edin."
+      description="Yönetici veya personel hesabınızla giriş yapın"
       footer={<span>Firma hesabınız yok mu? <Link href="/register">Kayıt olun</Link></span>}
-      mode="login"
-      title="Giriş"
+      title="Hesabınıza giriş yapın"
     >
-      <form aria-describedby={error ? "login-error" : notice ? "login-notice" : undefined} className="public-form" onSubmit={submit}>
-        <AuthField autoComplete="email" icon={<Mail size={18} />} id="login-email" label="E-posta" name="email" onChange={(event) => setEmail(event.target.value)} placeholder="ornek@firma.com" required type="email" value={email} />
-        <AuthField autoComplete="current-password" icon={<Lock size={18} />} id="login-password" label="Parola" name="password" onChange={(event) => setPassword(event.target.value)} placeholder="Parolanızı girin" required type="password" value={password} />
-        <div className="form-inline-link"><Link href="/forgot-password">Parolamı unuttum</Link></div>
-        {notice ? <div className="message info" id="login-notice">{notice}</div> : null}
-        {error ? <div className="message error" id="login-error" role="alert">{error}</div> : null}
-        <button className="button public-form-submit" disabled={loading} type="submit">
-          {loading ? <Loader2 aria-hidden className="auth-spinner" size={18} /> : <LogIn aria-hidden size={18} />}
-          {loading ? "Giriş yapılıyor" : "Giriş Yap"}
-        </button>
+      <form aria-describedby={error ? "login-error" : notice ? "login-notice" : undefined} onSubmit={submit}>
+        <FieldGroup>
+          <AuthField
+            autoComplete="email"
+            id="login-email"
+            label="E-posta"
+            name="email"
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="ornek@firma.com"
+            required
+            type="email"
+            value={email}
+          />
+          <AuthField
+            autoComplete="current-password"
+            id="login-password"
+            label="Parola"
+            labelAction={<Link className="underline-offset-4 hover:underline" href="/forgot-password">Parolamı unuttum</Link>}
+            name="password"
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            type="password"
+            value={password}
+          />
+          {notice ? <Alert id="login-notice" tone="success">{notice}</Alert> : null}
+          {error ? <Alert id="login-error" tone="error">{error}</Alert> : null}
+          <Field>
+            <Button disabled={loading} type="submit">
+              {loading ? <Loader2 aria-hidden className="animate-spin" /> : null}
+              {loading ? "Giriş yapılıyor" : "Giriş Yap"}
+            </Button>
+          </Field>
+        </FieldGroup>
       </form>
     </AuthShell>
   );

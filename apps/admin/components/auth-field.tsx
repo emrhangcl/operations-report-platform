@@ -1,24 +1,28 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import { InputHTMLAttributes, ReactNode, useId, useState } from "react";
+import { InputHTMLAttributes, useId, useState } from "react";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/shadcn/field";
+import { Input } from "@/components/shadcn/input";
+import { cn } from "@/lib/utils";
 
 interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
   error?: string;
   hint?: string;
-  icon: ReactNode;
   label: string;
+  labelAction?: React.ReactNode;
 }
 
+// shadcn "login-02" Field yapisi: FieldLabel + Input (+ aciklama). Parola alaninda goster/gizle.
 export function AuthField({
   "aria-describedby": describedBy,
   containerClassName,
   error,
   hint,
-  icon,
   id,
   label,
+  labelAction,
   type,
   ...inputProps
 }: AuthFieldProps) {
@@ -31,14 +35,21 @@ export function AuthField({
   const ariaDescribedBy = [describedBy, errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={["auth-field", containerClassName, error ? "has-error" : ""].filter(Boolean).join(" ")}>
-      <label htmlFor={inputId}>{label}</label>
-      <div className="auth-input-shell">
-        <span aria-hidden className="auth-input-icon">{icon}</span>
-        <input
+    <Field className={containerClassName} data-invalid={error ? true : undefined}>
+      {labelAction ? (
+        <div className="flex items-center">
+          <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+          <div className="ml-auto text-sm">{labelAction}</div>
+        </div>
+      ) : (
+        <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      )}
+      <div className="relative">
+        <Input
           {...inputProps}
           aria-describedby={ariaDescribedBy}
           aria-invalid={error ? true : undefined}
+          className={cn(isPassword && "pr-9")}
           id={inputId}
           type={isPassword && passwordVisible ? "text" : type}
         />
@@ -46,17 +57,17 @@ export function AuthField({
           <button
             aria-label={passwordVisible ? "Parolayı gizle" : "Parolayı göster"}
             aria-pressed={passwordVisible}
-            className="auth-password-toggle"
+            className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
             onClick={() => setPasswordVisible((visible) => !visible)}
             type="button"
           >
-            {passwordVisible ? <EyeOff aria-hidden size={18} /> : <Eye aria-hidden size={18} />}
+            {passwordVisible ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
           </button>
         ) : null}
       </div>
-      {hint ? <span className="auth-field-hint" id={hintId}>{hint}</span> : null}
-      {error ? <span className="auth-field-error" id={errorId}>{error}</span> : null}
-    </div>
+      {hint ? <FieldDescription id={hintId}>{hint}</FieldDescription> : null}
+      {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+    </Field>
   );
 }
 
@@ -74,15 +85,19 @@ export function PasswordStrength({ password }: { password: string }) {
   const labels = ["Çok zayıf", "Zayıf", "Orta", "İyi", "Güçlü"];
 
   return (
-    <div className="password-strength" aria-live="polite">
-      <div className="password-strength-heading">
-        <span>Parola gücü</span>
-        <strong>{labels[Math.max(0, score - 1)]}</strong>
+    <div aria-live="polite" className="grid gap-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Parola gücü</span>
+        <span className="font-medium">{labels[Math.max(0, score - 1)]}</span>
       </div>
-      <div aria-hidden className="password-strength-track">
-        {checks.map((passed, index) => <span className={passed ? "passed" : ""} key={index} />)}
+      <div aria-hidden className="grid grid-cols-5 gap-1">
+        {checks.map((passed, index) => (
+          <span className={cn("h-1 rounded-full", passed ? "bg-primary" : "bg-muted")} key={index} />
+        ))}
       </div>
-      <p>En az 10 karakter kullanın; büyük-küçük harf, sayı ve sembol eklemek güvenliği artırır.</p>
+      <p className="text-xs text-muted-foreground">
+        En az 10 karakter kullanın; büyük-küçük harf, sayı ve sembol eklemek güvenliği artırır.
+      </p>
     </div>
   );
 }

@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Alert } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { FieldGroup } from "@/components/shadcn/field";
 import { AuthShell } from "../../components/auth-shell";
 
 export default function VerifyEmailPage() {
@@ -33,15 +36,19 @@ export default function VerifyEmailPage() {
 
   return (
     <AuthShell
-      description={verified ? "E-posta adresiniz doğrulandı." : "Kayıt adresinize gönderilen doğrulama bağlantısını açın."}
-      title={verified ? "Doğrulama Tamamlandı" : "E-postanızı Doğrulayın"}
+      description={verified ? "E-posta adresiniz doğrulandı" : "Kayıt adresinize gönderilen doğrulama bağlantısını açın"}
+      title={verified ? "Doğrulama tamamlandı" : "E-postanızı doğrulayın"}
     >
-      <div className="auth-status-block" role="status">
-        {email ? <strong>{email}</strong> : null}
-        {error ? <div className="message error" role="alert">{error}</div> : null}
-        <p>{verified ? "Abonelik adımına geçmek için giriş yapabilirsiniz." : "E-posta birkaç dakika içinde gelmezse gereksiz klasörünü kontrol edin."}</p>
-        <Link className="button" href="/login">Giriş sayfasına git</Link>
-      </div>
+      <FieldGroup role="status">
+        {email ? <p className="text-center text-sm font-medium break-all">{email}</p> : null}
+        {error ? <Alert tone="error">{error}</Alert> : null}
+        <p className="text-center text-sm text-muted-foreground">
+          {verified ? "Abonelik adımına geçmek için giriş yapabilirsiniz." : "E-posta birkaç dakika içinde gelmezse gereksiz klasörünü kontrol edin."}
+        </p>
+        <Button asChild>
+          <Link href="/login">Giriş sayfasına git</Link>
+        </Button>
+      </FieldGroup>
     </AuthShell>
   );
 }

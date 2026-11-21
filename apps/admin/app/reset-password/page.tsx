@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { KeyRound, Loader2, Lock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { Alert } from "@/components/firm-ui";
+import { Button } from "@/components/shadcn/button";
+import { Field, FieldGroup } from "@/components/shadcn/field";
 import { AuthField, PasswordStrength } from "../../components/auth-field";
 import { AuthShell } from "../../components/auth-shell";
 
@@ -40,25 +43,44 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthShell
-      description="Yeni parolanız en az 10 karakter olmalıdır."
-      title="Yeni Parola"
+      description="Yeni parolanız en az 10 karakter olmalıdır"
+      footer={updated ? undefined : <Link href="/forgot-password">Yeni bağlantı isteyin</Link>}
+      title="Yeni parola belirleyin"
     >
       {updated ? (
-        <div className="auth-status-block" role="status">
-          <p>Parolanız güncellendi.</p>
-          <Link className="button" href="/login">Giriş yap</Link>
-        </div>
+        <FieldGroup>
+          <Alert tone="success">Parolanız güncellendi.</Alert>
+          <Button asChild>
+            <Link href="/login">Giriş yap</Link>
+          </Button>
+        </FieldGroup>
       ) : null}
-      {!updated && !ready ? <div className="message error" role="alert">Geçerli parola yenileme oturumu bulunamadı.</div> : null}
+      {!updated && !ready ? <Alert tone="error">Geçerli parola yenileme oturumu bulunamadı.</Alert> : null}
       {!updated && ready ? (
-        <form aria-describedby={message ? "reset-password-error" : undefined} className="public-form" onSubmit={submit}>
-          <AuthField autoComplete="new-password" icon={<Lock size={18} />} id="reset-password" label="Yeni parola" minLength={10} name="new-password" onChange={(event) => setPassword(event.target.value)} placeholder="En az 10 karakter" required type="password" value={password} />
-          <PasswordStrength password={password} />
-          {message ? <div className="message error" id="reset-password-error" role="alert">{message}</div> : null}
-          <button className="button public-form-submit" disabled={loading} type="submit">
-            {loading ? <Loader2 aria-hidden className="auth-spinner" size={18} /> : <KeyRound aria-hidden size={18} />}
-            {loading ? "Güncelleniyor" : "Parolayı Güncelle"}
-          </button>
+        <form aria-describedby={message ? "reset-password-error" : undefined} onSubmit={submit}>
+          <FieldGroup>
+            <Field>
+              <AuthField
+                autoComplete="new-password"
+                id="reset-password"
+                label="Yeni parola"
+                minLength={10}
+                name="new-password"
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type="password"
+                value={password}
+              />
+              <PasswordStrength password={password} />
+            </Field>
+            {message ? <Alert id="reset-password-error" tone="error">{message}</Alert> : null}
+            <Field>
+              <Button disabled={loading} type="submit">
+                {loading ? <Loader2 aria-hidden className="animate-spin" /> : null}
+                {loading ? "Güncelleniyor" : "Parolayı Güncelle"}
+              </Button>
+            </Field>
+          </FieldGroup>
         </form>
       ) : null}
     </AuthShell>
